@@ -1,781 +1,1177 @@
 <!DOCTYPE html>
 <html lang="pt">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sala de Avaliação - Madrassa Online</title>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1a5f2a 0%, #0d3320 100%);
-            min-height: 100vh;
-            color: #fff;
-        }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        .header {
-            text-align: center;
-            padding: 30px 0;
-        }
-        .header h1 {
-            font-size: 2rem;
-            margin-bottom: 5px;
-        }
-        .header p {
-            opacity: 0.9;
-            font-size: 0.95rem;
-        }
-        .card {
-            background: rgba(255,255,255,0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 16px;
-            padding: 25px;
-            margin-bottom: 20px;
-            border: 1px solid rgba(255,255,255,0.2);
-        }
-        .card h2 {
-            margin-bottom: 15px;
-            font-size: 1.3rem;
-            color: #a8e6cf;
-        }
-        input, textarea, select {
-            width: 100%;
-            padding: 12px 15px;
-            border: none;
-            border-radius: 10px;
-            margin-bottom: 12px;
-            font-size: 1rem;
-            background: rgba(255,255,255,0.15);
-            color: #fff;
-            outline: none;
-        }
-        input::placeholder, textarea::placeholder {
-            color: rgba(255,255,255,0.6);
-        }
-        input:focus, textarea:focus {
-            background: rgba(255,255,255,0.25);
-        }
-        textarea {
-            min-height: 80px;
-            resize: vertical;
-        }
-        .btn {
-            display: inline-block;
-            padding: 12px 30px;
-            border: none;
-            border-radius: 10px;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: all 0.3s;
-            font-weight: 600;
-            margin-right: 10px;
-            margin-bottom: 10px;
-        }
-        .btn-primary {
-            background: #2ecc71;
-            color: #fff;
-        }
-        .btn-primary:hover {
-            background: #27ae60;
-            transform: translateY(-2px);
-        }
-        .btn-secondary {
-            background: rgba(255,255,255,0.2);
-            color: #fff;
-        }
-        .btn-secondary:hover {
-            background: rgba(255,255,255,0.3);
-        }
-        .btn-danger {
-            background: #e74c3c;
-            color: #fff;
-        }
-        .btn-whatsapp {
-            background: #25D366;
-            color: #fff;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            justify-content: center;
-        }
-        .btn-whatsapp:hover {
-            background: #128C7E;
-        }
-        .btn-ustath {
-            background: rgba(255,255,255,0.15);
-            color: #fff;
-            font-size: 0.85rem;
-            padding: 8px 20px;
-            border: 1px solid rgba(255,255,255,0.3);
-        }
-        .btn-ustath:hover {
-            background: rgba(255,255,255,0.25);
-        }
-        .question-box {
-            background: rgba(255,255,255,0.08);
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 15px;
-            border-left: 4px solid #2ecc71;
-        }
-        .question-box h4 {
-            margin-bottom: 12px;
-            font-size: 1.1rem;
-        }
-        .options label {
-            display: block;
-            padding: 10px 15px;
-            margin-bottom: 8px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .options label:hover {
-            background: rgba(255,255,255,0.2);
-        }
-        .options input[type="radio"] {
-            width: auto;
-            margin-right: 10px;
-            margin-bottom: 0;
-        }
-        .hidden { display: none !important; }
-        .result-item {
-            padding: 12px;
-            margin-bottom: 10px;
-            border-radius: 8px;
-        }
-        .result-correct {
-            background: rgba(46, 204, 113, 0.2);
-            border-left: 4px solid #2ecc71;
-        }
-        .result-wrong {
-            background: rgba(231, 76, 60, 0.2);
-            border-left: 4px solid #e74c3c;
-        }
-        .score-box {
-            text-align: center;
-            padding: 30px;
-            font-size: 3rem;
-            font-weight: bold;
-            color: #2ecc71;
-        }
-        .alert {
-            padding: 12px 15px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-        }
-        .alert-success { background: rgba(46, 204, 113, 0.3); }
-        .alert-error { background: rgba(231, 76, 60, 0.3); }
-        .loading {
-            text-align: center;
-            padding: 20px;
-        }
-        .spinner {
-            border: 3px solid rgba(255,255,255,0.3);
-            border-top: 3px solid #2ecc71;
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 10px;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .small-text { font-size: 0.85rem; opacity: 0.8; }
-        .test-info {
-            background: rgba(255,255,255,0.1);
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-        }
-        .option-input {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 8px;
-            align-items: center;
-        }
-        .option-input input[type="radio"] {
-            width: auto;
-            margin-bottom: 0;
-        }
-        .remove-btn {
-            background: #e74c3c;
-            color: #fff;
-            border: none;
-            padding: 5px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.8rem;
-        }
-        .add-option-btn {
-            background: rgba(255,255,255,0.2);
-            color: #fff;
-            border: 1px dashed rgba(255,255,255,0.4);
-            padding: 8px 15px;
-            border-radius: 8px;
-            cursor: pointer;
-            margin-top: 5px;
-            font-size: 0.9rem;
-        }
-        .question-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-        .password-section {
-            text-align: center;
-            padding: 40px 20px;
-        }
-        .password-section input {
-            max-width: 300px;
-            margin: 0 auto 15px;
-            display: block;
-            text-align: center;
-            font-size: 1.1rem;
-            letter-spacing: 2px;
-        }
-        .footer-btn {
-            text-align: center;
-            margin-top: 30px;
-            padding: 20px;
-        }
-        .ustath-badge {
-            display: inline-block;
-            background: #f39c12;
-            color: #fff;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            margin-bottom: 10px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lotaria Moz 1-75</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --black: #0a0a0f;
+      --dark: #12121a;
+      --card-bg: rgba(255, 255, 255, 0.03);
+      --glass: rgba(255, 255, 255, 0.06);
+      --glass-border: rgba(255, 255, 255, 0.08);
+      --white: #ffffff;
+      --gray: #a0a0b0;
+      --green: #00f5a0;
+      --green-glow: rgba(0, 245, 160, 0.3);
+      --blue: #00d4ff;
+      --blue-glow: rgba(0, 212, 255, 0.3);
+      --purple: #a855f7;
+      --purple-glow: rgba(168, 85, 247, 0.3);
+      --red: #ff4757;
+      --warning: #ffa502;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--black);
+      color: var(--white);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Animated background */
+    .bg-orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(120px);
+      opacity: 0.4;
+      z-index: 0;
+      animation: float 20s ease-in-out infinite;
+    }
+    .orb-1 {
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, var(--purple), transparent 70%);
+      top: -10%; left: -10%;
+      animation-delay: 0s;
+    }
+    .orb-2 {
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, var(--blue), transparent 70%);
+      bottom: -10%; right: -10%;
+      animation-delay: -7s;
+    }
+    .orb-3 {
+      width: 300px; height: 300px;
+      background: radial-gradient(circle, var(--green), transparent 70%);
+      top: 40%; left: 50%;
+      animation-delay: -14s;
+    }
+    @keyframes float {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      33% { transform: translate(30px, -30px) scale(1.1); }
+      66% { transform: translate(-20px, 20px) scale(0.9); }
+    }
+
+    .app {
+      position: relative;
+      z-index: 1;
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 20px;
+      min-height: 100vh;
+    }
+
+    /* Glass Card */
+    .glass {
+      background: var(--glass);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      border-radius: 24px;
+      padding: 24px;
+      margin-bottom: 16px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255,255,255,0.05);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .glass:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+
+    /* Typography */
+    h1, h2, h3 {
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+    h1 { font-size: 28px; background: linear-gradient(135deg, var(--white), var(--green)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    h2 { font-size: 22px; margin-bottom: 4px; }
+    h3 { font-size: 18px; color: var(--white); }
+    .subtitle { color: var(--gray); font-size: 13px; font-weight: 400; }
+
+    /* Inputs */
+    .input-group {
+      margin-bottom: 14px;
+    }
+    .input-group label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--gray);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    input, select {
+      width: 100%;
+      padding: 14px 16px;
+      border-radius: 16px;
+      border: 1px solid var(--glass-border);
+      background: rgba(0, 0, 0, 0.3);
+      color: var(--white);
+      font-size: 15px;
+      font-family: 'Inter', sans-serif;
+      outline: none;
+      transition: all 0.3s ease;
+    }
+    input:focus, select:focus {
+      border-color: var(--green);
+      box-shadow: 0 0 0 3px var(--green-glow);
+    }
+    input::placeholder { color: rgba(160, 160, 176, 0.5); }
+
+    /* Glass Buttons */
+    .btn {
+      width: 100%;
+      padding: 16px;
+      border-radius: 16px;
+      border: none;
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      color: var(--white);
+    }
+    .btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .btn:hover::before { opacity: 1; }
+    .btn:hover { transform: translateY(-2px); }
+    .btn:active { transform: translateY(0); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--green), #00c853);
+      color: var(--black);
+      box-shadow: 0 4px 20px var(--green-glow);
+    }
+    .btn-primary:hover { box-shadow: 0 6px 30px var(--green-glow); }
+
+    .btn-blue {
+      background: linear-gradient(135deg, var(--blue), #0080ff);
+      color: var(--black);
+      box-shadow: 0 4px 20px var(--blue-glow);
+    }
+    .btn-purple {
+      background: linear-gradient(135deg, var(--purple), #7c3aed);
+      box-shadow: 0 4px 20px var(--purple-glow);
+    }
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--glass-border);
+      color: var(--gray);
+    }
+    .btn-outline:hover { border-color: var(--white); color: var(--white); background: rgba(255,255,255,0.05); }
+
+    .btn-glass {
+      background: var(--glass);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--glass-border);
+      color: var(--white);
+    }
+    .btn-glass:hover {
+      background: rgba(255,255,255,0.1);
+      border-color: rgba(255,255,255,0.2);
+    }
+
+    /* Balance Display */
+    .balance-card {
+      text-align: center;
+      padding: 32px 24px;
+      position: relative;
+      overflow: hidden;
+    }
+    .balance-card::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: conic-gradient(from 0deg, transparent, var(--green-glow), transparent 30%);
+      animation: rotate 4s linear infinite;
+      opacity: 0.3;
+    }
+    @keyframes rotate { 100% { transform: rotate(360deg); } }
+    .balance-inner {
+      position: relative;
+      z-index: 1;
+    }
+    .balance-label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--gray);
+      margin-bottom: 8px;
+    }
+    .balance-amount {
+      font-size: 42px;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--green), var(--blue));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      line-height: 1;
+    }
+    .balance-currency {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--green);
+      margin-left: 4px;
+    }
+
+    /* Ball Grid */
+    .ball-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      max-height: 320px;
+      overflow-y: auto;
+      padding: 8px;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 20px;
+      border: 1px solid var(--glass-border);
+    }
+    .ball-grid::-webkit-scrollbar { width: 4px; }
+    .ball-grid::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 4px; }
+
+    .ball {
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--glass-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      color: var(--gray);
+    }
+    .ball:hover {
+      background: rgba(255, 255, 255, 0.1);
+      transform: scale(1.1);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+    .ball.selected {
+      background: linear-gradient(135deg, var(--green), #00c853);
+      color: var(--black);
+      border-color: var(--green);
+      box-shadow: 0 0 20px var(--green-glow);
+      transform: scale(1.05);
+      font-weight: 800;
+    }
+    .ball.selected:hover { transform: scale(1.15); }
+
+    /* Selected balls display */
+    .selected-balls {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin: 16px 0;
+      min-height: 48px;
+      align-items: center;
+    }
+    .selected-ball {
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--blue), var(--purple));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 16px;
+      box-shadow: 0 4px 15px var(--blue-glow);
+      animation: popIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    @keyframes popIn {
+      0% { transform: scale(0); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .selected-placeholder {
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      border: 2px dashed var(--glass-border);
+      background: transparent;
+    }
+
+    /* Stats row */
+    .stats-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .stat-item {
+      flex: 1;
+      text-align: center;
+      padding: 16px;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 16px;
+      border: 1px solid var(--glass-border);
+    }
+    .stat-value {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--green);
+    }
+    .stat-label {
+      font-size: 11px;
+      color: var(--gray);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 4px;
+    }
+
+    /* History */
+    .history-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--glass-border);
+      animation: slideIn 0.4s ease;
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(-20px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    .history-item:last-child { border-bottom: none; }
+    .history-info { flex: 1; }
+    .history-balls {
+      display: flex;
+      gap: 6px;
+      margin-top: 6px;
+    }
+    .history-ball {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .history-ball.hit {
+      background: linear-gradient(135deg, var(--green), #00c853);
+      color: var(--black);
+    }
+    .history-prize {
+      text-align: right;
+    }
+    .prize-amount {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--green);
+    }
+    .prize-zero { color: var(--gray); }
+    .prize-date {
+      font-size: 11px;
+      color: var(--gray);
+    }
+
+    /* Modal overlay */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(8px);
+      z-index: 100;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+    .modal-content {
+      width: 100%;
+      max-width: 520px;
+      background: linear-gradient(180deg, #1a1a2e, var(--dark));
+      border-radius: 32px 32px 0 0;
+      border: 1px solid var(--glass-border);
+      border-bottom: none;
+      padding: 32px 24px;
+      transform: translateY(100%);
+      transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      max-height: 85vh;
+      overflow-y: auto;
+    }
+    .modal-overlay.active .modal-content {
+      transform: translateY(0);
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+    .modal-close {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      background: var(--glass);
+      border: 1px solid var(--glass-border);
+      color: var(--white);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 20px;
+      transition: all 0.3s ease;
+    }
+    .modal-close:hover { background: rgba(255,255,255,0.1); transform: rotate(90deg); }
+
+    /* Notice */
+    .notice {
+      background: linear-gradient(135deg, rgba(255, 171, 0, 0.1), rgba(255, 171, 0, 0.05));
+      border: 1px solid rgba(255, 171, 0, 0.2);
+      border-radius: 12px;
+      padding: 12px 16px;
+      font-size: 13px;
+      color: var(--warning);
+      margin: 12px 0;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .notice-icon { font-size: 16px; flex-shrink: 0; }
+
+    /* Checkbox */
+    .checkbox-wrap {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin: 16px 0;
+      font-size: 13px;
+      color: var(--gray);
+      cursor: pointer;
+    }
+    .checkbox-wrap input {
+      width: auto;
+      margin-top: 2px;
+      accent-color: var(--green);
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      background: rgba(0,0,0,0.2);
+      padding: 4px;
+      border-radius: 16px;
+    }
+    .tab {
+      flex: 1;
+      padding: 12px;
+      text-align: center;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      color: var(--gray);
+      border: none;
+      background: transparent;
+    }
+    .tab.active {
+      background: linear-gradient(135deg, var(--purple), var(--blue));
+      color: var(--white);
+      box-shadow: 0 4px 15px var(--purple-glow);
+    }
+
+    /* Animations */
+    .fade-in { animation: fadeIn 0.5s ease; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .hidden { display: none !important; }
+
+    /* Responsive */
+    @media (min-width: 520px) {
+      .modal-overlay { align-items: center; }
+      .modal-content { border-radius: 24px; border: 1px solid var(--glass-border); transform: translateY(20px) scale(0.95); }
+      .modal-overlay.active .modal-content { transform: translateY(0) scale(1); }
+    }
+
+    /* Loading spinner */
+    .spinner {
+      width: 20px; height: 20px;
+      border: 2px solid rgba(255,255,255,0.2);
+      border-top-color: var(--green);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      display: inline-block;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Prize table */
+    .prize-table {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin: 16px 0;
+    }
+    .prize-cell {
+      text-align: center;
+      padding: 12px 8px;
+      background: rgba(0,0,0,0.2);
+      border-radius: 12px;
+      border: 1px solid var(--glass-border);
+    }
+    .prize-cell .num { font-size: 20px; font-weight: 800; color: var(--blue); }
+    .prize-cell .val { font-size: 13px; font-weight: 600; color: var(--green); margin-top: 4px; }
+
+    /* Header logo area */
+    .logo-area {
+      text-align: center;
+      padding: 20px 0 10px;
+    }
+    .logo-icon {
+      width: 64px; height: 64px;
+      margin: 0 auto 12px;
+      background: linear-gradient(135deg, var(--green), var(--blue), var(--purple));
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      box-shadow: 0 8px 32px var(--green-glow);
+    }
+  </style>
+<base target="_blank">
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🕌 Sala de Avaliação</h1>
-            <p>Madrassa Online Moçambique</p>
+  <div class="bg-orb orb-1"></div>
+  <div class="bg-orb orb-2"></div>
+  <div class="bg-orb orb-3"></div>
+
+  <div class="app">
+
+    <!-- AUTH SCREEN -->
+    <div id="auth-screen" class="fade-in">
+      <div class="logo-area">
+        <div class="logo-icon">🎱</div>
+        <h1>Lotaria Moz 1-75</h1>
+        <p class="subtitle">Escolha 5 bolas. Ganhe até 50.000 MT!</p>
+      </div>
+
+      <div class="glass">
+        <div class="tabs">
+          <button class="tab active" onclick="switchTab('register')">Criar Conta</button>
+          <button class="tab" onclick="switchTab('login')">Entrar</button>
         </div>
 
-        <!-- ==================== MODO ALUNO (PADRÃO) ==================== -->
-        <div id="studentMode">
-            <!-- Passo 1: Dados do Aluno -->
-            <div id="studentStep1" class="card">
-                <h2>📝 Dados do Aluno</h2>
-                <input type="text" id="studentName" placeholder="Nome Completo">
-                <input type="tel" id="studentPhone" placeholder="Número de Telefone (ex: 84xxxxxxx)">
-                <button class="btn btn-primary" onclick="loadTest()">Ver Teste Disponível</button>
-                <div id="studentMsg"></div>
-            </div>
-
-            <!-- Passo 2: Fazer Teste -->
-            <div id="studentStep2" class="card hidden">
-                <div class="test-info">
-                    <h3 id="testTitle">Teste de Avaliação</h3>
-                    <p class="small-text" id="testDesc"></p>
-                </div>
-                <div id="questionsContainer"></div>
-                <button class="btn btn-primary" onclick="submitTest()">Finalizar Teste</button>
-            </div>
-
-            <!-- Passo 3: Resultado + PDF -->
-            <div id="studentStep3" class="card hidden">
-                <h2>✅ Teste Finalizado!</h2>
-                <div class="score-box" id="scoreDisplay"></div>
-                <div id="resultDetails"></div>
-                <div style="margin-top: 20px; text-align: center;">
-                    <button class="btn btn-whatsapp" onclick="shareWhatsApp()">
-                        📱 Partilhar no WhatsApp
-                    </button>
-                    <button class="btn btn-secondary" onclick="downloadPDF()">
-                        📄 Download PDF
-                    </button>
-                    <button class="btn btn-secondary" onclick="location.reload()">
-                        🔄 Novo Teste
-                    </button>
-                </div>
-            </div>
+        <div id="register-panel">
+          <div class="input-group">
+            <label>Nome Completo</label>
+            <input type="text" id="reg-name" placeholder="Ex: João Silva">
+          </div>
+          <div class="input-group">
+            <label>Número de Celular</label>
+            <input type="tel" id="reg-phone" placeholder="84XXXXXXX ou +25884XXXXXXX">
+          </div>
+          <div class="input-group">
+            <label>E-mail</label>
+            <input type="email" id="reg-email" placeholder="seu@email.com">
+          </div>
+          <div class="input-group">
+            <label>PIN (6 dígitos)</label>
+            <input type="password" id="reg-pin" maxlength="6" placeholder="••••••">
+          </div>
+          <label class="checkbox-wrap">
+            <input type="checkbox" id="reg-terms">
+            <span>Sou maior de 18 anos e concordo com os termos e condições do jogo.</span>
+          </label>
+          <button class="btn btn-primary" onclick="registerUser()" id="btn-register">
+            Criar Conta — Ganhe 20 MT
+          </button>
         </div>
 
-        <!-- ==================== LOGIN USTATH ==================== -->
-        <div id="loginMode" class="hidden">
-            <div class="card password-section">
-                <h2>🔐 Área do Ustath</h2>
-                <p class="small-text" style="margin-bottom: 20px;">Apenas autorizado</p>
-                <input type="password" id="passwordInput" placeholder="Digite a senha">
-                <button class="btn btn-primary" onclick="checkPassword()">Entrar</button>
-                <div id="loginMsg" style="margin-top: 15px;"></div>
-                <button class="btn btn-secondary" style="margin-top: 20px;" onclick="showStudentMode()">← Voltar para Aluno</button>
-            </div>
+        <div id="login-panel" class="hidden">
+          <div class="input-group">
+            <label>Número de Celular</label>
+            <input type="tel" id="login-phone" placeholder="84XXXXXXX">
+          </div>
+          <div class="input-group">
+            <label>PIN (6 dígitos)</label>
+            <input type="password" id="login-pin" maxlength="6" placeholder="••••••">
+          </div>
+          <button class="btn btn-blue" onclick="loginUser()" id="btn-login">Entrar na Conta</button>
         </div>
+      </div>
 
-        <!-- ==================== MODO USTATH ==================== -->
-        <div id="teacherMode" class="hidden">
-            <div class="ustath-badge">👨‍🏫 MODO USTATH</div>
-            
-            <div class="card">
-                <h2>📝 Criar Novo Teste</h2>
-                <input type="text" id="testTitleInput" placeholder="Título do Teste (ex: Fiqh - Aula 3)">
-                <textarea id="testDescInput" placeholder="Descrição breve do teste..."></textarea>
-                
-                <div id="teacherQuestions"></div>
-                
-                <button class="btn btn-secondary" onclick="addQuestion()">➕ Adicionar Pergunta</button>
-                <button class="btn btn-primary" onclick="publishTest()">📤 Publicar Teste</button>
-                <div id="teacherMsg"></div>
-            </div>
-
-            <div class="card">
-                <h2>📋 Testes Publicados</h2>
-                <div id="publishedTests"></div>
-            </div>
-
-            <div class="card">
-                <h2>📊 Resultados dos Alunos</h2>
-                <div id="studentResults"></div>
-            </div>
-
-            <button class="btn btn-secondary" onclick="logoutUstath()">🚪 Sair</button>
+      <div class="glass" style="text-align: center;">
+        <div class="prize-table">
+          <div class="prize-cell"><div class="num">1</div><div class="val">10 MT</div></div>
+          <div class="prize-cell"><div class="num">2</div><div class="val">50 MT</div></div>
+          <div class="prize-cell"><div class="num">3</div><div class="val">500 MT</div></div>
+          <div class="prize-cell"><div class="num">4</div><div class="val">5.000 MT</div></div>
+          <div class="prize-cell"><div class="num">5</div><div class="val">50.000 MT</div></div>
         </div>
-
-        <!-- Botão discreto para Ustath -->
-        <div class="footer-btn" id="ustathAccessBtn">
-            <button class="btn btn-ustath" onclick="showLoginMode()">👨‍🏫 Acesso Ustath</button>
-        </div>
+        <p class="subtitle">Custo por jogada: 10 MT | Mínimo levantamento: 30 MT</p>
+      </div>
     </div>
 
-    <script>
-        // ==================== FIREBASE CONFIG ====================
-        const firebaseConfig = {
-            apiKey: "AIzaSyD2rNS7HSJyek3OCrRquudFgqQSWXZJYrY",
-            authDomain: "madrassa-online-b851c.firebaseapp.com",
-            databaseURL: "https://madrassa-online-b851c-default-rtdb.firebaseio.com",
-            projectId: "madrassa-online-b851c",
-            storageBucket: "madrassa-online-b851c.firebasestorage.app",
-            messagingSenderId: "360782668012",
-            appId: "1:360782668012:web:d501ef187911db632445c9",
-            measurementId: "G-RV9GD4S22T"
+    <!-- MAIN APP -->
+    <div id="app-screen" class="hidden">
+      <!-- User Header -->
+      <div class="glass balance-card">
+        <div class="balance-inner">
+          <div class="balance-label">Saldo Disponível</div>
+          <div>
+            <span class="balance-amount" id="user-balance">0</span>
+            <span class="balance-currency">MT</span>
+          </div>
+          <p class="subtitle" id="user-welcome" style="margin-top: 8px;">Bem-vindo</p>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="stats-row">
+        <button class="btn btn-blue" onclick="openModal('recharge-modal')" style="flex:1;">
+          💰 Recarregar
+        </button>
+        <button class="btn btn-purple" onclick="openModal('payout-modal')" style="flex:1;">
+          🏧 Levantar
+        </button>
+      </div>
+
+      <!-- Game Area -->
+      <div class="glass">
+        <h3>🎯 Sorteio 1-75</h3>
+        <p class="subtitle" style="text-align:center; margin-bottom:16px;">Escolha exatamente 5 bolas — Custo: 10 MT</p>
+
+        <div class="selected-balls" id="selected-display">
+          <div class="selected-placeholder"></div>
+          <div class="selected-placeholder"></div>
+          <div class="selected-placeholder"></div>
+          <div class="selected-placeholder"></div>
+          <div class="selected-placeholder"></div>
+        </div>
+
+        <div class="ball-grid" id="ball-grid"></div>
+
+        <div style="display: flex; gap: 10px; margin-top: 16px;">
+          <button class="btn btn-outline" onclick="clearSelection()" style="flex: 1;">Limpar</button>
+          <button class="btn btn-primary" id="btn-play" onclick="playGame()" disabled style="flex: 2;">
+            Apostar 10 MT
+          </button>
+        </div>
+      </div>
+
+      <!-- History -->
+      <div class="glass">
+        <h3>📜 Histórico</h3>
+        <div id="history-list">
+          <p class="subtitle" style="text-align:center; padding: 20px 0;">Nenhum jogo registrado ainda.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RECHARGE MODAL -->
+  <div class="modal-overlay" id="recharge-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>💰 Recarregar Conta</h3>
+        <button class="modal-close" onclick="closeModal('recharge-modal')">×</button>
+      </div>
+      <div class="notice">
+        <span class="notice-icon">⚡</span>
+        <span>Os pagamentos via <strong>M-Pesa</strong> são processados com maior rapidez.</span>
+      </div>
+      <div class="input-group">
+        <label>Valor (Mínimo: 20 MT)</label>
+        <input type="number" id="deposit-amount" placeholder="Ex: 100" min="20">
+      </div>
+      <div class="input-group">
+        <label>Método de Pagamento</label>
+        <select id="deposit-method">
+          <option value="mpesa">M-Pesa (Recomendado)</option>
+          <option value="emola">e-Mola</option>
+          <option value="mkesh">mKesh</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" onclick="submitDeposit()">Confirmar Depósito</button>
+    </div>
+  </div>
+
+  <!-- PAYOUT MODAL -->
+  <div class="modal-overlay" id="payout-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>🏧 Pedir Levantamento</h3>
+        <button class="modal-close" onclick="closeModal('payout-modal')">×</button>
+      </div>
+      <div class="notice">
+        <span class="notice-icon">ℹ️</span>
+        <span>Mínimo: 30 MT | Taxa do jogo: 10% | Prazo: até 24h</span>
+      </div>
+      <div class="input-group">
+        <label>Valor a Levantar</label>
+        <input type="number" id="payout-amount" placeholder="Ex: 100" min="30">
+      </div>
+      <div class="input-group">
+        <label>Método</label>
+        <select id="payout-method">
+          <option value="mpesa">M-Pesa</option>
+          <option value="emola">e-Mola</option>
+        </select>
+      </div>
+      <button class="btn btn-purple" onclick="submitPayout()">Solicitar Levantamento</button>
+    </div>
+  </div>
+
+  <!-- RESULT MODAL -->
+  <div class="modal-overlay" id="result-modal">
+    <div class="modal-content" style="text-align: center;">
+      <div id="result-icon" style="font-size: 64px; margin-bottom: 16px;">🎉</div>
+      <h2 id="result-title">Parabéns!</h2>
+      <p class="subtitle" id="result-message" style="margin: 12px 0 24px;"></p>
+      <div id="result-prize" style="font-size: 36px; font-weight: 800; background: linear-gradient(135deg, var(--green), var(--blue)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 24px;"></div>
+      <button class="btn btn-primary" onclick="closeModal('result-modal')">Continuar</button>
+    </div>
+  </div>
+
+  <script>
+    // ===================== FIREBASE CONFIG =====================
+    const firebaseConfig = {
+      apiKey: "AIzaSyCW9ZZadm4WJ_FKtOjvkP1czsfImwzl98c",
+      authDomain: "mozcoin.firebaseapp.com",
+      databaseURL: "https://mozcoin-default-rtdb.firebaseio.com",
+      projectId: "mozcoin",
+      storageBucket: "mozcoin.firebasestorage.app",
+      messagingSenderId: "1097811611947",
+      appId: "1:1097811611947:web:476c4b2e12fc4c6529756e"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // ===================== CONFIG =====================
+    // ⚠️ SUBSTITUA PELA URL DO SEU GOOGLE APPS SCRIPT DEPLOYADO
+    const GAS_URL = "SUA_URL_DO_GOOGLE_APPS_SCRIPT_AQUI";
+
+    let currentUser = null;
+    let selectedBalls = [];
+    let balanceRef = null;
+
+    // ===================== OFFLINE BLOCK =====================
+    window.addEventListener('offline', () => {
+      document.body.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;padding:20px;text-align:center;">
+          <div style="font-size:48px;margin-bottom:16px;">📡</div>
+          <h2 style="color:#fff;margin-bottom:8px;">Sem Ligação</h2>
+          <p style="color:#888;">O jogo requer uma ligação ativa à internet.</p>
+        </div>
+      `;
+    });
+
+    // ===================== TABS =====================
+    function switchTab(mode) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      event.target.classList.add('active');
+      if (mode === 'register') {
+        document.getElementById('register-panel').classList.remove('hidden');
+        document.getElementById('login-panel').classList.add('hidden');
+      } else {
+        document.getElementById('register-panel').classList.add('hidden');
+        document.getElementById('login-panel').classList.remove('hidden');
+      }
+    }
+
+    // ===================== MODALS =====================
+    function openModal(id) {
+      document.getElementById(id).classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('active');
+      document.body.style.overflow = '';
+    }
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) closeModal(overlay.id);
+      });
+    });
+
+    // ===================== PHONE FORMAT =====================
+    function formatPhone(phone) {
+      let cleaned = String(phone).replace(/\D/g, '');
+      if (cleaned.length === 9) return "+258" + cleaned;
+      if (cleaned.length === 12 && cleaned.startsWith("258")) return "+" + cleaned;
+      return phone;
+    }
+
+    // ===================== REGISTER =====================
+    function setLoading(btnId, loading) {
+      const btn = document.getElementById(btnId);
+      if (loading) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span> Processando...';
+      } else {
+        btn.disabled = false;
+        btn.innerHTML = btnId === 'btn-register' ? 'Criar Conta — Ganhe 20 MT' : 'Entrar na Conta';
+      }
+    }
+
+    function registerUser() {
+      const name = document.getElementById('reg-name').value.trim();
+      let phone = document.getElementById('reg-phone').value.trim();
+      const email = document.getElementById('reg-email').value.trim();
+      const pin = document.getElementById('reg-pin').value.trim();
+      const terms = document.getElementById('reg-terms').checked;
+
+      if (!name || !phone || !email || pin.length !== 6 || !terms) {
+        showResult('❌', 'Erro', 'Preencha todos os campos corretamente. O PIN deve ter 6 dígitos.', '');
+        return;
+      }
+
+      phone = formatPhone(phone);
+      setLoading('btn-register', true);
+
+      // Check if phone already exists
+      db.ref('users').orderByChild('phone').equalTo(phone).once('value').then(snap => {
+        if (snap.exists()) {
+          setLoading('btn-register', false);
+          showResult('⚠️', 'Telefone já registado', 'Este número já tem uma conta. Use a opção Entrar.', '');
+          return;
+        }
+
+        const uid = db.ref('users').push().key;
+        const userData = {
+          uid: uid,
+          name: name,
+          phone: phone,
+          email: email,
+          pin: pin,
+          balance: 20.00,
+          hasPlayedBefore: false,
+          createdAt: Date.now()
         };
 
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
+        db.ref('users/' + uid).set(userData).then(() => {
+          setLoading('btn-register', false);
+          showResult('🎉', 'Bem-vindo!', 'Conta criada com sucesso! Ganhou 20 MT de bónus.', '+20 MT');
+          setTimeout(() => {
+            closeModal('result-modal');
+            loginSuccess(userData);
+          }, 2000);
+        });
+      });
+    }
 
-        const USTATH_PASSWORD = "Abdullah123456";
+    // ===================== LOGIN =====================
+    function loginUser() {
+      let phone = document.getElementById('login-phone').value.trim();
+      const pin = document.getElementById('login-pin').value.trim();
 
-        // ==================== VARIÁVEIS GLOBAIS ====================
-        let currentTest = null;
-        let studentAnswers = {};
-        let studentData = {};
-        let testResult = null;
-        let teacherQuestions = [];
+      if (!phone || pin.length !== 6) {
+        showResult('❌', 'Erro', 'Preencha o telefone e o PIN de 6 dígitos.', '');
+        return;
+      }
 
-        // ==================== NAVEGAÇÃO ====================
-        function showStudentMode() {
-            document.getElementById('studentMode').classList.remove('hidden');
-            document.getElementById('loginMode').classList.add('hidden');
-            document.getElementById('teacherMode').classList.add('hidden');
-            document.getElementById('ustathAccessBtn').classList.remove('hidden');
-        }
+      phone = formatPhone(phone);
+      setLoading('btn-login', true);
 
-        function showLoginMode() {
-            document.getElementById('studentMode').classList.add('hidden');
-            document.getElementById('loginMode').classList.remove('hidden');
-            document.getElementById('teacherMode').classList.add('hidden');
-            document.getElementById('ustathAccessBtn').classList.add('hidden');
-        }
-
-        function showTeacherMode() {
-            document.getElementById('studentMode').classList.add('hidden');
-            document.getElementById('loginMode').classList.add('hidden');
-            document.getElementById('teacherMode').classList.remove('hidden');
-            document.getElementById('ustathAccessBtn').classList.add('hidden');
-            loadPublishedTests();
-            loadStudentResults();
-        }
-
-        function logoutUstath() {
-            showStudentMode();
-        }
-
-        function checkPassword() {
-            const input = document.getElementById('passwordInput').value;
-            if (input === USTATH_PASSWORD) {
-                document.getElementById('passwordInput').value = '';
-                showTeacherMode();
+      db.ref('users').orderByChild('phone').equalTo(phone).once('value').then(snapshot => {
+        setLoading('btn-login', false);
+        if (snapshot.exists()) {
+          snapshot.forEach(child => {
+            const user = child.val();
+            if (user.pin === pin) {
+              loginSuccess(user);
             } else {
-                showMsg('loginMsg', 'Senha incorreta!', 'error');
+              showResult('🔒', 'PIN Incorreto', 'O PIN introduzido está errado. Tente novamente.', '');
             }
+          });
+        } else {
+          showResult('❓', 'Utilizador não encontrado', 'Este número não está registado. Crie uma conta primeiro.', '');
         }
+      });
+    }
 
-        // ==================== ALUNO ====================
-        function showMsg(id, msg, type) {
-            const el = document.getElementById(id);
-            el.innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
-            setTimeout(() => el.innerHTML = '', 4000);
+    // ===================== LOGIN SUCCESS =====================
+    function loginSuccess(user) {
+      currentUser = user;
+      document.getElementById('auth-screen').classList.add('hidden');
+      document.getElementById('app-screen').classList.remove('hidden');
+      document.getElementById('app-screen').classList.add('fade-in');
+      document.getElementById('user-welcome').innerText = `Olá, ${user.name.split(' ')[0]} 👋`;
+
+      // Real-time balance
+      if (balanceRef) balanceRef.off();
+      balanceRef = db.ref(`users/${user.uid}/balance`);
+      balanceRef.on('value', snap => {
+        const val = parseFloat(snap.val() || 0);
+        document.getElementById('user-balance').innerText = val.toLocaleString('pt-MZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      });
+
+      buildBallGrid();
+      loadHistory();
+    }
+
+    // ===================== BALL GRID =====================
+    function buildBallGrid() {
+      const grid = document.getElementById('ball-grid');
+      grid.innerHTML = '';
+      for (let i = 1; i <= 75; i++) {
+        const ball = document.createElement('div');
+        ball.className = 'ball';
+        ball.innerText = i;
+        ball.dataset.num = i;
+        if (selectedBalls.includes(i)) ball.classList.add('selected');
+        ball.onclick = () => toggleBall(i, ball);
+        grid.appendChild(ball);
+      }
+      updateSelectedDisplay();
+    }
+
+    function toggleBall(num, element) {
+      if (selectedBalls.includes(num)) {
+        selectedBalls = selectedBalls.filter(b => b !== num);
+        element.classList.remove('selected');
+      } else {
+        if (selectedBalls.length < 5) {
+          selectedBalls.push(num);
+          element.classList.add('selected');
+        } else {
+          // Shake animation for limit reached
+          element.style.animation = 'none';
+          element.offsetHeight;
+          element.style.animation = 'shake 0.3s ease';
+          setTimeout(() => element.style.animation = '', 300);
         }
+      }
+      updateSelectedDisplay();
+      document.getElementById('btn-play').disabled = selectedBalls.length !== 5;
+    }
 
-        function loadTest() {
-            const name = document.getElementById('studentName').value.trim();
-            const phone = document.getElementById('studentPhone').value.trim();
-
-            if (!name || !phone) {
-                showMsg('studentMsg', 'Por favor preencha nome e telefone!', 'error');
-                return;
-            }
-
-            studentData = { name, phone };
-
-            document.getElementById('studentStep1').innerHTML = '<div class="loading"><div class="spinner"></div><p>A carregar teste...</p></div>';
-
-            db.ref('tests/active').once('value').then(snapshot => {
-                const test = snapshot.val();
-                if (!test) {
-                    document.getElementById('studentStep1').innerHTML = `
-                        <h2>📝 Dados do Aluno</h2>
-                        <input type="text" id="studentName" value="${name}">
-                        <input type="tel" id="studentPhone" value="${phone}">
-                        <button class="btn btn-primary" onclick="loadTest()">Ver Teste Disponível</button>
-                        <div id="studentMsg"></div>
-                    `;
-                    showMsg('studentMsg', 'Nenhum teste disponível no momento. Contacte o Ustath.', 'error');
-                    return;
-                }
-
-                currentTest = test;
-                document.getElementById('studentStep1').classList.add('hidden');
-                document.getElementById('studentStep2').classList.remove('hidden');
-                document.getElementById('testTitle').textContent = test.title || 'Teste de Avaliação';
-                document.getElementById('testDesc').textContent = test.description || '';
-
-                const container = document.getElementById('questionsContainer');
-                container.innerHTML = '';
-
-                test.questions.forEach((q, idx) => {
-                    let optionsHtml = '';
-                    q.options.forEach((opt, optIdx) => {
-                        optionsHtml += `
-                            <label>
-                                <input type="radio" name="q${idx}" value="${optIdx}" onchange="studentAnswers[${idx}] = ${optIdx}">
-                                ${opt}
-                            </label>
-                        `;
-                    });
-
-                    container.innerHTML += `
-                        <div class="question-box">
-                            <h4>${idx + 1}. ${q.question}</h4>
-                            <div class="options">
-                                ${optionsHtml}
-                            </div>
-                        </div>
-                    `;
-                });
-            });
+    function updateSelectedDisplay() {
+      const container = document.getElementById('selected-display');
+      container.innerHTML = '';
+      for (let i = 0; i < 5; i++) {
+        if (selectedBalls[i]) {
+          const div = document.createElement('div');
+          div.className = 'selected-ball';
+          div.innerText = selectedBalls[i];
+          container.appendChild(div);
+        } else {
+          const div = document.createElement('div');
+          div.className = 'selected-placeholder';
+          container.appendChild(div);
         }
+      }
+    }
 
-        function submitTest() {
-            if (!currentTest) return;
+    function clearSelection() {
+      selectedBalls = [];
+      buildBallGrid();
+      document.getElementById('btn-play').disabled = true;
+    }
 
-            const total = currentTest.questions.length;
-            const answered = Object.keys(studentAnswers).length;
-            if (answered < total) {
-                alert(`Responda todas as ${total} perguntas! (Faltam ${total - answered})`);
-                return;
-            }
+    // Add shake keyframes dynamically
+    const shakeStyle = document.createElement('style');
+    shakeStyle.innerHTML = `
+      @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-5px); }
+        75% { transform: translateX(5px); }
+      }
+    `;
+    document.head.appendChild(shakeStyle);
 
-            let correct = 0;
-            const details = [];
+    // ===================== PLAY GAME =====================
+    function playGame() {
+      if (selectedBalls.length !== 5) return;
+      if (GAS_URL === "SUA_URL_DO_GOOGLE_APPS_SCRIPT_AQUI") {
+        showResult('⚙️', 'Configuração Pendente', 'O administrador precisa configurar o URL do servidor (GAS_URL).', '');
+        return;
+      }
 
-            currentTest.questions.forEach((q, idx) => {
-                const studentAns = studentAnswers[idx];
-                const isCorrect = studentAns === q.correct;
-                if (isCorrect) correct++;
-                
-                details.push({
-                    question: q.question,
-                    studentAnswer: q.options[studentAns],
-                    correctAnswer: q.options[q.correct],
-                    isCorrect: isCorrect
-                });
-            });
+      const btn = document.getElementById('btn-play');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> A sortear...';
 
-            const percentage = Math.round((correct / total) * 100);
-            testResult = {
-                student: studentData,
-                testTitle: currentTest.title,
-                score: correct,
-                total: total,
-                percentage: percentage,
-                details: details,
-                date: new Date().toLocaleString('pt-PT'),
-                timestamp: Date.now()
-            };
+      fetch(GAS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "PLAY_LOTTERY",
+          uid: currentUser.uid,
+          chosenNumbers: selectedBalls
+        })
+      })
+      .then(res => res.json())
+      .then(res => {
+        btn.disabled = false;
+        btn.innerHTML = 'Apostar 10 MT';
 
-            db.ref('results').push(testResult);
-
-            document.getElementById('studentStep2').classList.add('hidden');
-            document.getElementById('studentStep3').classList.remove('hidden');
-            document.getElementById('scoreDisplay').innerHTML = `${percentage}%<br><span style="font-size:1rem">${correct}/${total} corretas</span>`;
-
-            let detailsHtml = '';
-            details.forEach((d, i) => {
-                const cls = d.isCorrect ? 'result-correct' : 'result-wrong';
-                const icon = d.isCorrect ? '✅' : '❌';
-                detailsHtml += `
-                    <div class="result-item ${cls}">
-                        <strong>${i+1}. ${d.question}</strong><br>
-                        <span class="small-text">Sua resposta: ${d.studentAnswer} ${icon}</span><br>
-                        ${!d.isCorrect ? `<span class="small-text">Correta: ${d.correctAnswer}</span>` : ''}
-                    </div>
-                `;
-            });
-            document.getElementById('resultDetails').innerHTML = detailsHtml;
+        if (res.success) {
+          const icons = ['😢', '🙂', '😊', '🎉', '🎊', '🔥'];
+          const titles = ['Não foi desta', 'Acertou 1!', 'Acertou 2!', 'Acertou 3!', 'Acertou 4!', 'JACKPOT! 5 Acertos!'];
+          const msgs = [
+            'Não desanime! Tente novamente.',
+            'Recuperou os 10 MT!',
+            'Boa! Ganhou 50 MT!',
+            'Excelente! 500 MT no bolso!',
+            'INCRÍVEL! 5.000 MT!',
+            'SENSACIONAL! 50.000 MT!'
+          ];
+          showResult(icons[res.matches], titles[res.matches], msgs[res.matches], res.prize > 0 ? `+${res.prize} MT` : '');
+          selectedBalls = [];
+          buildBallGrid();
+          loadHistory();
+        } else {
+          showResult('❌', 'Erro', res.message, '');
         }
+      })
+      .catch(err => {
+        btn.disabled = false;
+        btn.innerHTML = 'Apostar 10 MT';
+        showResult('❌', 'Erro de Ligação', 'Não foi possível contactar o servidor. Tente novamente.', '');
+      });
+    }
 
-        // ==================== PDF & WHATSAPP ====================
-        async function downloadPDF() {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
+    // ===================== DEPOSIT =====================
+    function submitDeposit() {
+      const amount = parseFloat(document.getElementById('deposit-amount').value);
+      const method = document.getElementById('deposit-method').value;
 
-            doc.setFillColor(26, 95, 42);
-            doc.rect(0, 0, 210, 40, 'F');
-            doc.setTextColor(255, 255, 255);
-            doc.setFontSize(22);
-            doc.text('Sala de Avaliação - Madrassa Online', 105, 20, { align: 'center' });
-            doc.setFontSize(12);
-            doc.text('Moçambique', 105, 30, { align: 'center' });
+      if (isNaN(amount) || amount < 20) {
+        showResult('❌', 'Valor inválido', 'O depósito mínimo é de 20 MT.', '');
+        return;
+      }
 
-            doc.setTextColor(0, 0, 0);
-            doc.setFontSize(14);
-            doc.text(`Aluno: ${testResult.student.name}`, 20, 55);
-            doc.text(`Telefone: ${testResult.student.phone}`, 20, 62);
-            doc.text(`Data: ${testResult.date}`, 20, 69);
-            doc.text(`Teste: ${testResult.testTitle}`, 20, 76);
+      db.ref('pending_deposits').push({
+        uid: currentUser.uid,
+        phone: currentUser.phone,
+        amount: amount,
+        method: method,
+        status: "PENDING",
+        timestamp: Date.now()
+      }).then(() => {
+        closeModal('recharge-modal');
+        showResult('⏳', 'Depósito Pendente', `Solicitação de ${amount} MT via ${method.toUpperCase()} enviada. O saldo será creditado após confirmação.`, '');
+        document.getElementById('deposit-amount').value = '';
+      });
+    }
 
-            doc.setFillColor(46, 204, 113);
-            doc.roundedRect(70, 85, 70, 25, 5, 5, 'F');
-            doc.setTextColor(255, 255, 255);
-            doc.setFontSize(18);
-            doc.text(`Nota: ${testResult.percentage}%`, 105, 100, { align: 'center' });
-            doc.setFontSize(11);
-            doc.text(`${testResult.score}/${testResult.total} corretas`, 105, 107, { align: 'center' });
+    // ===================== PAYOUT =====================
+    function submitPayout() {
+      const amount = parseFloat(document.getElementById('payout-amount').value);
+      const method = document.getElementById('payout-method').value;
 
-            doc.setTextColor(0, 0, 0);
-            doc.setFontSize(12);
-            let y = 125;
+      if (isNaN(amount) || amount < 30) {
+        showResult('❌', 'Valor inválido', 'O levantamento mínimo é de 30 MT.', '');
+        return;
+      }
 
-            testResult.details.forEach((d, i) => {
-                if (y > 270) {
-                    doc.addPage();
-                    y = 20;
-                }
-                
-                doc.setFont(undefined, 'bold');
-                doc.text(`${i+1}. ${d.question}`, 20, y);
-                y += 8;
-                
-                doc.setFont(undefined, 'normal');
-                const status = d.isCorrect ? '✅ Correta' : '❌ Incorreta';
-                doc.text(`   Sua resposta: ${d.studentAnswer} ${status}`, 20, y);
-                y += 7;
-                
-                if (!d.isCorrect) {
-                    doc.setTextColor(231, 76, 60);
-                    doc.text(`   Resposta correta: ${d.correctAnswer}`, 20, y);
-                    doc.setTextColor(0, 0, 0);
-                    y += 7;
-                }
-                y += 5;
-            });
+      if (GAS_URL === "SUA_URL_DO_GOOGLE_APPS_SCRIPT_AQUI") {
+        showResult('⚙️', 'Configuração Pendente', 'O administrador precisa configurar o URL do servidor.', '');
+        return;
+      }
 
-            doc.setFontSize(10);
-            doc.setTextColor(100, 100, 100);
-            doc.text('Madrassa Online Moçambique - Sala de Avaliação', 105, 285, { align: 'center' });
-
-            doc.save(`Teste_${testResult.student.name.replace(/\s+/g, '_')}.pdf`);
+      fetch(GAS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "REQUEST_PAYOUT",
+          uid: currentUser.uid,
+          amount: amount,
+          method: method
+        })
+      })
+      .then(res => res.json())
+      .then(res => {
+        if (res.success) {
+          closeModal('payout-modal');
+          showResult('✅', 'Levantamento Solicitado', res.message, '');
+          document.getElementById('payout-amount').value = '';
+        } else {
+          showResult('❌', 'Erro', res.message, '');
         }
+      })
+      .catch(() => {
+        showResult('❌', 'Erro de Ligação', 'Não foi possível contactar o servidor.', '');
+      });
+    }
 
-        function shareWhatsApp() {
-            const text = `*Sala de Avaliação - Madrassa Online*%0A%0A` +
-                `*Aluno:* ${testResult.student.name}%0A` +
-                `*Telefone:* ${testResult.student.phone}%0A` +
-                `*Teste:* ${testResult.testTitle}%0A` +
-                `*Nota:* ${testResult.percentage}% (${testResult.score}/${testResult.total})%0A%0A` +
-                `*Respostas:*%0A` +
-                testResult.details.map((d, i) => 
-                    `${i+1}. ${d.question}%0A   ${d.isCorrect ? '✅' : '❌'} ${d.studentAnswer}`
-                ).join('%0A%0A');
-
-            window.open(`https://wa.me/258860407269?text=${text}`, '_blank');
+    // ===================== HISTORY =====================
+    function loadHistory() {
+      db.ref(`history/${currentUser.uid}`).limitToLast(10).once('value').then(snap => {
+        const list = document.getElementById('history-list');
+        list.innerHTML = '';
+        if (!snap.exists()) {
+          list.innerHTML = '<p class="subtitle" style="text-align:center; padding: 20px 0;">Nenhum jogo registrado ainda.</p>';
+          return;
         }
+        const items = [];
+        snap.forEach(child => items.push(child.val()));
+        items.reverse().forEach(item => {
+          const div = document.createElement('div');
+          div.className = 'history-item';
+          const date = new Date(item.date).toLocaleString('pt-MZ', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+          const isWin = item.prize > 0;
+          div.innerHTML = `
+            <div class="history-info">
+              <div style="font-weight: 600; font-size: 14px;">${isWin ? '✅ Vitória' : '❌ Não acertou'}</div>
+              <div class="history-balls">
+                ${item.userNumbers.map(n => `<div class="history-ball ${item.matches > 0 ? 'hit' : ''}">${n}</div>`).join('')}
+              </div>
+              <div class="prize-date">${date} • ${item.matches} acerto${item.matches !== 1 ? 's' : ''}</div>
+            </div>
+            <div class="history-prize">
+              <div class="prize-amount ${isWin ? '' : 'prize-zero'}">${isWin ? '+' : ''}${item.prize} MT</div>
+              <div class="prize-date">custo: ${item.cost} MT</div>
+            </div>
+          `;
+          list.appendChild(div);
+        });
+      });
+    }
 
-        // ==================== USTATH ====================
-        function addQuestion() {
-            const idx = teacherQuestions.length;
-            teacherQuestions.push({ question: '', options: ['', ''], correct: 0 });
-            renderTeacherQuestions();
-        }
-
-        function renderTeacherQuestions() {
-            const container = document.getElementById('teacherQuestions');
-            container.innerHTML = '';
-
-            teacherQuestions.forEach((q, qIdx) => {
-                let optionsHtml = '';
-                q.options.forEach((opt, oIdx) => {
-                    optionsHtml += `
-                        <div class="option-input">
-                            <input type="radio" name="correct${qIdx}" ${q.correct === oIdx ? 'checked' : ''} 
-                                onchange="teacherQuestions[${qIdx}].correct = ${oIdx}" title="Marcar como correta">
-                            <input type="text" value="${opt}" placeholder="Opção ${oIdx + 1}" 
-                                onchange="teacherQuestions[${qIdx}].options[${oIdx}] = this.value">
-                            ${q.options.length > 2 ? `<button class="remove-btn" onclick="removeOption(${qIdx}, ${oIdx})">✕</button>` : ''}
-                        </div>
-                    `;
-                });
-
-                container.innerHTML += `
-                    <div class="question-box">
-                        <div class="question-header">
-                            <h4>Pergunta ${qIdx + 1}</h4>
-                            <button class="remove-btn" onclick="removeQuestion(${qIdx})">Remover</button>
-                        </div>
-                        <input type="text" value="${q.question}" placeholder="Escreva a pergunta..." 
-                            onchange="teacherQuestions[${qIdx}].question = this.value">
-                        <p class="small-text" style="margin-bottom:8px">Marque a opção correta:</p>
-                        ${optionsHtml}
-                        <button class="add-option-btn" onclick="addOption(${qIdx})">+ Adicionar Opção</button>
-                    </div>
-                `;
-            });
-        }
-
-        function addOption(qIdx) {
-            teacherQuestions[qIdx].options.push('');
-            renderTeacherQuestions();
-        }
-
-        function removeOption(qIdx, oIdx) {
-            teacherQuestions[qIdx].options.splice(oIdx, 1);
-            if (teacherQuestions[qIdx].correct >= teacherQuestions[qIdx].options.length) {
-                teacherQuestions[qIdx].correct = 0;
-            }
-            renderTeacherQuestions();
-        }
-
-        function removeQuestion(idx) {
-            teacherQuestions.splice(idx, 1);
-            renderTeacherQuestions();
-        }
-
-        function publishTest() {
-            const title = document.getElementById('testTitleInput').value.trim();
-            const desc = document.getElementById('testDescInput').value.trim();
-
-            if (!title) {
-                showMsg('teacherMsg', 'Coloque um título para o teste!', 'error');
-                return;
-            }
-
-            for (let q of teacherQuestions) {
-                if (!q.question.trim()) {
-                    showMsg('teacherMsg', 'Todas as perguntas devem ter texto!', 'error');
-                    return;
-                }
-                for (let opt of q.options) {
-                    if (!opt.trim()) {
-                        showMsg('teacherMsg', 'Todas as opções devem estar preenchidas!', 'error');
-                        return;
-                    }
-                }
-            }
-
-            if (teacherQuestions.length === 0) {
-                showMsg('teacherMsg', 'Adicione pelo menos uma pergunta!', 'error');
-                return;
-            }
-
-            const testData = {
-                title: title,
-                description: desc,
-                questions: teacherQuestions,
-                createdAt: Date.now()
-            };
-
-            db.ref('tests/active').set(testData).then(() => {
-                showMsg('teacherMsg', 'Teste publicado com sucesso!', 'success');
-                document.getElementById('testTitleInput').value = '';
-                document.getElementById('testDescInput').value = '';
-                teacherQuestions = [];
-                renderTeacherQuestions();
-                loadPublishedTests();
-            });
-        }
-
-        function loadPublishedTests() {
-            db.ref('tests/active').once('value').then(snapshot => {
-                const test = snapshot.val();
-                const container = document.getElementById('publishedTests');
-                
-                if (!test) {
-                    container.innerHTML = '<p class="small-text">Nenhum teste publicado.</p>';
-                    return;
-                }
-
-                container.innerHTML = `
-                    <div style="background:rgba(255,255,255,0.1);padding:15px;border-radius:10px;">
-                        <h4>${test.title}</h4>
-                        <p class="small-text">${test.description || ''}</p>
-                        <p class="small-text">${test.questions.length} pergunta(s)</p>
-                        <button class="btn btn-danger" style="margin-top:10px" onclick="deleteTest()">🗑️ Eliminar Teste</button>
-                    </div>
-                `;
-            });
-        }
-
-        function deleteTest() {
-            if (confirm('Tem certeza que deseja eliminar o teste atual?')) {
-                db.ref('tests/active').remove().then(() => {
-                    loadPublishedTests();
-                    showMsg('teacherMsg', 'Teste eliminado!', 'success');
-                });
-            }
-        }
-
-        function loadStudentResults() {
-            db.ref('results').orderByChild('timestamp').limitToLast(50).once('value').then(snapshot => {
-                const results = snapshot.val();
-                const container = document.getElementById('studentResults');
-                
-                if (!results) {
-                    container.innerHTML = '<p class="small-text">Nenhum resultado ainda.</p>';
-                    return;
-                }
-
-                let html = '';
-                Object.entries(results).reverse().forEach(([id, r]) => {
-                    html += `
-                        <div style="background:rgba(255,255,255,0.08);padding:12px;border-radius:8px;margin-bottom:8px;">
-                            <strong>${r.student.name}</strong> <span class="small-text">(${r.student.phone})</span><br>
-                            <span class="small-text">${r.testTitle} - ${r.percentage}% (${r.score}/${r.total})</span><br>
-                            <span class="small-text">${r.date}</span>
-                        </div>
-                    `;
-                });
-                container.innerHTML = html;
-            });
-        }
-
-        // Inicializar
-        addQuestion();
-    </script>
+    // ===================== RESULT MODAL =====================
+    function showResult(icon, title, message, prize) {
+      document.getElementById('result-icon').innerText = icon;
+      document.getElementById('result-title').innerText = title;
+      document.getElementById('result-message').innerText = message;
+      document.getElementById('result-prize').innerText = prize;
+      openModal('result-modal');
+    }
+  </script>
 </body>
 </html>
