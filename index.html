@@ -783,7 +783,7 @@
 
     // ===================== CONFIG =====================
     // ⚠️ SUBSTITUA PELA URL DO SEU GOOGLE APPS SCRIPT DEPLOYADO
-    const GAS_URL = "SUA_URL_DO_GOOGLE_APPS_SCRIPT_AQUI";
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbxlCCQyqf1NEorGJrqVgXJJDigBv5qUW-Ng6qJXBsqBWrJMlhQkx_SBnyxTJ24dWYHz/exec";
 
     let currentUser = null;
     let selectedBalls = [];
@@ -1017,7 +1017,7 @@
     // ===================== PLAY GAME =====================
     function playGame() {
       if (selectedBalls.length !== 5) return;
-      if (GAS_URL === "SUA_URL_DO_GOOGLE_APPS_SCRIPT_AQUI") {
+      if (GAS_URL === "https://script.google.com/macros/s/AKfycbxlCCQyqf1NEorGJrqVgXJJDigBv5qUW-Ng6qJXBsqBWrJMlhQkx_SBnyxTJ24dWYHz/exec") {
         showResult('⚙️', 'Configuração Pendente', 'O administrador precisa configurar o URL do servidor (GAS_URL).', '');
         return;
       }
@@ -1100,7 +1100,7 @@
         return;
       }
 
-      if (GAS_URL === "SUA_URL_DO_GOOGLE_APPS_SCRIPT_AQUI") {
+      if (GAS_URL === "https://script.google.com/macros/s/AKfycbxlCCQyqf1NEorGJrqVgXJJDigBv5qUW-Ng6qJXBsqBWrJMlhQkx_SBnyxTJ24dWYHz/exec") {
         showResult('⚙️', 'Configuração Pendente', 'O administrador precisa configurar o URL do servidor.', '');
         return;
       }
