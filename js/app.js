@@ -299,16 +299,18 @@ const app = {
     document.getElementById('conta-id').textContent = this.user.id;
   },
 
-  setTab(t) {
+    setTab(t) {
     document.querySelectorAll('.tab').forEach(el => el.classList.toggle('active', el.dataset.tab === t));
     ['jogar', 'resultados', 'historico', 'conta'].forEach(x => {
       document.getElementById('tab-' + x).classList.toggle('hidden', x !== t);
     });
-    if (t === 'resultados') { this.carregarResultado(); this.carregarCofres(); }
+    if (t === 'resultados') { 
+      this.carregarResultado(); 
+      this.carregarHistoricoResultados(); // ← mudou aqui
+    }
     if (t === 'historico') { this.renderPremios(); }
     if (t === 'conta') { this.renderLevantamentos(); }
   },
-
   /* ---------- Depósito ---------- */
 
   abrirDeposito() { document.getElementById('modal-deposito').classList.remove('hidden'); },
