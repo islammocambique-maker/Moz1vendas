@@ -3,7 +3,7 @@
    Substitui GAS_URL pelo URL do teu deployment
    ============================================ */
 
-const GAS_URL = 'https://script.google.com/macros/s/SEU_ID_AQUI/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbycq5wHfa3O3cu27K5RIKZvN3EbK4UIYqUuj6jhCLtdQo77UcxkNTVhjEocECRAVoBHmQ/exec';
 
 const app = {
   user: null,
