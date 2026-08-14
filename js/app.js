@@ -68,10 +68,12 @@ const app = {
   },
 
   async carregarResultado() {
+    async carregarResultado() {
     try {
       const res = await this.get('resultado');
       const elInfo = document.getElementById('ultimo-resultado-info');
       const elBolas = document.getElementById('ultimo-bolas');
+      
       if (res.success && res.resultado) {
         const r = res.resultado;
         elInfo.textContent = `Sorteio ${r.sorteioId} — ${r.data} ${r.hora}`;
@@ -85,25 +87,49 @@ const app = {
     }
   },
 
-  async carregarCofres() {
+  async carregarHistoricoResultados() {
     try {
       const sorteios = await this.get('sorteios');
-      const c = document.getElementById('lista-cofres');
-      if (!sorteios.length) {
-        c.innerHTML = '<div class="empty-state">Sem sorteios hoje</div>';
+      const c = document.getElementById('lista-resultados');
+      
+      // Filtra apenas sorteios já sorteados (têm resultado)
+      const sorteados = sorteios.filter(s => s.status === 'SORTEADO' || s.status === 'PAGO');
+      
+      if (!sorteados.length) {
+        c.innerHTML = '<div class="empty-state">Ainda não há sorteios realizados</div>';
         return;
       }
-      c.innerHTML = sorteios.map(s => `
-        <div class="info-row">
-          <span class="info-label">${s.hora} (${s.data})</span>
-          <span class="info-val">${Number(s.saldoPremios || 0).toLocaleString('pt-PT')} MZN</span>
+
+      // Busca resultados para mostrar os números
+      const resultados = [];
+      for (const s of sorteados.slice(-10).reverse()) { // últimos 10
+        try {
+          const r = await this.get('resultadoSorteio', { sorteioId: s.id });
+          if (r.success && r.resultado) {
+            resultados.push({
+              sorteioId: s.id,
+              data: s.data,
+              hora: s.hora,
+              numeros: r.resultado.numeros
+            });
+          }
+        } catch (e) {}
+      }
+
+      c.innerHTML = resultados.map(r => `
+        <div class="info-row" style="flex-direction: column; align-items: flex-start; gap: 8px; padding: 12px 0;">
+          <div style="font-size: 12px; color: var(--color-text-secondary);">
+            ${r.data} · ${r.hora}
+          </div>
+          <div class="result-balls" style="justify-content: flex-start; gap: 6px; margin: 0;">
+            ${r.numeros.map(n => `<div class="ball" style="width: 28px; height: 28px; font-size: 12px;">${n}</div>`).join('')}
+          </div>
         </div>
       `).join('');
     } catch (e) {
-      document.getElementById('lista-cofres').innerHTML = '<div class="empty-state">Erro ao carregar cofres</div>';
+      document.getElementById('lista-resultados').innerHTML = '<div class="empty-state">Erro ao carregar</div>';
     }
   },
-
   /* ---------- Login ---------- */
 
   async entrar() {
