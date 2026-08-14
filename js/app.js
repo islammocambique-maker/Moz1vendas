@@ -27,13 +27,30 @@ const app = {
     return r.json();
   },
 
+  // POST como form-urlencoded (compatível com GAS)
   async post(data) {
+    const formData = new URLSearchParams();
+    for (const [key, value] of Object.entries(data)) {
+      if (Array.isArray(value)) {
+        formData.append(key, JSON.stringify(value));
+      } else {
+        formData.append(key, value);
+      }
+    }
+
     const r = await fetch(GAS_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: formData
     });
-    return r.json();
+
+    const text = await r.text();
+    try {
+      return JSON.parse(text);
+    } catch (e) {
+      console.error('Resposta não-JSON:', text);
+      throw new Error('Erro no servidor');
+    }
   },
 
   /* ---------- Config ---------- */
@@ -103,7 +120,10 @@ const app = {
         this.entrarApp();
         this.toast(res.existente ? 'Bem-vindo de volta!' : 'Conta criada!');
       } else { this.toast(res.error || 'Erro'); }
-    } catch (e) { this.toast('Erro de ligação'); }
+    } catch (e) {
+      console.error(e);
+      this.toast('Erro de ligação: ' + e.message);
+    }
   },
 
   verificarSessao() {
@@ -221,9 +241,12 @@ const app = {
 
     try {
       const res = await this.post({
-        action: 'registarJogada', usuarioId: this.user.id,
-        referencia: this.user.referencia, sorteioId: this.sorteioAtual,
-        numeros: nums, valor: 10
+        action: 'registarJogada',
+        usuarioId: this.user.id,
+        referencia: this.user.referencia,
+        sorteioId: this.sorteioAtual,
+        numeros: JSON.stringify(nums),
+        valor: 10
       });
 
       if (res.success) {
@@ -234,7 +257,10 @@ const app = {
         this.toast('Aposta confirmada! Boa sorte!');
         this.adicionarHistoricoLocal(nums, res.jogadaId, res.sorteioId);
       } else { this.toast(res.error || 'Erro'); }
-    } catch (e) { this.toast('Erro de ligação'); }
+    } catch (e) {
+      console.error(e);
+      this.toast('Erro de ligação: ' + e.message);
+    }
   },
 
   /* ---------- UI ---------- */
@@ -299,10 +325,13 @@ const app = {
         this.toast('Pedido enviado! Aguarda aprovação.');
         this.renderLevantamentos();
       } else { this.toast(res.error || 'Erro no pedido'); }
-    } catch (e) { this.toast('Erro de ligação'); }
+    } catch (e) {
+      console.error(e);
+      this.toast('Erro de ligação: ' + e.message);
+    }
   },
 
-  /* ---------- Histórico local ---------- */
+  /* ---------- Histórico ---------- */
 
   adicionarHistoricoLocal(nums, jogadaId, sorteioId) {
     const sorteio = this.sorteiosDisponiveis.find(s => s.id === sorteioId) || { hora: '?', data: '?' };
@@ -335,12 +364,7 @@ const app = {
     try {
       const res = await this.get('meusPremios', { id: this.user.id });
       if (res.success && res.premios.length) {
-        c.innerHTML = res.premios.map(p => `
-          <div class="info-row">
-            <span class="info-label">${p.acertos} acertos · Sorteio ${p.sorteioId}</span>
-            <span class="info-val" style="color:var(--color-green)">+${p.premio} MZN</span>
-          </div>
-        `).join('');
+        c.innerHTML = res.premios.map(p => `<div class="info-row"><span class="info-label">${p.acertos} acertos · Sorteio ${p.sorteioId}</span><span class="info-val" style="color:var(--color-green)">+${p.premio} MZN</span></div>`).join('');
       } else { c.innerHTML = '<div class="empty-state">Sem prémios ainda</div>'; }
     } catch (e) { c.innerHTML = '<div class="empty-state">Erro ao carregar</div>'; }
   },
