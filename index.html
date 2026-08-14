@@ -1,755 +1,155 @@
 <!DOCTYPE html>
 <html lang="pt">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Lotaria Moz 1-75</title>
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --black: #0a0a0f;
-      --dark: #12121a;
-      --card-bg: rgba(255, 255, 255, 0.03);
-      --glass: rgba(255, 255, 255, 0.06);
-      --glass-border: rgba(255, 255, 255, 0.08);
-      --white: #ffffff;
-      --gray: #a0a0b0;
-      --green: #00f5a0;
-      --green-glow: rgba(0, 245, 160, 0.3);
-      --blue: #00d4ff;
-      --blue-glow: rgba(0, 212, 255, 0.3);
-      --purple: #a855f7;
-      --purple-glow: rgba(168, 85, 247, 0.3);
-      --red: #ff4757;
-      --warning: #ffa502;
-    }
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: 'Inter', sans-serif;
-      background: var(--black);
-      color: var(--white);
-      min-height: 100vh;
-      overflow-x: hidden;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .bg-orb {
-      position: fixed;
-      border-radius: 50%;
-      filter: blur(120px);
-      opacity: 0.4;
-      z-index: 0;
-      animation: float 20s ease-in-out infinite;
-      pointer-events: none;
-    }
-    .orb-1 { width: 500px; height: 500px; background: radial-gradient(circle, var(--purple), transparent 70%); top: -10%; left: -10%; animation-delay: 0s; }
-    .orb-2 { width: 400px; height: 400px; background: radial-gradient(circle, var(--blue), transparent 70%); bottom: -10%; right: -10%; animation-delay: -7s; }
-    .orb-3 { width: 300px; height: 300px; background: radial-gradient(circle, var(--green), transparent 70%); top: 40%; left: 50%; animation-delay: -14s; }
-    @keyframes float { 0%, 100% { transform: translate(0, 0) scale(1); } 33% { transform: translate(30px, -30px) scale(1.1); } 66% { transform: translate(-20px, 20px) scale(0.9); } }
-    .app { position: relative; z-index: 1; max-width: 520px; margin: 0 auto; padding: 20px; min-height: 100vh; }
-    .glass {
-      background: var(--glass);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid var(--glass-border);
-      border-radius: 24px;
-      padding: 24px;
-      margin-bottom: 16px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255,255,255,0.05);
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-    .glass:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.08); }
-    h1, h2, h3 { font-weight: 700; letter-spacing: -0.5px; }
-    h1 { font-size: 28px; background: linear-gradient(135deg, var(--white), var(--green)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-    h2 { font-size: 22px; margin-bottom: 4px; }
-    h3 { font-size: 18px; color: var(--white); }
-    .subtitle { color: var(--gray); font-size: 13px; font-weight: 400; }
-    .input-group { margin-bottom: 14px; }
-    .input-group label { display: block; font-size: 12px; font-weight: 500; color: var(--gray); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
-    input, select {
-      width: 100%; padding: 14px 16px; border-radius: 16px; border: 1px solid var(--glass-border);
-      background: rgba(0, 0, 0, 0.3); color: var(--white); font-size: 15px; font-family: 'Inter', sans-serif;
-      outline: none; transition: all 0.3s ease;
-    }
-    input:focus, select:focus { border-color: var(--green); box-shadow: 0 0 0 3px var(--green-glow); }
-    input::placeholder { color: rgba(160, 160, 176, 0.5); }
-    .btn {
-      width: 100%; padding: 16px; border-radius: 16px; border: none; font-family: 'Inter', sans-serif;
-      font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.3s ease;
-      position: relative; overflow: hidden; color: var(--white);
-    }
-    .btn::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent); opacity: 0; transition: opacity 0.3s ease; }
-    .btn:hover::before { opacity: 1; }
-    .btn:hover { transform: translateY(-2px); }
-    .btn:active { transform: translateY(0); }
-    .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
-    .btn-primary { background: linear-gradient(135deg, var(--green), #00c853); color: var(--black); box-shadow: 0 4px 20px var(--green-glow); }
-    .btn-primary:hover { box-shadow: 0 6px 30px var(--green-glow); }
-    .btn-blue { background: linear-gradient(135deg, var(--blue), #0080ff); color: var(--black); box-shadow: 0 4px 20px var(--blue-glow); }
-    .btn-purple { background: linear-gradient(135deg, var(--purple), #7c3aed); box-shadow: 0 4px 20px var(--purple-glow); }
-    .btn-outline { background: transparent; border: 1px solid var(--glass-border); color: var(--gray); }
-    .btn-outline:hover { border-color: var(--white); color: var(--white); background: rgba(255,255,255,0.05); }
-    .btn-glass { background: var(--glass); backdrop-filter: blur(10px); border: 1px solid var(--glass-border); color: var(--white); }
-    .balance-card { text-align: center; padding: 32px 24px; position: relative; overflow: hidden; }
-    .balance-card::before { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: conic-gradient(from 0deg, transparent, var(--green-glow), transparent 30%); animation: rotate 4s linear infinite; opacity: 0.3; }
-    @keyframes rotate { 100% { transform: rotate(360deg); } }
-    .balance-inner { position: relative; z-index: 1; }
-    .balance-label { font-size: 12px; text-transform: uppercase; letter-spacing: 2px; color: var(--gray); margin-bottom: 8px; }
-    .balance-amount { font-size: 42px; font-weight: 800; background: linear-gradient(135deg, var(--green), var(--blue)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1; }
-    .balance-currency { font-size: 18px; font-weight: 600; color: var(--green); margin-left: 4px; }
-    .ball-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; max-height: 320px; overflow-y: auto; padding: 8px; background: rgba(0, 0, 0, 0.2); border-radius: 20px; border: 1px solid var(--glass-border); }
-    .ball-grid::-webkit-scrollbar { width: 4px; }
-    .ball-grid::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 4px; }
-    .ball { aspect-ratio: 1; border-radius: 50%; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; cursor: pointer; user-select: none; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); color: var(--gray); }
-    .ball:hover { background: rgba(255, 255, 255, 0.1); transform: scale(1.1); border-color: rgba(255, 255, 255, 0.2); }
-    .ball.selected { background: linear-gradient(135deg, var(--green), #00c853); color: var(--black); border-color: var(--green); box-shadow: 0 0 20px var(--green-glow); transform: scale(1.05); font-weight: 800; }
-    .ball.selected:hover { transform: scale(1.15); }
-    .selected-balls { display: flex; gap: 10px; justify-content: center; margin: 16px 0; min-height: 48px; align-items: center; }
-    .selected-ball { width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, var(--blue), var(--purple)); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 16px; box-shadow: 0 4px 15px var(--blue-glow); animation: popIn 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-    @keyframes popIn { 0% { transform: scale(0); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
-    .selected-placeholder { width: 48px; height: 48px; border-radius: 50%; border: 2px dashed var(--glass-border); background: transparent; }
-    .stats-row { display: flex; gap: 12px; margin-bottom: 16px; }
-    .stat-item { flex: 1; text-align: center; padding: 16px; background: rgba(0, 0, 0, 0.2); border-radius: 16px; border: 1px solid var(--glass-border); }
-    .stat-value { font-size: 20px; font-weight: 700; color: var(--green); }
-    .stat-label { font-size: 11px; color: var(--gray); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
-    .history-item { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--glass-border); animation: slideIn 0.4s ease; }
-    @keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
-    .history-item:last-child { border-bottom: none; }
-    .history-info { flex: 1; }
-    .history-balls { display: flex; gap: 6px; margin-top: 6px; }
-    .history-ball { width: 28px; height: 28px; border-radius: 50%; background: rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; }
-    .history-ball.hit { background: linear-gradient(135deg, var(--green), #00c853); color: var(--black); }
-    .history-prize { text-align: right; }
-    .prize-amount { font-size: 18px; font-weight: 700; color: var(--green); }
-    .prize-zero { color: var(--gray); }
-    .prize-date { font-size: 11px; color: var(--gray); }
-    .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(8px); z-index: 100; display: flex; align-items: flex-end; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
-    .modal-overlay.active { opacity: 1; pointer-events: all; }
-    .modal-content { width: 100%; max-width: 520px; background: linear-gradient(180deg, #1a1a2e, var(--dark)); border-radius: 32px 32px 0 0; border: 1px solid var(--glass-border); border-bottom: none; padding: 32px 24px; transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); max-height: 85vh; overflow-y: auto; }
-    .modal-overlay.active .modal-content { transform: translateY(0); }
-    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
-    .modal-close { width: 40px; height: 40px; border-radius: 50%; background: var(--glass); border: 1px solid var(--glass-border); color: var(--white); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 20px; transition: all 0.3s ease; }
-    .modal-close:hover { background: rgba(255,255,255,0.1); transform: rotate(90deg); }
-    .notice { background: linear-gradient(135deg, rgba(255, 171, 0, 0.1), rgba(255, 171, 0, 0.05)); border: 1px solid rgba(255, 171, 0, 0.2); border-radius: 12px; padding: 12px 16px; font-size: 13px; color: var(--warning); margin: 12px 0; display: flex; gap: 10px; align-items: flex-start; }
-    .notice-icon { font-size: 16px; flex-shrink: 0; }
-    .checkbox-wrap { display: flex; align-items: flex-start; gap: 10px; margin: 16px 0; font-size: 13px; color: var(--gray); cursor: pointer; }
-    .checkbox-wrap input { width: auto; margin-top: 2px; accent-color: var(--green); }
-    .tabs { display: flex; gap: 8px; margin-bottom: 20px; background: rgba(0,0,0,0.2); padding: 4px; border-radius: 16px; }
-    .tab { flex: 1; padding: 12px; text-align: center; border-radius: 12px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.3s ease; color: var(--gray); border: none; background: transparent; }
-    .tab.active { background: linear-gradient(135deg, var(--purple), var(--blue)); color: var(--white); box-shadow: 0 4px 15px var(--purple-glow); }
-    .fade-in { animation: fadeIn 0.5s ease; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-    .hidden { display: none !important; }
-    @media (min-width: 520px) { .modal-overlay { align-items: center; } .modal-content { border-radius: 24px; border: 1px solid var(--glass-border); transform: translateY(20px) scale(0.95); } .modal-overlay.active .modal-content { transform: translateY(0) scale(1); } }
-    .spinner { width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.2); border-top-color: var(--green); border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block; vertical-align: middle; margin-right: 8px; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .prize-table { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 16px 0; }
-    .prize-cell { text-align: center; padding: 12px 8px; background: rgba(0,0,0,0.2); border-radius: 12px; border: 1px solid var(--glass-border); }
-    .prize-cell .num { font-size: 20px; font-weight: 800; color: var(--blue); }
-    .prize-cell .val { font-size: 13px; font-weight: 600; color: var(--green); margin-top: 4px; }
-    .logo-area { text-align: center; padding: 20px 0 10px; }
-    .logo-icon { width: 64px; height: 64px; margin: 0 auto 12px; background: linear-gradient(135deg, var(--green), var(--blue), var(--purple)); border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 28px; box-shadow: 0 8px 32px var(--green-glow); }
-    .debug-box { background: rgba(255,0,0,0.1); border: 1px solid rgba(255,0,0,0.3); border-radius: 12px; padding: 12px; margin: 10px 0; font-size: 12px; color: #ff6b6b; font-family: monospace; word-break: break-all; }
-  </style>
-<base target="_blank">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>SORTEMZ — Loteria 5/65</title>
+  <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
-  <div class="bg-orb orb-1"></div>
-  <div class="bg-orb orb-2"></div>
-  <div class="bg-orb orb-3"></div>
+  <div id="app">
+    <!-- TELA LOGIN -->
+    <section id="tela-login">
+      <header class="app-header">
+        <h1>SORTEMZ</h1>
+        <p>Loteria 5/65 — Moçambique</p>
+      </header>
 
-  <div class="app">
-
-    <!-- AUTH SCREEN -->
-    <div id="auth-screen" class="fade-in">
-      <div class="logo-area">
-        <div class="logo-icon">🎱</div>
-        <h1>Lotaria Moz 1-75</h1>
-        <p class="subtitle">Escolha 5 bolas. Ganhe até 50.000 MT!</p>
+      <div class="card">
+        <div class="card-title">Entrar na conta</div>
+        <input class="input" id="login-nome" placeholder="Nome completo" autocomplete="name" />
+        <input class="input" id="login-telefone" placeholder="Telefone (ex: 84xxxxxxx)" type="tel" autocomplete="tel" />
+        <button class="btn btn-primary" onclick="app.entrar()">Entrar / Criar conta</button>
+        <p class="hint">Primeira vez? Preenche para criar conta automaticamente.</p>
       </div>
 
-      <div class="glass">
-        <div class="tabs">
-          <button class="tab active" onclick="switchTab('register')">Criar Conta</button>
-          <button class="tab" onclick="switchTab('login')">Entrar</button>
+      <div class="card">
+        <div class="card-title">Próximos sorteios hoje</div>
+        <div id="proximos-sorteios" class="info-list"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Tabela de prémios</div>
+        <table class="premio-table">
+          <thead>
+            <tr><th>Acertos</th><th>Prémio (MZN)</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>5 números</td><td class="gold">500.000</td></tr>
+            <tr><td>4 números</td><td>5.000</td></tr>
+            <tr><td>3 números</td><td>500</td></tr>
+            <tr><td>2 números</td><td>50</td></tr>
+            <tr><td>1 número</td><td>10</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- TELA APP -->
+    <section id="tela-app" class="hidden">
+      <header class="app-header">
+        <h1>SORTEMZ</h1>
+        <p id="user-ref">Ref: —</p>
+      </header>
+
+      <div class="saldo-box">
+        <div>
+          <div class="saldo-label">Saldo disponível</div>
+          <div class="saldo-valor" id="saldo-display">0 <span class="saldo-mzn">MZN</span></div>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="app.abrirDeposito()">+ Depositar</button>
+      </div>
+
+      <nav class="tabs">
+        <button class="tab active" data-tab="jogar" onclick="app.setTab('jogar')">Jogar</button>
+        <button class="tab" data-tab="resultados" onclick="app.setTab('resultados')">Resultados</button>
+        <button class="tab" data-tab="historico" onclick="app.setTab('historico')">Histórico</button>
+        <button class="tab" data-tab="conta" onclick="app.setTab('conta')">Conta</button>
+      </nav>
+
+      <!-- ABA JOGAR -->
+      <div id="tab-jogar" class="tab-panel">
+        <div class="card">
+          <div class="card-title">Escolha o sorteio</div>
+          <div id="sorteio-selector" class="tag-group"></div>
         </div>
 
-        <div id="register-panel">
-          <div class="input-group">
-            <label>Nome Completo</label>
-            <input type="text" id="reg-name" placeholder="Ex: João Silva">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Escolha 5 números (1–65)</div>
+            <span class="badge badge-gray" id="contador-nums">0/5</span>
           </div>
-          <div class="input-group">
-            <label>Número de Celular</label>
-            <input type="tel" id="reg-phone" placeholder="84XXXXXXX ou +25884XXXXXXX">
+          <div class="grid-nums" id="grid-numeros"></div>
+          <div class="actions-row">
+            <button class="btn btn-outline btn-sm" onclick="app.limparNums()">Limpar</button>
+            <button class="btn btn-outline btn-sm" onclick="app.aleatorio()">Aleatório</button>
           </div>
-          <div class="input-group">
-            <label>E-mail</label>
-            <input type="email" id="reg-email" placeholder="seu@email.com">
-          </div>
-          <div class="input-group">
-            <label>PIN (6 dígitos)</label>
-            <input type="password" id="reg-pin" maxlength="6" placeholder="••••••">
-          </div>
-          <label class="checkbox-wrap">
-            <input type="checkbox" id="reg-terms">
-            <span>Sou maior de 18 anos e concordo com os termos e condições do jogo.</span>
-          </label>
-          <button class="btn btn-primary" onclick="registerUser()" id="btn-register">
-            Criar Conta — Ganhe 20 MT
-          </button>
         </div>
 
-        <div id="login-panel" class="hidden">
-          <div class="input-group">
-            <label>Número de Celular</label>
-            <input type="tel" id="login-phone" placeholder="84XXXXXXX">
-          </div>
-          <div class="input-group">
-            <label>PIN (6 dígitos)</label>
-            <input type="password" id="login-pin" maxlength="6" placeholder="••••••">
-          </div>
-          <button class="btn btn-blue" onclick="loginUser()" id="btn-login">Entrar na Conta</button>
+        <div class="card">
+          <div class="card-title">Resumo da aposta</div>
+          <div class="info-row"><span class="info-label">Números</span><span class="info-val" id="resumo-nums">—</span></div>
+          <div class="info-row"><span class="info-label">Valor</span><span class="info-val">10 MZN</span></div>
+          <div class="info-row"><span class="info-label">Sorteio</span><span class="info-val" id="resumo-sorteio">—</span></div>
+          <button class="btn btn-primary" id="btn-apostar" onclick="app.apostar()" disabled>Confirmar aposta</button>
         </div>
       </div>
 
-      <div class="glass" style="text-align: center;">
-        <div class="prize-table">
-          <div class="prize-cell"><div class="num">1</div><div class="val">10 MT</div></div>
-          <div class="prize-cell"><div class="num">2</div><div class="val">50 MT</div></div>
-          <div class="prize-cell"><div class="num">3</div><div class="val">500 MT</div></div>
-          <div class="prize-cell"><div class="num">4</div><div class="val">5.000 MT</div></div>
-          <div class="prize-cell"><div class="num">5</div><div class="val">50.000 MT</div></div>
+      <!-- ABA RESULTADOS -->
+      <div id="tab-resultados" class="tab-panel hidden">
+        <div class="card">
+          <div class="card-title">Último resultado</div>
+          <div class="resultado-header" id="ultimo-resultado-info">A carregar…</div>
+          <div class="result-balls" id="ultimo-bolas"></div>
         </div>
-        <p class="subtitle">Custo por jogada: 10 MT | Mínimo levantamento: 30 MT</p>
+        <div class="card">
+          <div class="card-title">Cofres do dia</div>
+          <div id="lista-cofres" class="info-list"></div>
+        </div>
+      </div>
+
+      <!-- ABA HISTÓRICO -->
+      <div id="tab-historico" class="tab-panel hidden">
+        <div id="lista-historico"></div>
+      </div>
+
+      <!-- ABA CONTA -->
+      <div id="tab-conta" class="tab-panel hidden">
+        <div class="card">
+          <div class="card-title">Dados da conta</div>
+          <div class="info-row"><span class="info-label">Nome</span><span class="info-val" id="conta-nome">—</span></div>
+          <div class="info-row"><span class="info-label">Telefone</span><span class="info-val" id="conta-telefone">—</span></div>
+          <div class="info-row"><span class="info-label">Referência</span><span class="info-val" id="conta-ref">—</span></div>
+          <div class="info-row"><span class="info-label">ID</span><span class="info-val" id="conta-id">—</span></div>
+          <div class="info-row"><span class="info-label">Status</span><span class="badge badge-green">Ativo</span></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Movimentos</div>
+          <div id="lista-movimentos" class="info-list"></div>
+        </div>
+        <button class="btn btn-outline" style="width:100%; margin-top:8px;" onclick="app.sair()">Sair da conta</button>
+      </div>
+    </section>
+
+    <!-- MODAL DEPÓSITO -->
+    <div id="modal-deposito" class="modal hidden">
+      <div class="modal-backdrop" onclick="app.fecharDeposito()"></div>
+      <div class="modal-content">
+        <div class="card-title">Depositar saldo</div>
+        <p class="hint">Usa a tua referência no Netshop para carregar saldo.</p>
+        <div class="ref-box">
+          <div class="ref-label">Sua referência</div>
+          <div class="ref-code" id="dep-ref">SMZ000000</div>
+        </div>
+        <input class="input" type="number" id="dep-valor" placeholder="Valor (MZN)" value="100" min="10" />
+        <a href="https://www.netshop.co.mz/p/r9hhaw3r" target="_blank" class="btn btn-gold" style="display:block; text-align:center; text-decoration:none; margin-bottom:8px;">Ir para Netshop pagar</a>
+        <button class="btn btn-outline" style="width:100%;" onclick="app.fecharDeposito()">Fechar</button>
       </div>
     </div>
 
-    <!-- MAIN APP -->
-    <div id="app-screen" class="hidden">
-      <!-- User Header -->
-      <div class="glass balance-card">
-        <div class="balance-inner">
-          <div class="balance-label">Saldo Disponível</div>
-          <div>
-            <span class="balance-amount" id="user-balance">0</span>
-            <span class="balance-currency">MT</span>
-          </div>
-          <p class="subtitle" id="user-welcome" style="margin-top: 8px;">Bem-vindo</p>
-        </div>
-      </div>
-
-      <!-- Connection Status -->
-      <div id="conn-status" class="glass hidden" style="padding: 12px 16px; margin-bottom: 12px;">
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <div id="conn-dot" style="width: 10px; height: 10px; border-radius: 50%; background: var(--green); box-shadow: 0 0 10px var(--green-glow);"></div>
-          <span id="conn-text" style="font-size: 13px; color: var(--gray);">Servidor online</span>
-        </div>
-      </div>
-
-      <!-- Action Buttons -->
-      <div class="stats-row">
-        <button class="btn btn-blue" onclick="openModal('recharge-modal')" style="flex:1;">💰 Recarregar</button>
-        <button class="btn btn-purple" onclick="openModal('payout-modal')" style="flex:1;">🏧 Levantar</button>
-      </div>
-
-      <!-- Game Area -->
-      <div class="glass">
-        <h3>🎯 Sorteio 1-75</h3>
-        <p class="subtitle" style="text-align:center; margin-bottom:16px;">Escolha exatamente 5 bolas — Custo: 10 MT</p>
-
-        <div class="selected-balls" id="selected-display">
-          <div class="selected-placeholder"></div>
-          <div class="selected-placeholder"></div>
-          <div class="selected-placeholder"></div>
-          <div class="selected-placeholder"></div>
-          <div class="selected-placeholder"></div>
-        </div>
-
-        <div class="ball-grid" id="ball-grid"></div>
-
-        <div style="display: flex; gap: 10px; margin-top: 16px;">
-          <button class="btn btn-outline" onclick="clearSelection()" style="flex: 1;">Limpar</button>
-          <button class="btn btn-primary" id="btn-play" onclick="playGame()" disabled style="flex: 2;">
-            Apostar 10 MT
-          </button>
-        </div>
-      </div>
-
-      <!-- History -->
-      <div class="glass">
-        <h3>📜 Histórico</h3>
-        <div id="history-list">
-          <p class="subtitle" style="text-align:center; padding: 20px 0;">Nenhum jogo registrado ainda.</p>
-        </div>
-      </div>
-    </div>
+    <div class="toast" id="toast"></div>
   </div>
 
-  <!-- RECHARGE MODAL -->
-  <div class="modal-overlay" id="recharge-modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3>💰 Recarregar Conta</h3>
-        <button class="modal-close" onclick="closeModal('recharge-modal')">×</button>
-      </div>
-      <div class="notice">
-        <span class="notice-icon">⚡</span>
-        <span>Os pagamentos via <strong>M-Pesa</strong> são processados com maior rapidez.</span>
-      </div>
-      <div class="input-group">
-        <label>Valor (Mínimo: 20 MT)</label>
-        <input type="number" id="deposit-amount" placeholder="Ex: 100" min="20">
-      </div>
-      <div class="input-group">
-        <label>Método de Pagamento</label>
-        <select id="deposit-method">
-          <option value="mpesa">M-Pesa (Recomendado)</option>
-          <option value="emola">e-Mola</option>
-          <option value="mkesh">mKesh</option>
-        </select>
-      </div>
-      <button class="btn btn-primary" onclick="submitDeposit()">Confirmar Depósito</button>
-    </div>
-  </div>
-
-  <!-- PAYOUT MODAL -->
-  <div class="modal-overlay" id="payout-modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3>🏧 Pedir Levantamento</h3>
-        <button class="modal-close" onclick="closeModal('payout-modal')">×</button>
-      </div>
-      <div class="notice">
-        <span class="notice-icon">ℹ️</span>
-        <span>Mínimo: 30 MT | Taxa do jogo: 10% | Prazo: até 24h</span>
-      </div>
-      <div class="input-group">
-        <label>Valor a Levantar</label>
-        <input type="number" id="payout-amount" placeholder="Ex: 100" min="30">
-      </div>
-      <div class="input-group">
-        <label>Método</label>
-        <select id="payout-method">
-          <option value="mpesa">M-Pesa</option>
-          <option value="emola">e-Mola</option>
-        </select>
-      </div>
-      <button class="btn btn-purple" onclick="submitPayout()">Solicitar Levantamento</button>
-    </div>
-  </div>
-
-  <!-- RESULT MODAL -->
-  <div class="modal-overlay" id="result-modal">
-    <div class="modal-content" style="text-align: center;">
-      <div id="result-icon" style="font-size: 64px; margin-bottom: 16px;">🎉</div>
-      <h2 id="result-title">Parabéns!</h2>
-      <p class="subtitle" id="result-message" style="margin: 12px 0 24px;"></p>
-      <div id="result-prize" style="font-size: 36px; font-weight: 800; background: linear-gradient(135deg, var(--green), var(--blue)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 24px;"></div>
-      <button class="btn btn-primary" onclick="closeModal('result-modal')">Continuar</button>
-    </div>
-  </div>
-
-  <script>
-    // ===================== FIREBASE CONFIG =====================
-    const firebaseConfig = {
-      apiKey: "AIzaSyCW9ZZadm4WJ_FKtOjvkP1czsfImwzl98c",
-      authDomain: "mozcoin.firebaseapp.com",
-      databaseURL: "https://mozcoin-default-rtdb.firebaseio.com",
-      projectId: "mozcoin",
-      storageBucket: "mozcoin.firebasestorage.app",
-      messagingSenderId: "1097811611947",
-      appId: "1:1097811611947:web:476c4b2e12fc4c6529756e"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-
-    // ===================== GAS URL =====================
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbxlCCQyqf1NEorGJrqVgXJJDigBv5qUW-Ng6qJXBsqBWrJMlhQkx_SBnyxTJ24dWYHz/exec";
-
-    let currentUser = null;
-    let selectedBalls = [];
-    let balanceRef = null;
-
-    // ===================== DEBUG LOG =====================
-    function log(msg) {
-      console.log("[LotariaMoz] " + msg);
-    }
-
-    // ===================== OFFLINE BLOCK =====================
-    window.addEventListener('offline', () => {
-      document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;padding:20px;text-align:center;"><div style="font-size:48px;margin-bottom:16px;">📡</div><h2 style="color:#fff;margin-bottom:8px;">Sem Ligação</h2><p style="color:#888;">O jogo requer uma ligação ativa à internet.</p></div>';
-    });
-
-    // ===================== TEST GAS CONNECTION =====================
-    async function testGasConnection() {
-      log("A testar ligação ao GAS...");
-      try {
-        const res = await fetch(GAS_URL, { method: "GET", mode: "cors" });
-        const data = await res.json();
-        log("GAS respondeu: " + JSON.stringify(data));
-        document.getElementById('conn-status').classList.remove('hidden');
-        document.getElementById('conn-dot').style.background = 'var(--green)';
-        document.getElementById('conn-text').innerText = 'Servidor online ✓';
-      } catch (err) {
-        log("ERRO GAS: " + err.message);
-        document.getElementById('conn-status').classList.remove('hidden');
-        document.getElementById('conn-dot').style.background = 'var(--red)';
-        document.getElementById('conn-text').innerText = 'Servidor offline — verifique o GAS';
-      }
-    }
-
-    // ===================== TABS =====================
-    function switchTab(mode) {
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      event.target.classList.add('active');
-      if (mode === 'register') {
-        document.getElementById('register-panel').classList.remove('hidden');
-        document.getElementById('login-panel').classList.add('hidden');
-      } else {
-        document.getElementById('register-panel').classList.add('hidden');
-        document.getElementById('login-panel').classList.remove('hidden');
-      }
-    }
-
-    // ===================== MODALS =====================
-    function openModal(id) {
-      document.getElementById(id).classList.add('active');
-      document.body.style.overflow = 'hidden';
-    }
-    function closeModal(id) {
-      document.getElementById(id).classList.remove('active');
-      document.body.style.overflow = '';
-    }
-    document.querySelectorAll('.modal-overlay').forEach(overlay => {
-      overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(overlay.id); });
-    });
-
-    // ===================== PHONE FORMAT =====================
-    function formatPhone(phone) {
-      let cleaned = String(phone).replace(/\D/g, '');
-      if (cleaned.length === 9) return "+258" + cleaned;
-      if (cleaned.length === 12 && cleaned.startsWith("258")) return "+" + cleaned;
-      return phone;
-    }
-
-    // ===================== LOADING =====================
-    function setLoading(btnId, loading) {
-      const btn = document.getElementById(btnId);
-      if (loading) { btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Processando...'; }
-      else { btn.disabled = false; btn.innerHTML = btnId === 'btn-register' ? 'Criar Conta — Ganhe 20 MT' : 'Entrar na Conta'; }
-    }
-
-    // ===================== REGISTER =====================
-    function registerUser() {
-      const name = document.getElementById('reg-name').value.trim();
-      let phone = document.getElementById('reg-phone').value.trim();
-      const email = document.getElementById('reg-email').value.trim();
-      const pin = document.getElementById('reg-pin').value.trim();
-      const terms = document.getElementById('reg-terms').checked;
-
-      if (!name || !phone || !email || pin.length !== 6 || !terms) {
-        showResult('❌', 'Erro', 'Preencha todos os campos corretamente e aceite os termos (PIN deve ter 6 dígitos).', '');
-        return;
-      }
-
-      phone = formatPhone(phone);
-      setLoading('btn-register', true);
-
-      db.ref('users').orderByChild('phone').equalTo(phone).once('value').then(snap => {
-        if (snap.exists()) {
-          setLoading('btn-register', false);
-          showResult('⚠️', 'Telefone já registado', 'Este número já tem uma conta. Use a opção Entrar.', '');
-          return;
-        }
-
-        const uid = db.ref('users').push().key;
-        const userData = {
-          uid: uid, name: name, phone: phone, email: email, pin: pin,
-          balance: 20.00, hasPlayedBefore: false, createdAt: Date.now()
-        };
-
-        db.ref('users/' + uid).set(userData).then(() => {
-          setLoading('btn-register', false);
-          showResult('🎉', 'Bem-vindo!', 'Conta criada com sucesso! Ganhou 20 MT de bónus.', '+20 MT');
-          setTimeout(() => { closeModal('result-modal'); loginSuccess(userData); }, 2000);
-        });
-      }).catch(err => {
-        setLoading('btn-register', false);
-        showResult('❌', 'Erro Firebase', err.message, '');
-      });
-    }
-
-    // ===================== LOGIN =====================
-    function loginUser() {
-      let phone = document.getElementById('login-phone').value.trim();
-      const pin = document.getElementById('login-pin').value.trim();
-
-      if (!phone || pin.length !== 6) {
-        showResult('❌', 'Erro', 'Preencha o telefone e o PIN de 6 dígitos.', '');
-        return;
-      }
-
-      phone = formatPhone(phone);
-      setLoading('btn-login', true);
-
-      db.ref('users').orderByChild('phone').equalTo(phone).once('value').then(snapshot => {
-        setLoading('btn-login', false);
-        if (snapshot.exists()) {
-          snapshot.forEach(child => {
-            const user = child.val();
-            if (user.pin === pin) { loginSuccess(user); }
-            else { showResult('🔒', 'PIN Incorreto', 'O PIN introduzido está errado. Tente novamente.', ''); }
-          });
-        } else {
-          showResult('❓', 'Utilizador não encontrado', 'Este número não está registado. Crie uma conta primeiro.', '');
-        }
-      }).catch(err => {
-        setLoading('btn-login', false);
-        showResult('❌', 'Erro Firebase', err.message, '');
-      });
-    }
-
-    // ===================== LOGIN SUCCESS =====================
-    function loginSuccess(user) {
-      currentUser = user;
-      document.getElementById('auth-screen').classList.add('hidden');
-      document.getElementById('app-screen').classList.remove('hidden');
-      document.getElementById('app-screen').classList.add('fade-in');
-      document.getElementById('user-welcome').innerText = `Olá, ${user.name.split(' ')[0]} 👋`;
-
-      if (balanceRef) balanceRef.off();
-      balanceRef = db.ref(`users/${user.uid}/balance`);
-      balanceRef.on('value', snap => {
-        const val = parseFloat(snap.val() || 0);
-        document.getElementById('user-balance').innerText = val.toLocaleString('pt-MZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      });
-
-      buildBallGrid();
-      loadHistory();
-      testGasConnection();
-    }
-
-    // ===================== BALL GRID =====================
-    function buildBallGrid() {
-      const grid = document.getElementById('ball-grid');
-      grid.innerHTML = '';
-      for (let i = 1; i <= 75; i++) {
-        const ball = document.createElement('div');
-        ball.className = 'ball'; ball.innerText = i; ball.dataset.num = i;
-        if (selectedBalls.includes(i)) ball.classList.add('selected');
-        ball.onclick = () => toggleBall(i, ball);
-        grid.appendChild(ball);
-      }
-      updateSelectedDisplay();
-    }
-
-    function toggleBall(num, element) {
-      if (selectedBalls.includes(num)) {
-        selectedBalls = selectedBalls.filter(b => b !== num);
-        element.classList.remove('selected');
-      } else {
-        if (selectedBalls.length < 5) { selectedBalls.push(num); element.classList.add('selected'); }
-        else { element.style.animation = 'none'; element.offsetHeight; element.style.animation = 'shake 0.3s ease'; setTimeout(() => element.style.animation = '', 300); }
-      }
-      updateSelectedDisplay();
-      document.getElementById('btn-play').disabled = selectedBalls.length !== 5;
-    }
-
-    function updateSelectedDisplay() {
-      const container = document.getElementById('selected-display');
-      container.innerHTML = '';
-      for (let i = 0; i < 5; i++) {
-        if (selectedBalls[i]) {
-          const div = document.createElement('div'); div.className = 'selected-ball'; div.innerText = selectedBalls[i]; container.appendChild(div);
-        } else {
-          const div = document.createElement('div'); div.className = 'selected-placeholder'; container.appendChild(div);
-        }
-      }
-    }
-
-    function clearSelection() {
-      selectedBalls = [];
-      buildBallGrid();
-      document.getElementById('btn-play').disabled = true;
-    }
-
-    const shakeStyle = document.createElement('style');
-    shakeStyle.innerHTML = `@keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }`;
-    document.head.appendChild(shakeStyle);
-
-    // ===================== PLAY GAME =====================
-    async function playGame() {
-      if (selectedBalls.length !== 5) return;
-      log("A iniciar jogada... uid=" + currentUser.uid + " | bolas=" + selectedBalls.join(','));
-
-      const btn = document.getElementById('btn-play');
-      btn.disabled = true;
-      btn.innerHTML = '<span class="spinner"></span> A sortear...';
-
-      try {
-        const payload = {
-          action: "PLAY_LOTTERY",
-          uid: currentUser.uid,
-          chosenNumbers: selectedBalls
-        };
-        log("Payload: " + JSON.stringify(payload));
-
-        const res = await fetch(GAS_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        });
-
-        log("Resposta HTTP: " + res.status);
-        const text = await res.text();
-        log("Resposta texto: " + text);
-
-        let data;
-        try { data = JSON.parse(text); }
-        catch (e) {
-          log("ERRO PARSE JSON: " + e + " | texto: " + text);
-          showResult('❌', 'Erro do Servidor', 'O servidor retornou uma resposta inválida. Verifique os logs do GAS.', '');
-          btn.disabled = false; btn.innerHTML = 'Apostar 10 MT'; return;
-        }
-
-        log("Resposta JSON: " + JSON.stringify(data));
-
-        if (data.success) {
-          const icons = ['😢', '🙂', '😊', '🎉', '🎊', '🔥'];
-          const titles = ['Não foi desta', 'Acertou 1!', 'Acertou 2!', 'Acertou 3!', 'Acertou 4!', 'JACKPOT! 5 Acertos!'];
-          const msgs = [
-            'Não desanime! Tente novamente.',
-            'Recuperou os 10 MT!',
-            'Boa! Ganhou 50 MT!',
-            'Excelente! 500 MT no bolso!',
-            'INCRÍVEL! 5.000 MT!',
-            'SENSACIONAL! 50.000 MT!'
-          ];
-          showResult(icons[data.matches], titles[data.matches], msgs[data.matches], data.prize > 0 ? `+${data.prize} MT` : '');
-          selectedBalls = [];
-          buildBallGrid();
-          loadHistory();
-        } else {
-          showResult('❌', 'Erro', data.message || 'Erro desconhecido do servidor.', '');
-        }
-      } catch (err) {
-        log("ERRO FETCH: " + err.message);
-        showResult('❌', 'Erro de Ligação', 'Não foi possível contactar o servidor.
-
-Detalhe: ' + err.message + '
-
-Verifique se o GAS está publicado como "Qualquer pessoa".', '');
-      } finally {
-        btn.disabled = false;
-        btn.innerHTML = 'Apostar 10 MT';
-      }
-    }
-
-    // ===================== DEPOSIT =====================
-    function submitDeposit() {
-      const amount = parseFloat(document.getElementById('deposit-amount').value);
-      const method = document.getElementById('deposit-method').value;
-
-      if (isNaN(amount) || amount < 20) {
-        showResult('❌', 'Valor inválido', 'O depósito mínimo é de 20 MT.', '');
-        return;
-      }
-
-      db.ref('pending_deposits').push({
-        uid: currentUser.uid, phone: currentUser.phone, amount: amount,
-        method: method, status: "PENDING", timestamp: Date.now()
-      }).then(() => {
-        closeModal('recharge-modal');
-        showResult('⏳', 'Depósito Pendente', `Solicitação de ${amount} MT via ${method.toUpperCase()} enviada. O saldo será creditado após confirmação.`, '');
-        document.getElementById('deposit-amount').value = '';
-      }).catch(err => {
-        showResult('❌', 'Erro Firebase', err.message, '');
-      });
-    }
-
-    // ===================== PAYOUT =====================
-    async function submitPayout() {
-      const amount = parseFloat(document.getElementById('payout-amount').value);
-      const method = document.getElementById('payout-method').value;
-
-      if (isNaN(amount) || amount < 30) {
-        showResult('❌', 'Valor inválido', 'O levantamento mínimo é de 30 MT.', '');
-        return;
-      }
-
-      try {
-        const res = await fetch(GAS_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "REQUEST_PAYOUT", uid: currentUser.uid, amount: amount, method: method })
-        });
-        const text = await res.text();
-        let data;
-        try { data = JSON.parse(text); } catch (e) {
-          showResult('❌', 'Erro do Servidor', 'Resposta inválida do servidor.', ''); return;
-        }
-
-        if (data.success) {
-          closeModal('payout-modal');
-          showResult('✅', 'Levantamento Solicitado', data.message, '');
-          document.getElementById('payout-amount').value = '';
-        } else {
-          showResult('❌', 'Erro', data.message, '');
-        }
-      } catch (err) {
-        showResult('❌', 'Erro de Ligação', 'Não foi possível contactar o servidor.
-' + err.message, '');
-      }
-    }
-
-    // ===================== HISTORY =====================
-    function loadHistory() {
-      db.ref(`history/${currentUser.uid}`).limitToLast(10).once('value').then(snap => {
-        const list = document.getElementById('history-list');
-        list.innerHTML = '';
-        if (!snap.exists()) {
-          list.innerHTML = '<p class="subtitle" style="text-align:center; padding: 20px 0;">Nenhum jogo registrado ainda.</p>';
-          return;
-        }
-        const items = [];
-        snap.forEach(child => items.push(child.val()));
-        items.reverse().forEach(item => {
-          const div = document.createElement('div'); div.className = 'history-item';
-          const date = new Date(item.date).toLocaleString('pt-MZ', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-          const isWin = item.prize > 0;
-          div.innerHTML = `
-            <div class="history-info">
-              <div style="font-weight: 600; font-size: 14px;">${isWin ? '✅ Vitória' : '❌ Não acertou'}</div>
-              <div class="history-balls">
-                ${item.userNumbers.map(n => `<div class="history-ball ${item.matches > 0 ? 'hit' : ''}">${n}</div>`).join('')}
-              </div>
-              <div class="prize-date">${date} • ${item.matches} acerto${item.matches !== 1 ? 's' : ''}</div>
-            </div>
-            <div class="history-prize">
-              <div class="prize-amount ${isWin ? '' : 'prize-zero'}">${isWin ? '+' : ''}${item.prize} MT</div>
-              <div class="prize-date">custo: ${item.cost} MT</div>
-            </div>
-          `;
-          list.appendChild(div);
-        });
-      }).catch(err => {
-        log("Erro ao carregar histórico: " + err.message);
-      });
-    }
-
-    // ===================== RESULT MODAL =====================
-    function showResult(icon, title, message, prize) {
-      document.getElementById('result-icon').innerText = icon;
-      document.getElementById('result-title').innerText = title;
-      document.getElementById('result-message').innerText = message;
-      document.getElementById('result-prize').innerText = prize;
-      openModal('result-modal');
-    }
-
-    // ===================== INIT =====================
-    log("App iniciado. GAS_URL: " + GAS_URL);
-  </script>
+  <script src="js/app.js"></script>
 </body>
 </html>
