@@ -3,41 +3,43 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>SORTEMZ — Loteria 5/65</title>
+  <title>SORTEMZ — Loteria 5/55</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
   <div id="app">
+
     <!-- TELA LOGIN -->
     <section id="tela-login">
       <header class="app-header">
-        <h1>SORTEMZ</h1>
-        <p>Loteria 5/65 — Moçambique</p>
+        <div class="logo-badge">5/55</div>
+        <h1>SORTE<span>MZ</span></h1>
+        <p>A Maior Loteria Digital de Moçambique</p>
       </header>
 
       <div class="card">
-        <div class="card-title">Entrar na conta</div>
+        <div class="card-title">Entrar ou Registar</div>
         <input class="input" id="login-nome" placeholder="Nome completo" autocomplete="name" />
-        <input class="input" id="login-telefone" placeholder="Telefone (ex: 84xxxxxxx)" type="tel" autocomplete="tel" />
-        <button class="btn btn-primary" onclick="app.entrar()">Entrar / Criar conta</button>
-        <p class="hint">Primeira vez? Preenche para criar conta automaticamente.</p>
+        <input class="input" id="login-telefone" placeholder="Telefone M-Pesa (ex: 84/85xxxxxxx)" type="tel" autocomplete="tel" />
+        <button class="btn btn-primary" onclick="app.entrar()">Entrar na Conta</button>
+        <p class="hint">Primeira vez? A conta é criada automaticamente.</p>
       </div>
 
       <div class="card">
-        <div class="card-title">Próximos sorteios hoje</div>
-        <div id="proximos-sorteios" class="info-list"></div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">Tabela de prémios</div>
+        <div class="card-title">Tabela de Prémios</div>
         <table class="premio-table">
-          <thead><tr><th>Acertos</th><th>Prémio (MZN)</th></tr></thead>
+          <thead>
+            <tr><th>Acertos</th><th>Prémio Máximo</th></tr>
+          </thead>
           <tbody>
-            <tr><td>5 números</td><td class="gold">500.000</td></tr>
-            <tr><td>4 números</td><td>5.000</td></tr>
-            <tr><td>3 números</td><td>500</td></tr>
-            <tr><td>2 números</td><td>50</td></tr>
-            <tr><td>1 número</td><td>10</td></tr>
+            <tr><td><span class="badge badge-gold">5 Bolas</span></td><td class="gold font-bold">500.000 MZN</td></tr>
+            <tr><td><span class="badge badge-purple">4 Bolas</span></td><td>5.000 MZN</td></tr>
+            <tr><td><span class="badge badge-blue">3 Bolas</span></td><td>500 MZN</td></tr>
+            <tr><td><span class="badge badge-gray">2 Bolas</span></td><td>50 MZN</td></tr>
+            <tr><td><span class="badge badge-gray">1 Bola</span></td><td>10 MZN</td></tr>
           </tbody>
         </table>
       </div>
@@ -45,89 +47,107 @@
 
     <!-- TELA APP -->
     <section id="tela-app" class="hidden">
-      <header class="app-header">
-        <h1>SORTEMZ</h1>
-        <p id="user-ref">Ref: —</p>
+      <header class="app-header header-app-compact">
+        <div>
+          <h1>SORTE<span>MZ</span></h1>
+          <p id="user-ref">Ref: —</p>
+        </div>
+        <button class="btn-icon" onclick="app.sair()" title="Sair">
+          <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+        </button>
       </header>
 
+      <!-- CARD SALDO CASINO -->
       <div class="saldo-box">
-        <div>
-          <div class="saldo-label">Saldo disponível</div>
+        <div class="saldo-info">
+          <div class="saldo-label">Saldo Disponível</div>
           <div class="saldo-valor" id="saldo-display">0 <span class="saldo-mzn">MZN</span></div>
         </div>
-        <div class="actions-row" style="flex-direction: column; gap: 6px;">
-          <button class="btn btn-outline btn-sm" onclick="app.abrirDeposito()">+ Depositar</button>
+        <div class="saldo-actions">
+          <button class="btn btn-gold btn-sm" onclick="app.abrirDeposito()">+ Depositar</button>
           <button class="btn btn-outline btn-sm" onclick="app.abrirLevantamento()">− Levantar</button>
         </div>
       </div>
 
+      <!-- TABS NAVEGAÇÃO -->
       <nav class="tabs">
         <button class="tab active" data-tab="jogar" onclick="app.setTab('jogar')">Jogar</button>
         <button class="tab" data-tab="resultados" onclick="app.setTab('resultados')">Resultados</button>
-        <button class="tab" data-tab="historico" onclick="app.setTab('historico')">Histórico</button>
+        <button class="tab" data-tab="historico" onclick="app.setTab('historico')">Apostas</button>
         <button class="tab" data-tab="conta" onclick="app.setTab('conta')">Conta</button>
       </nav>
 
       <!-- ABA JOGAR -->
       <div id="tab-jogar" class="tab-panel">
         <div class="card">
-          <div class="card-title">Escolha o sorteio</div>
+          <div class="card-title">Selecione o Sorteio</div>
           <div id="sorteio-selector" class="tag-group"></div>
         </div>
 
         <div class="card">
           <div class="card-header">
-            <div class="card-title">Escolha 5 números (1–65)</div>
-            <span class="badge badge-gray" id="contador-nums">0/5</span>
+            <div class="card-title">Escolha 5 números (1–55)</div>
+            <span class="badge badge-gold" id="contador-nums">0/5</span>
           </div>
           <div class="grid-nums" id="grid-numeros"></div>
           <div class="actions-row">
             <button class="btn btn-outline btn-sm" onclick="app.limparNums()">Limpar</button>
-            <button class="btn btn-outline btn-sm" onclick="app.aleatorio()">Aleatório</button>
+            <button class="btn btn-outline btn-sm" onclick="app.aleatorio()">Surpresa (Surpresinha)</button>
           </div>
         </div>
 
-        <div class="card">
-          <div class="card-title">Resumo da aposta</div>
-          <div class="info-row"><span class="info-label">Números</span><span class="info-val" id="resumo-nums">—</span></div>
-          <div class="info-row"><span class="info-label">Valor</span><span class="info-val">10 MZN</span></div>
-          <div class="info-row"><span class="info-label">Sorteio</span><span class="info-val" id="resumo-sorteio">—</span></div>
-          <button class="btn btn-primary" id="btn-apostar" onclick="app.apostar()" disabled>Confirmar aposta</button>
+        <div class="card card-checkout">
+          <div class="card-title">Resumo do Bilhete</div>
+          <div class="info-row"><span class="info-label">Números Escolhidos</span><span class="info-val gold" id="resumo-nums">—</span></div>
+          <div class="info-row"><span class="info-label">Custo do Bilhete</span><span class="info-val">10 MZN</span></div>
+          <div class="info-row"><span class="info-label">Sorteio Alvo</span><span class="info-val" id="resumo-sorteio">—</span></div>
+          <button class="btn btn-primary btn-block btn-lg" id="btn-apostar" onclick="app.apostar()" disabled>CONFIRMAR APOSTA (10 MZN)</button>
         </div>
       </div>
 
       <!-- ABA RESULTADOS -->
-<div id="tab-resultados" class="tab-panel hidden">
-  <div class="card">
-    <div class="card-title">Último resultado</div>
-    <div class="resultado-header" id="ultimo-resultado-info">A carregar…</div>
-    <div class="result-balls" id="ultimo-bolas"></div>
-  </div>
-  <div class="card">
-    <div class="card-title">Histórico de sorteios</div>
-    <div id="lista-resultados" class="info-list"></div>
-  </div>
-</div>
+      <div id="tab-resultados" class="tab-panel hidden">
+        <div class="card card-highlight">
+          <div class="card-title">Último Sorteio Realizado</div>
+          <div class="resultado-header" id="ultimo-resultado-info">A carregar…</div>
+          <div class="result-balls" id="ultimo-bolas"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Prêmio dos Sorteios de Hoje</div>
+          <div id="lista-cofres" class="info-list"></div>
+        </div>
+      </div>
+
+      <!-- ABA HISTÓRICO -->
+      <div id="tab-historico" class="tab-panel hidden">
+        <div class="card">
+          <div class="card-title">Minhas Apostas Recentes</div>
+          <div id="lista-historico" class="info-list"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Meus Prémios</div>
+          <div id="lista-premios" class="info-list"></div>
+        </div>
+      </div>
 
       <!-- ABA CONTA -->
       <div id="tab-conta" class="tab-panel hidden">
         <div class="card">
-          <div class="card-title">Dados da conta</div>
+          <div class="card-title">Perfil do Jogador</div>
           <div class="info-row"><span class="info-label">Nome</span><span class="info-val" id="conta-nome">—</span></div>
           <div class="info-row"><span class="info-label">Telefone</span><span class="info-val" id="conta-telefone">—</span></div>
-          <div class="info-row"><span class="info-label">Referência</span><span class="info-val" id="conta-ref">—</span></div>
-          <div class="info-row"><span class="info-label">ID</span><span class="info-val" id="conta-id">—</span></div>
-          <div class="info-row"><span class="info-label">Status</span><span class="badge badge-green">Ativo</span></div>
+          <div class="info-row"><span class="info-label">Referência</span><span class="info-val gold" id="conta-ref">—</span></div>
+          <div class="info-row"><span class="info-label">ID Sistema</span><span class="info-val" id="conta-id">—</span></div>
+          <div class="info-row"><span class="info-label">Estado</span><span class="badge badge-green">Conta Verificada</span></div>
         </div>
         <div class="card">
-          <div class="card-title">Movimentos</div>
+          <div class="card-title">Movimentos Recentes</div>
           <div id="lista-movimentos" class="info-list"></div>
         </div>
         <div class="card">
-          <div class="card-title">Levantamentos</div>
+          <div class="card-title">Histórico de Levantamentos</div>
           <div id="lista-levantamentos" class="info-list"></div>
         </div>
-        <button class="btn btn-outline" style="width:100%; margin-top:8px;" onclick="app.sair()">Sair da conta</button>
       </div>
     </section>
 
@@ -135,15 +155,14 @@
     <div id="modal-deposito" class="modal hidden">
       <div class="modal-backdrop" onclick="app.fecharDeposito()"></div>
       <div class="modal-content">
-        <div class="card-title">Depositar saldo</div>
-        <p class="hint">Usa a tua referência no Netshop para carregar saldo.</p>
+        <div class="card-title">Carregar Saldo via Netshop / M-Pesa</div>
+        <p class="hint">Copie a sua referência abaixo e introduza no portal de pagamento.</p>
         <div class="ref-box">
-          <div class="ref-label">Sua referência</div>
+          <div class="ref-label">Sua Referência de Cliente</div>
           <div class="ref-code" id="dep-ref">SMZ000000</div>
         </div>
-        <input class="input" type="number" id="dep-valor" placeholder="Valor (MZN)" value="100" min="10" />
-        <a href="https://www.netshop.co.mz/p/r9hhaw3r" target="_blank" class="btn btn-gold" style="display:block; text-align:center; text-decoration:none; margin-bottom:8px;">Ir para Netshop pagar</a>
-        <button class="btn btn-outline" style="width:100%;" onclick="app.fecharDeposito()">Fechar</button>
+        <a href="https://www.netshop.co.mz/p/r9hhaw3r" target="_blank" class="btn btn-gold btn-block" style="text-decoration:none; text-align:center; margin-bottom:10px;">Pagar no Netshop</a>
+        <button class="btn btn-outline btn-block" onclick="app.fecharDeposito()">Fechar</button>
       </div>
     </div>
 
@@ -151,19 +170,20 @@
     <div id="modal-levantamento" class="modal hidden">
       <div class="modal-backdrop" onclick="app.fecharLevantamento()"></div>
       <div class="modal-content">
-        <div class="card-title">Levantar dinheiro</div>
-        <p class="hint">O dinheiro será enviado para o teu M-Pesa. Taxa: 0 MZN.</p>
+        <div class="card-title">Levantar para M-Pesa</div>
+        <p class="hint">Transferência direta para a sua conta M-Pesa.</p>
         <div class="info-row" style="margin-bottom:12px;">
-          <span class="info-label">Saldo atual</span>
-          <span class="info-val" id="lev-saldo">0 MZN</span>
+          <span class="info-label">Saldo Disponível</span>
+          <span class="info-val gold" id="lev-saldo">0 MZN</span>
         </div>
-        <input class="input" type="number" id="lev-valor" placeholder="Valor a levantar (MZN)" min="50" />
+        <input class="input" type="number" id="lev-valor" placeholder="Valor (MZN) - Mínimo 50" min="50" />
         <input class="input" type="tel" id="lev-telefone" placeholder="Telefone M-Pesa (ex: 84xxxxxxx)" />
-        <button class="btn btn-primary" style="width:100%; margin-bottom:8px;" onclick="app.solicitarLevantamento()">Solicitar levantamento</button>
-        <button class="btn btn-outline" style="width:100%;" onclick="app.fecharLevantamento()">Cancelar</button>
+        <button class="btn btn-primary btn-block" style="margin-bottom:8px;" onclick="app.solicitarLevantamento()">Solicitar Levantamento</button>
+        <button class="btn btn-outline btn-block" onclick="app.fecharLevantamento()">Cancelar</button>
       </div>
     </div>
 
+    <!-- TOAST NOTIFICAÇÃO -->
     <div class="toast" id="toast"></div>
   </div>
 
