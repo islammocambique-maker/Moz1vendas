@@ -31,9 +31,7 @@
       <div class="card">
         <div class="card-title">Tabela de prémios</div>
         <table class="premio-table">
-          <thead>
-            <tr><th>Acertos</th><th>Prémio (MZN)</th></tr>
-          </thead>
+          <thead><tr><th>Acertos</th><th>Prémio (MZN)</th></tr></thead>
           <tbody>
             <tr><td>5 números</td><td class="gold">500.000</td></tr>
             <tr><td>4 números</td><td>5.000</td></tr>
@@ -57,7 +55,10 @@
           <div class="saldo-label">Saldo disponível</div>
           <div class="saldo-valor" id="saldo-display">0 <span class="saldo-mzn">MZN</span></div>
         </div>
-        <button class="btn btn-outline btn-sm" onclick="app.abrirDeposito()">+ Depositar</button>
+        <div class="actions-row" style="flex-direction: column; gap: 6px;">
+          <button class="btn btn-outline btn-sm" onclick="app.abrirDeposito()">+ Depositar</button>
+          <button class="btn btn-outline btn-sm" onclick="app.abrirLevantamento()">− Levantar</button>
+        </div>
       </div>
 
       <nav class="tabs">
@@ -111,6 +112,10 @@
       <!-- ABA HISTÓRICO -->
       <div id="tab-historico" class="tab-panel hidden">
         <div id="lista-historico"></div>
+        <div class="card" style="margin-top:12px;">
+          <div class="card-title">Meus prémios</div>
+          <div id="lista-premios"></div>
+        </div>
       </div>
 
       <!-- ABA CONTA -->
@@ -126,6 +131,10 @@
         <div class="card">
           <div class="card-title">Movimentos</div>
           <div id="lista-movimentos" class="info-list"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Levantamentos</div>
+          <div id="lista-levantamentos" class="info-list"></div>
         </div>
         <button class="btn btn-outline" style="width:100%; margin-top:8px;" onclick="app.sair()">Sair da conta</button>
       </div>
@@ -144,6 +153,23 @@
         <input class="input" type="number" id="dep-valor" placeholder="Valor (MZN)" value="100" min="10" />
         <a href="https://www.netshop.co.mz/p/r9hhaw3r" target="_blank" class="btn btn-gold" style="display:block; text-align:center; text-decoration:none; margin-bottom:8px;">Ir para Netshop pagar</a>
         <button class="btn btn-outline" style="width:100%;" onclick="app.fecharDeposito()">Fechar</button>
+      </div>
+    </div>
+
+    <!-- MODAL LEVANTAMENTO -->
+    <div id="modal-levantamento" class="modal hidden">
+      <div class="modal-backdrop" onclick="app.fecharLevantamento()"></div>
+      <div class="modal-content">
+        <div class="card-title">Levantar dinheiro</div>
+        <p class="hint">O dinheiro será enviado para o teu M-Pesa. Taxa: 0 MZN.</p>
+        <div class="info-row" style="margin-bottom:12px;">
+          <span class="info-label">Saldo atual</span>
+          <span class="info-val" id="lev-saldo">0 MZN</span>
+        </div>
+        <input class="input" type="number" id="lev-valor" placeholder="Valor a levantar (MZN)" min="50" />
+        <input class="input" type="tel" id="lev-telefone" placeholder="Telefone M-Pesa (ex: 84xxxxxxx)" />
+        <button class="btn btn-primary" style="width:100%; margin-bottom:8px;" onclick="app.solicitarLevantamento()">Solicitar levantamento</button>
+        <button class="btn btn-outline" style="width:100%;" onclick="app.fecharLevantamento()">Cancelar</button>
       </div>
     </div>
 
