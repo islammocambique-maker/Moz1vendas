@@ -1,1157 +1,1833 @@
-// ============================================================
-// SORTEMZ - CODE.GS COMPLETO
-// JOGO: 5 NÚMEROS DE 1 A 55
-// SORTEIOS: 10:00 | 15:00 | 19:00
-// FECHAMENTO: 15 MINUTOS ANTES
-// ============================================================
+/************************************************************
+ * SORTEMZ — LOTARIA 5/55
+ * GOOGLE APPS SCRIPT — BACKEND COMPLETO
+ *
+ * REGRAS:
+ * - Jogo: 5/55
+ * - Aposta: 10 MZN
+ * - Abertura: 15 minutos antes da hora do sorteio
+ * - 50% da arrecadação = CASA
+ * - 50% da arrecadação = FUNDO DE PRÉMIOS
+ *
+ * O JAVASCRIPT DA APP NÃO FAZ A LÓGICA.
+ * O GAS é responsável por:
+ * - utilizadores
+ * - saldo
+ * - sorteios
+ * - apostas
+ * - abertura/fecho
+ * - resultados
+ * - prémios
+ * - movimentos
+ * - NetShop
+ ************************************************************/
 
 
-// ============================================================
-// CONFIGURAÇÕES PRINCIPAIS
-// ============================================================
+/* ==========================================================
+   CONFIGURAÇÃO
+   ========================================================== */
 
-const SPREADSHEET_ID = '1QrHg2UIimGQULhQp8bZng2l1Kh453d_SS1EcImoP8Jo';
+const CONFIG = {
 
-// COLOQUE AQUI A MESMA CHAVE ADMINISTRATIVA QUE JÁ USAVA
-const ADMIN_SECRET_KEY = 'Sueila6300';
+  NOME: 'SORTEMZ',
+
+  JOGO: '5/55',
+
+  VALOR_APOSTA: 10,
+
+  NUMEROS: 55,
+
+  ESCOLHER: 5,
+
+  MINUTOS_ABERTURA: 15,
+
+  PERCENTUAL_CASA: 0.50,
+
+  PERCENTUAL_PREMIOS: 0.50
+
+};
+
+
+/* ==========================================================
+   PLANILHA
+   ========================================================== */
+
+const SPREADSHEET_ID = 'COLOQUE_AQUI_O_ID_DA_NOVA_PLANILHA';
+
 
 const SHEETS = {
+
   USUARIOS: 'USUARIOS',
-  JOGADAS: 'JOGADAS',
+
   SORTEIOS: 'SORTEIOS',
+
+  JOGADAS: 'JOGADAS',
+
   RESULTADOS: 'RESULTADOS',
+
   PREMIOS: 'PREMIOS',
+
   MOVIMENTOS: 'MOVIMENTOS',
-  LEVANTAMENTOS: 'LEVANTAMENTOS'
-};
 
-const HORARIOS_SORTEIO = ['10:00', '15:00', '19:00'];
+  LEVANTAMENTOS: 'LEVANTAMENTOS',
 
-const MINUTOS_FECHAMENTO_ANTES = 15;
+  CONFIG: 'CONFIG'
 
-const PREMIOS = {
-  1: 10,
-  2: 50,
-  3: 500,
-  4: 5000,
-  5: 500000
 };
 
 
-// ============================================================
-// NETSHOP
-// ============================================================
+/* ==========================================================
+   NETSHOP
+   ========================================================== */
 
-// COLOQUE AQUI A MESMA API KEY DA SUA CONTA NETSHOP
 const NETSHOP_CONFIG = {
-  WALLET_ID: 'coloca a carteira',
-  API_KEY: 'coloca api aqui',
-  BASE_URL: 'https://www.netshop.co.mz/api/v1'
+
+  BASE_URL: 'COLOQUE_AQUI_A_BASE_URL_DA_NETSHOP',
+
+  API_KEY: 'COLOQUE_AQUI_A_API_KEY',
+
+  WALLET_ID: 'COLOQUE_AQUI_O_WALLET_ID'
+
 };
 
 
-// ============================================================
-// UTILITÁRIOS
-// ============================================================
+/* ==========================================================
+   GET
+   ========================================================== */
 
-function normalizarTelefone(tel) {
-  if (!tel) return '';
-  return String(tel).trim().replace(/\D/g, '');
-}
+function doGet(e) {
 
+  try {
 
-function normalizarStatus(status) {
-  return String(status || '').trim().toUpperCase();
-}
+    const action =
+      e &&
+      e.parameter &&
+      e.parameter.action
+        ? e.parameter.action
+        : '';
 
+    switch (action) {
 
-function normalizarHora(hora) {
-  if (!hora) return '';
+      case 'config':
+        return jsonResponse(obterConfig());
 
-  if (hora instanceof Date) {
-    return Utilities.formatDate(
-      hora,
-      Session.getScriptTimeZone(),
-      'HH:mm'
-    );
-  }
+      case 'sorteiosAbertos':
+        return jsonResponse(obterSorteiosAbertos());
 
-  let texto = String(hora).trim();
+      case 'resultado':
+        return jsonResponse(obterUltimoResultado());
 
-  // Caso venha como 10:00:00
-  if (/^\d{1,2}:\d{2}:\d{2}$/.test(texto)) {
-    texto = texto.substring(0, 5);
-  }
+      case 'usuario':
+        return jsonResponse(
+          obterUsuario(
+            e.parameter.id
+          )
+        );
 
-  // Caso venha como 10:0
-  const partes = texto.split(':');
+      case 'minhasJogadas':
+        return jsonResponse(
+          obterMinhasJogadas(
+            e.parameter.id
+          )
+        );
 
-  if (partes.length >= 2) {
-    const hh = Number(partes[0]);
-    const mm = Number(partes[1]);
+      case 'meusPremios':
+        return jsonResponse(
+          obterMeusPremios(
+            e.parameter.id
+          )
+        );
 
-    if (!isNaN(hh) && !isNaN(mm)) {
-      return (
-        String(hh).padStart(2, '0') +
-        ':' +
-        String(mm).padStart(2, '0')
-      );
+      case 'meusLevantamentos':
+        return jsonResponse(
+          obterMeusLevantamentos(
+            e.parameter.id
+          )
+        );
+
+      default:
+
+        return jsonResponse({
+
+          success: true,
+
+          sistema: CONFIG.NOME,
+
+          jogo: CONFIG.JOGO,
+
+          mensagem: 'SORTEMZ API ativa.'
+
+        });
+
     }
+
+  } catch (erro) {
+
+    return jsonResponse({
+
+      success: false,
+
+      error: erro.toString()
+
+    });
+
   }
 
-  return texto;
 }
 
 
-function dataParaString(data) {
-  if (!data) return '';
+/* ==========================================================
+   POST
+   ========================================================== */
 
-  if (data instanceof Date && !isNaN(data.getTime())) {
-    return Utilities.formatDate(
-      data,
-      Session.getScriptTimeZone(),
-      'yyyy-MM-dd'
-    );
+function doPost(e) {
+
+  try {
+
+    const p =
+      e &&
+      e.parameter
+        ? e.parameter
+        : {};
+
+    const action = p.action || '';
+
+    switch (action) {
+
+      case 'registarUsuario':
+
+        return jsonResponse(
+          registarUsuario(
+            p.nome,
+            p.telefone
+          )
+        );
+
+
+      case 'registarJogada':
+
+        return jsonResponse(
+          registarJogada(
+            p.usuarioId,
+            p.referencia,
+            p.sorteioId,
+            p.numeros,
+            p.valor
+          )
+        );
+
+
+      case 'depositoNetshop':
+
+        return jsonResponse(
+          processarDepositoNetshop(
+            p.referencia,
+            p.telefone,
+            p.valor,
+            p.metodo
+          )
+        );
+
+
+      case 'solicitarLevantamento':
+
+        return jsonResponse(
+          solicitarLevantamento(
+            p.usuarioId,
+            p.valor,
+            p.telefone
+          )
+        );
+
+
+      case 'webhookNetshop':
+
+        return jsonResponse(
+          processarWebhookNetshop(
+            interpretarWebhook(p)
+          )
+        );
+
+
+      default:
+
+        return jsonResponse({
+
+          success: false,
+
+          error: 'Ação não reconhecida.'
+
+        });
+
+    }
+
+  } catch (erro) {
+
+    return jsonResponse({
+
+      success: false,
+
+      error: erro.toString()
+
+    });
+
   }
 
-  const texto = String(data).trim();
-
-  // yyyy-MM-dd
-  if (/^\d{4}-\d{2}-\d{2}$/.test(texto)) {
-    return texto;
-  }
-
-  // dd/MM/yyyy
-  if (/^\d{2}\/\d{2}\/\d{4}$/.test(texto)) {
-    const p = texto.split('/');
-    return p[2] + '-' + p[1] + '-' + p[0];
-  }
-
-  // dd-MM-yyyy
-  if (/^\d{2}-\d{2}-\d{4}$/.test(texto)) {
-    const p = texto.split('-');
-    return p[2] + '-' + p[1] + '-' + p[0];
-  }
-
-  const tentativa = new Date(texto);
-
-  if (!isNaN(tentativa.getTime())) {
-    return Utilities.formatDate(
-      tentativa,
-      Session.getScriptTimeZone(),
-      'yyyy-MM-dd'
-    );
-  }
-
-  return texto;
 }
 
 
-function criarDataHora(data, hora) {
-  const dataStr = dataParaString(data);
-  const horaStr = normalizarHora(hora);
+/* ==========================================================
+   RESPOSTA JSON
+   ========================================================== */
 
-  if (!dataStr || !horaStr) return null;
+function jsonResponse(obj) {
 
-  const partesData = dataStr.split('-');
-  const partesHora = horaStr.split(':');
-
-  if (partesData.length !== 3 || partesHora.length < 2) {
-    return null;
-  }
-
-  const ano = Number(partesData[0]);
-  const mes = Number(partesData[1]);
-  const dia = Number(partesData[2]);
-
-  const hh = Number(partesHora[0]);
-  const mm = Number(partesHora[1]);
-
-  if (
-    isNaN(ano) ||
-    isNaN(mes) ||
-    isNaN(dia) ||
-    isNaN(hh) ||
-    isNaN(mm)
-  ) {
-    return null;
-  }
-
-  return new Date(
-    ano,
-    mes - 1,
-    dia,
-    hh,
-    mm,
-    0,
-    0
-  );
-}
-
-
-function dataHoje() {
-  const agora = new Date();
-
-  const texto = Utilities.formatDate(
-    agora,
-    Session.getScriptTimeZone(),
-    'yyyy-MM-dd'
-  );
-
-  const p = texto.split('-');
-
-  return new Date(
-    Number(p[0]),
-    Number(p[1]) - 1,
-    Number(p[2]),
-    0,
-    0,
-    0,
-    0
-  );
-}
-
-
-function json(obj) {
   return ContentService
-    .createTextOutput(JSON.stringify(obj))
-    .setMimeType(ContentService.MimeType.JSON);
-}
 
+    .createTextOutput(
+      JSON.stringify(obj)
+    )
 
-// ============================================================
-// SETUP
-// ============================================================
-
-function setup() {
-
-  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-
-  criarAba(
-    ss,
-    SHEETS.USUARIOS,
-    [
-      'ID',
-      'Nome',
-      'Telefone',
-      'Referencia',
-      'Saldo',
-      'Data Registo',
-      'Status'
-    ]
-  );
-
-  criarAba(
-    ss,
-    SHEETS.JOGADAS,
-    [
-      'ID',
-      'UsuarioID',
-      'Referencia',
-      'SorteioID',
-      'Data',
-      'Hora',
-      'Numeros',
-      'Valor',
-      'Status'
-    ]
-  );
-
-  criarAba(
-    ss,
-    SHEETS.SORTEIOS,
-    [
-      'ID',
-      'Data',
-      'Hora',
-      'Arrecadacao',
-      'Casa',
-      'FundoPremios',
-      'PremiosPagos',
-      'SaldoPremios',
-      'Status'
-    ]
-  );
-
-  criarAba(
-    ss,
-    SHEETS.RESULTADOS,
-    [
-      'SorteioID',
-      'Data',
-      'Hora',
-      'N1',
-      'N2',
-      'N3',
-      'N4',
-      'N5'
-    ]
-  );
-
-  criarAba(
-    ss,
-    SHEETS.PREMIOS,
-    [
-      'ID',
-      'SorteioID',
-      'UsuarioID',
-      'Acertos',
-      'PremioTeorico',
-      'PremioPago',
-      'Status',
-      'Data'
-    ]
-  );
-
-  criarAba(
-    ss,
-    SHEETS.MOVIMENTOS,
-    [
-      'ID',
-      'Data',
-      'UsuarioID',
-      'Tipo',
-      'Referencia',
-      'Valor',
-      'Status',
-      'TransacaoID',
-      'Origem'
-    ]
-  );
-
-  criarAba(
-    ss,
-    SHEETS.LEVANTAMENTOS,
-    [
-      'ID',
-      'Data',
-      'UsuarioID',
-      'Telefone',
-      'Valor',
-      'Taxa',
-      'ValorLiquido',
-      'Status',
-      'ProcessadoEm',
-      'Obs'
-    ]
-  );
-
-
-  // Cria os sorteios de hoje e amanhã
-  criarSorteiosDia(new Date());
-  
-  const amanha = new Date();
-  amanha.setDate(amanha.getDate() + 1);
-
-  criarSorteiosDia(amanha);
-
-
-  // Instala os triggers automaticamente
-  instalarTriggers();
-
-
-  SpreadsheetApp.flush();
-
-  return {
-    success: true,
-    message: 'SORTEMZ configurado com sucesso.'
-  };
-}
-
-
-// ============================================================
-// CRIAÇÃO DAS ABAS
-// ============================================================
-
-function criarAba(ss, nome, cabecalho) {
-
-  let sheet = ss.getSheetByName(nome);
-
-  if (!sheet) {
-
-    sheet = ss.insertSheet(nome);
-
-    sheet
-      .getRange(1, 1, 1, cabecalho.length)
-      .setValues([cabecalho]);
-
-    sheet.setFrozenRows(1);
-  }
-}
-
-
-// ============================================================
-// TRIGGERS
-// ============================================================
-
-function instalarTriggers() {
-
-  const triggers = ScriptApp.getProjectTriggers();
-
-  triggers.forEach(function(trigger) {
-
-    const funcao = trigger.getHandlerFunction();
-
-    if (
-      funcao === 'triggerDiarioSorteios' ||
-      funcao === 'triggerFecharSorteios' ||
-      funcao === 'triggerSorteioAutomatico'
-    ) {
-      ScriptApp.deleteTrigger(trigger);
-    }
-
-  });
-
-
-  // Todos os dias de madrugada cria os sorteios
-  ScriptApp.newTrigger('triggerDiarioSorteios')
-    .timeBased()
-    .everyDays(1)
-    .atHour(0)
-    .create();
-
-
-  // Verifica fechamento a cada 5 minutos
-  ScriptApp.newTrigger('triggerFecharSorteios')
-    .timeBased()
-    .everyMinutes(5)
-    .create();
-
-
-  // Verifica sorteios a cada 5 minutos
-  ScriptApp.newTrigger('triggerSorteioAutomatico')
-    .timeBased()
-    .everyMinutes(5)
-    .create();
-
-
-  Logger.log('Triggers instalados com sucesso.');
-}
-
-
-// ============================================================
-// CRIAÇÃO DOS SORTEIOS DIÁRIOS
-// ============================================================
-
-function triggerDiarioSorteios() {
-
-  try {
-
-    criarSorteiosDia(new Date());
-
-    const amanha = new Date();
-    amanha.setDate(amanha.getDate() + 1);
-
-    criarSorteiosDia(amanha);
-
-    Logger.log('triggerDiarioSorteios: OK');
-
-  } catch (e) {
-
-    Logger.log(
-      'ERRO triggerDiarioSorteios: ' +
-      e.message
+    .setMimeType(
+      ContentService.MimeType.JSON
     );
-  }
+
 }
 
 
-function criarSorteiosDia(dataBase) {
+/* ==========================================================
+   CRIAR NOVA PLANILHA
+   ========================================================== */
 
-  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+function criarEstruturaPlanilha() {
 
-  const sheet = ss.getSheetByName(SHEETS.SORTEIOS);
-
-  if (!sheet) {
-    throw new Error('Aba SORTEIOS não existe.');
-  }
-
-
-  const dataAlvo = dataParaString(dataBase);
-
-  const dados = sheet.getDataRange().getValues();
-
-  const existentes = {};
+  const ss =
+    SpreadsheetApp.openById(
+      SPREADSHEET_ID
+    );
 
 
-  // Lê todos os sorteios existentes
-  for (let i = 1; i < dados.length; i++) {
+  const estruturas = {
 
-    const dataLinha = dataParaString(dados[i][1]);
+    USUARIOS: [
+      'ID',
+      'DATA',
+      'NOME',
+      'TELEFONE',
+      'REFERENCIA',
+      'SALDO',
+      'STATUS'
+    ],
 
-    const horaLinha = normalizarHora(dados[i][2]);
+    SORTEIOS: [
+      'ID',
+      'DATA',
+      'HORA',
+      'FECHAMENTO',
+      'STATUS',
+      'TOTAL_APOSTAS',
+      'ARRECADADO',
+      'CASA_50',
+      'PREMIOS_50',
+      'RESULTADO'
+    ],
 
-    if (dataLinha === dataAlvo && horaLinha) {
+    JOGADAS: [
+      'ID',
+      'DATA',
+      'USUARIO_ID',
+      'REFERENCIA',
+      'SORTEIO_ID',
+      'NUMEROS',
+      'VALOR',
+      'STATUS',
+      'ACERTOS',
+      'PREMIO'
+    ],
 
-      existentes[horaLinha] = true;
-    }
-  }
+    RESULTADOS: [
+      'ID',
+      'SORTEIO_ID',
+      'DATA',
+      'HORA',
+      'NUMEROS'
+    ],
+
+    PREMIOS: [
+      'ID',
+      'DATA',
+      'USUARIO_ID',
+      'JOGADA_ID',
+      'SORTEIO_ID',
+      'ACERTOS',
+      'PREMIO',
+      'STATUS'
+    ],
+
+    MOVIMENTOS: [
+      'ID',
+      'DATA',
+      'USUARIO_ID',
+      'TIPO',
+      'REFERENCIA',
+      'VALOR',
+      'STATUS',
+      'TRANSACAO_ID',
+      'ORIGEM'
+    ],
+
+    LEVANTAMENTOS: [
+      'ID',
+      'DATA',
+      'USUARIO_ID',
+      'TELEFONE',
+      'VALOR',
+      'STATUS'
+    ],
+
+    CONFIG: [
+      'CHAVE',
+      'VALOR'
+    ]
+
+  };
 
 
-  // Cria individualmente os horários que estiverem faltando
-  HORARIOS_SORTEIO.forEach(function(hora) {
+  Object.keys(estruturas).forEach(nome => {
 
-    if (!existentes[hora]) {
+    const nomeAba =
+      SHEETS[nome];
 
-      const id =
-        'SRT-' +
-        Utilities
-          .getUuid()
-          .substring(0, 6)
-          .toUpperCase();
+    let sheet =
+      ss.getSheetByName(nomeAba);
 
-
-      const dataReal = criarDataHora(
-        dataAlvo,
-        '00:00'
-      );
-
-
-      sheet.appendRow([
-        id,
-        dataReal,
-        hora,
-        0,
-        0,
-        0,
-        0,
-        0,
-        'ABERTO'
-      ]);
-
-      Logger.log(
-        'Sorteio criado: ' +
-        dataAlvo +
-        ' ' +
-        hora
-      );
-    }
-  });
-
-
-  SpreadsheetApp.flush();
-}
-
-
-// ============================================================
-// FECHAMENTO AUTOMÁTICO
-// ============================================================
-
-function triggerFecharSorteios() {
-
-  try {
-
-    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-    const sheet = ss.getSheetByName(SHEETS.SORTEIOS);
 
     if (!sheet) {
-      throw new Error('Aba SORTEIOS não encontrada.');
+
+      sheet =
+        ss.insertSheet(nomeAba);
+
     }
 
-    const dados = sheet.getDataRange().getValues();
-    const agora = new Date();
 
-    for (let i = 1; i < dados.length; i++) {
+    if (
+      sheet.getLastRow() === 0
+    ) {
 
-      const id = String(dados[i][0] || '').trim();
-      const data = dados[i][1];
-      const hora = dados[i][2];
+      sheet
+        .getRange(
+          1,
+          1,
+          1,
+          estruturas[nome].length
+        )
+        .setValues([
+          estruturas[nome]
+        ]);
 
-      if (!id || !data || !hora) {
-        continue;
-      }
+      sheet
+        .getRange(1, 1, 1,
+          estruturas[nome].length
+        )
+        .setFontWeight('bold');
 
-      const dataHoraSorteio =
-        criarDataHora(data, hora);
-
-      if (!dataHoraSorteio) {
-        continue;
-      }
-
-      // Fecha 15 minutos antes do sorteio
-      const fechamento =
-        new Date(
-          dataHoraSorteio.getTime() -
-          MINUTOS_FECHAMENTO_ANTES * 60000
-        );
-
-      const statusAtual =
-        normalizarStatus(dados[i][8]);
-
-      // =====================================================
-      // AINDA ESTÁ DENTRO DO PERÍODO DE APOSTAS
-      // =====================================================
-
-      if (agora < fechamento) {
-
-        if (statusAtual !== 'ABERTO') {
-
-          sheet
-            .getRange(i + 1, 9)
-            .setValue('ABERTO');
-
-          Logger.log(
-            'Sorteio ABERTO: ' +
-            id +
-            ' | ' +
-            dataParaString(data) +
-            ' ' +
-            normalizarHora(hora)
-          );
-        }
-
-        continue;
-      }
-
-      // =====================================================
-      // JÁ CHEGOU AOS 15 MINUTOS ANTES
-      // =====================================================
-
-      if (
-        agora >= fechamento &&
-        agora < dataHoraSorteio &&
-        statusAtual === 'ABERTO'
-      ) {
-
-        sheet
-          .getRange(i + 1, 9)
-          .setValue('FECHADO');
-
-        Logger.log(
-          'Sorteio FECHADO: ' +
-          id
-        );
-      }
     }
 
-    SpreadsheetApp.flush();
+  });
 
-  } catch (e) {
 
-    Logger.log(
-      'ERRO triggerFecharSorteios: ' +
-      e.message
-    );
-  }
+  configurarSistema();
+
+
+  return {
+
+    success: true,
+
+    message:
+      'Estrutura criada com sucesso.'
+
+  };
+
 }
 
 
-// ============================================================
-// SORTEIO AUTOMÁTICO
-// ============================================================
+/* ==========================================================
+   CONFIGURAÇÃO INICIAL
+   ========================================================== */
 
-function triggerSorteioAutomatico() {
-
-  try {
-
-    const ss =
-      SpreadsheetApp.openById(SPREADSHEET_ID);
-
-    const sheet =
-      ss.getSheetByName(SHEETS.SORTEIOS);
-
-    if (!sheet) return;
-
-
-    const dados =
-      sheet.getDataRange().getValues();
-
-    const agora = new Date();
-
-    let sorteados = 0;
-
-
-    for (let i = 1; i < dados.length; i++) {
-
-      const status =
-        normalizarStatus(dados[i][8]);
-
-      if (status !== 'FECHADO') {
-        continue;
-      }
-
-
-      const sorteioId =
-        String(dados[i][0] || '').trim();
-
-      if (!sorteioId) continue;
-
-
-      const dataHoraSorteio =
-        criarDataHora(
-          dados[i][1],
-          dados[i][2]
-        );
-
-      if (!dataHoraSorteio) continue;
-
-
-      if (
-        agora >= dataHoraSorteio &&
-        !resultadoExiste(sorteioId)
-      ) {
-
-        try {
-
-          processarSorteioCompleto(
-            sorteioId
-          );
-
-          sorteados++;
-
-        } catch (erroSorteio) {
-
-          Logger.log(
-            'Erro no sorteio ' +
-            sorteioId +
-            ': ' +
-            erroSorteio.message
-          );
-        }
-      }
-    }
-
-
-    if (sorteados > 0) {
-
-      Logger.log(
-        'Sorteios processados: ' +
-        sorteados
-      );
-    }
-
-  } catch (e) {
-
-    Logger.log(
-      'ERRO triggerSorteioAutomatico: ' +
-      e.message
-    );
-  }
-}
-
-
-// ============================================================
-// VERIFICA SE JÁ EXISTE RESULTADO
-// ============================================================
-
-function resultadoExiste(sorteioId) {
+function configurarSistema() {
 
   const ss =
-    SpreadsheetApp.openById(SPREADSHEET_ID);
+    SpreadsheetApp.openById(
+      SPREADSHEET_ID
+    );
 
   const sheet =
-    ss.getSheetByName(SHEETS.RESULTADOS);
-
-  if (!sheet) return false;
-
-
-  const dados =
-    sheet.getDataRange().getValues();
-
-
-  for (let i = 1; i < dados.length; i++) {
-
-    if (
-      String(dados[i][0]).trim() ===
-      String(sorteioId).trim()
-    ) {
-      return true;
-    }
-  }
-
-  return false;
-}
-
-
-// ============================================================
-// PROCESSAR SORTEIO COMPLETO
-// ============================================================
-
-function processarSorteioCompleto(sorteioId) {
-
-  const ss =
-    SpreadsheetApp.openById(SPREADSHEET_ID);
-
-  const sheetSorteios =
-    ss.getSheetByName(SHEETS.SORTEIOS);
-
-  const sheetResultados =
-    ss.getSheetByName(SHEETS.RESULTADOS);
-
-  const sheetJogadas =
-    ss.getSheetByName(SHEETS.JOGADAS);
-
-  const sheetPremios =
-    ss.getSheetByName(SHEETS.PREMIOS);
-
-  const sheetUsuarios =
-    ss.getSheetByName(SHEETS.USUARIOS);
-
-  const sheetMovimentos =
-    ss.getSheetByName(SHEETS.MOVIMENTOS);
-
-
-  const dadosSorteios =
-    sheetSorteios.getDataRange().getValues();
-
-
-  let linhaSorteio = -1;
-  let fundoPremios = 0;
-
-
-  for (let i = 1; i < dadosSorteios.length; i++) {
-
-    if (
-      String(dadosSorteios[i][0]).trim() ===
-      String(sorteioId).trim()
-    ) {
-
-      linhaSorteio = i + 1;
-
-      fundoPremios =
-        Number(dadosSorteios[i][5] || 0);
-
-      break;
-    }
-  }
-
-
-  if (linhaSorteio === -1) {
-
-    throw new Error(
-      'Sorteio não encontrado.'
-    );
-  }
-
-
-  if (resultadoExiste(sorteioId)) {
-
-    throw new Error(
-      'Este sorteio já possui resultado.'
-    );
-  }
-
-
-  // ==========================================================
-  // BUSCAR JOGADAS
-  // ==========================================================
-
-  const dadosJogadas =
-    sheetJogadas.getDataRange().getValues();
-
-  const jogadasDoSorteio = [];
-
-  const todosNumerosApostados =
-    new Set();
-
-
-  for (let i = 1; i < dadosJogadas.length; i++) {
-
-    const idJogadaSorteio =
-      String(dadosJogadas[i][3] || '').trim();
-
-    const status =
-      normalizarStatus(dadosJogadas[i][8]);
-
-
-    if (
-      idJogadaSorteio ===
-      String(sorteioId).trim() &&
-      status === 'CONFIRMADA'
-    ) {
-
-      const textoNumeros =
-        String(dadosJogadas[i][6] || '');
-
-      const nums =
-        textoNumeros
-          .split(',')
-          .map(Number)
-          .filter(function(n) {
-            return n >= 1 && n <= 55;
-          });
-
-
-      if (nums.length === 5) {
-
-        jogadasDoSorteio.push({
-
-          linha: i + 1,
-
-          usuarioId:
-            dadosJogadas[i][1],
-
-          jogadaId:
-            dadosJogadas[i][0],
-
-          numeros:
-            nums,
-
-          valor:
-            Number(dadosJogadas[i][7] || 0)
-        });
-
-
-        nums.forEach(function(n) {
-
-          todosNumerosApostados.add(n);
-
-        });
-      }
-    }
-  }
-
-
-  // ==========================================================
-  // GERAR NÚMEROS
-  // ==========================================================
-
-  let numerosSorteados;
-
-
-  if (jogadasDoSorteio.length === 0) {
-
-    numerosSorteados =
-      gerarCombinacaoAleatoria();
-
-    Logger.log(
-      'Sorteio ' +
-      sorteioId +
-      ': sem apostas.'
+    ss.getSheetByName(
+      SHEETS.CONFIG
     );
 
-  } else {
 
-    numerosSorteados =
-      sorteioCondicionado(
-        jogadasDoSorteio,
-        fundoPremios,
-        todosNumerosApostados
-      );
+  const valores = {
 
-    Logger.log(
-      'Sorteio ' +
-      sorteioId +
-      ': ' +
-      numerosSorteados.join(',')
-    );
-  }
+    JOGO: '5/55',
+
+    VALOR_APOSTA: '10',
+
+    MINUTOS_ABERTURA: '15',
+
+    PERCENTUAL_CASA: '50',
+
+    PERCENTUAL_PREMIOS: '50'
+
+  };
 
 
-  // ==========================================================
-  // GRAVAR RESULTADO
-  // ==========================================================
-
-  sheetResultados.appendRow([
-
-    sorteioId,
-
-    new Date(),
-
-    Utilities.formatDate(
-      new Date(),
-      Session.getScriptTimeZone(),
-      'HH:mm:ss'
-    ),
-
-    numerosSorteados[0],
-    numerosSorteados[1],
-    numerosSorteados[2],
-    numerosSorteados[3],
-    numerosSorteados[4]
-
-  ]);
+  const existentes =
+    sheet
+      .getDataRange()
+      .getValues();
 
 
-  sheetSorteios
-    .getRange(linhaSorteio, 9)
-    .setValue('SORTEADO');
-
-
-  // ==========================================================
-  // PAGAR PRÉMIOS
-  // ==========================================================
-
-  let totalPremiosPagos = 0;
+  const mapa = {};
 
 
   for (
-    let i = 0;
-    i < jogadasDoSorteio.length;
+    let i = 1;
+    i < existentes.length;
     i++
   ) {
 
-    const jogada =
-      jogadasDoSorteio[i];
+    mapa[
+      String(
+        existentes[i][0]
+      )
+    ] = i + 1;
+
+  }
 
 
-    const acertos =
-      jogada.numeros.filter(
-        function(n) {
-          return numerosSorteados.includes(n);
-        }
-      ).length;
+  Object.keys(valores).forEach(chave => {
 
+    if (mapa[chave]) {
 
-    if (
-      acertos >= 1 &&
-      PREMIOS[acertos]
-    ) {
-
-      const premio =
-        PREMIOS[acertos];
-
-
-      const premioId =
-        'PRM-' +
-        Utilities
-          .getUuid()
-          .substring(0, 8)
-          .toUpperCase();
-
-
-      sheetPremios.appendRow([
-
-        premioId,
-
-        sorteioId,
-
-        jogada.usuarioId,
-
-        acertos,
-
-        premio,
-
-        premio,
-
-        'PAGO',
-
-        new Date()
-
-      ]);
-
-
-      const dadosUsuarios =
-        sheetUsuarios
-          .getDataRange()
-          .getValues();
-
-
-      for (
-        let u = 1;
-        u < dadosUsuarios.length;
-        u++
-      ) {
-
-        if (
-          String(dadosUsuarios[u][0]) ===
-          String(jogada.usuarioId)
-        ) {
-
-          const saldoAtual =
-            Number(
-              dadosUsuarios[u][4] || 0
-            );
-
-
-          sheetUsuarios
-            .getRange(u + 1, 5)
-            .setValue(
-              saldoAtual + premio
-            );
-
-          break;
-        }
-      }
-
-
-      sheetMovimentos.appendRow([
-
-        'MOV-' +
-        Utilities
-          .getUuid()
-          .substring(0, 8)
-          .toUpperCase(),
-
-        new Date(),
-
-        jogada.usuarioId,
-
-        'PREMIO',
-
-        jogada.jogadaId,
-
-        premio,
-
-        'PAGO',
-
-        premioId,
-
-        'Sistema'
-
-      ]);
-
-
-      totalPremiosPagos += premio;
-
-
-      sheetJogadas
-        .getRange(jogada.linha, 9)
+      sheet
+        .getRange(
+          mapa[chave],
+          2
+        )
         .setValue(
-          'GANHOU_' + acertos
+          valores[chave]
         );
 
     } else {
 
-      sheetJogadas
-        .getRange(jogada.linha, 9)
-        .setValue('PERDEU');
+      sheet.appendRow([
+        chave,
+        valores[chave]
+      ]);
+
     }
+
+  });
+
+}
+
+
+/* ==========================================================
+   CRIAR SORTEIOS DO DIA
+   ========================================================== */
+
+function criarSorteiosDoDia() {
+
+  const ss =
+    SpreadsheetApp.openById(
+      SPREADSHEET_ID
+    );
+
+  const sheet =
+    ss.getSheetByName(
+      SHEETS.SORTEIOS
+    );
+
+
+  const agora =
+    new Date();
+
+
+  const data =
+    Utilities.formatDate(
+      agora,
+      Session.getScriptTimeZone(),
+      'yyyy-MM-dd'
+    );
+
+
+  /*
+   * HORÁRIOS DOS SORTEIOS
+   *
+   * ALTERE AQUI OS HORÁRIOS.
+   *
+   * Exemplo:
+   * 12:00
+   * 15:00
+   * 18:00
+   * 21:00
+   */
+
+  const horarios = [
+    '12:00',
+    '15:00',
+    '18:00',
+    '21:00'
+  ];
+
+
+  const dados =
+    sheet
+      .getDataRange()
+      .getValues();
+
+
+  horarios.forEach(hora => {
+
+    const id =
+      'SMZ-' +
+      data.replace(/-/g, '') +
+      '-' +
+      hora.replace(':', '');
+
+
+    let existe = false;
+
+
+    for (
+      let i = 1;
+      i < dados.length;
+      i++
+    ) {
+
+      if (
+        String(dados[i][0]) === id
+      ) {
+
+        existe = true;
+
+        break;
+
+      }
+
+    }
+
+
+    if (!existe) {
+
+      const fechamento =
+        calcularDataHora(
+          data,
+          hora
+        );
+
+
+      sheet.appendRow([
+
+        id,
+
+        data,
+
+        hora,
+
+        fechamento,
+
+        'PROGRAMADO',
+
+        0,
+
+        0,
+
+        0,
+
+        0,
+
+        ''
+
+      ]);
+
+    }
+
+  });
+
+
+  atualizarStatusSorteios();
+
+
+  return {
+
+    success: true
+
+  };
+
+}
+
+
+/* ==========================================================
+   ATUALIZAR STATUS DOS SORTEIOS
+   ========================================================== */
+
+function atualizarStatusSorteios() {
+
+  const ss =
+    SpreadsheetApp.openById(
+      SPREADSHEET_ID
+    );
+
+  const sheet =
+    ss.getSheetByName(
+      SHEETS.SORTEIOS
+    );
+
+
+  const dados =
+    sheet
+      .getDataRange()
+      .getValues();
+
+
+  const agora =
+    new Date();
+
+
+  for (
+    let i = 1;
+    i < dados.length;
+    i++
+  ) {
+
+    const data =
+      String(dados[i][1] || '');
+
+    const hora =
+      String(dados[i][2] || '');
+
+    if (!data || !hora) continue;
+
+
+    const sorteio =
+      calcularDataHora(
+        data,
+        hora
+      );
+
+
+    const abertura =
+      new Date(
+        sorteio.getTime() -
+        CONFIG.MINUTOS_ABERTURA *
+        60000
+      );
+
+
+    const fechamento =
+      sorteio;
+
+
+    let status =
+      String(
+        dados[i][4] || ''
+      );
+
+
+    /*
+     * ABERTO:
+     * desde 15 minutos antes
+     * até à hora do sorteio.
+     */
+
+    if (
+      agora >= abertura &&
+      agora < fechamento
+    ) {
+
+      status = 'ABERTO';
+
+    }
+
+    else if (
+      agora >= fechamento
+    ) {
+
+      if (
+        status !== 'REALIZADO'
+      ) {
+
+        status = 'FECHADO';
+
+      }
+
+    }
+
+    else {
+
+      status = 'PROGRAMADO';
+
+    }
+
+
+    sheet
+      .getRange(i + 1, 5)
+      .setValue(status);
+
+  }
+
+}
+
+
+/* ==========================================================
+   OBTER SORTEIOS ABERTOS
+   ========================================================== */
+
+function obterSorteiosAbertos() {
+
+  criarSorteiosDoDia();
+
+  atualizarStatusSorteios();
+
+
+  const ss =
+    SpreadsheetApp.openById(
+      SPREADSHEET_ID
+    );
+
+  const sheet =
+    ss.getSheetByName(
+      SHEETS.SORTEIOS
+    );
+
+
+  const dados =
+    sheet
+      .getDataRange()
+      .getValues();
+
+
+  const agora =
+    new Date();
+
+  const lista = [];
+
+
+  for (
+    let i = 1;
+    i < dados.length;
+    i++
+  ) {
+
+    const data =
+      String(dados[i][1] || '');
+
+    const hora =
+      String(dados[i][2] || '');
+
+    if (!data || !hora) continue;
+
+
+    const sorteio =
+      calcularDataHora(
+        data,
+        hora
+      );
+
+
+    const abertura =
+      new Date(
+        sorteio.getTime() -
+        CONFIG.MINUTOS_ABERTURA *
+        60000
+      );
+
+
+    /*
+     * ESTA É A REGRA PRINCIPAL.
+     *
+     * Se já estamos nos 15 minutos
+     * anteriores ao sorteio e ainda
+     * não atingimos a hora:
+     *
+     * ABERTO.
+     */
+
+    if (
+      agora >= abertura &&
+      agora < sorteio
+    ) {
+
+      lista.push({
+
+        id: dados[i][0],
+
+        data: data,
+
+        hora: hora,
+
+        fechamento:
+          formatarDataHora(
+            sorteio
+          ),
+
+        status: 'ABERTO'
+
+      });
+
+    }
+
   }
 
 
-  // ==========================================================
-  // ATUALIZAR COFRE
-  // ==========================================================
+  return {
 
-  const premiosPagosAtual =
+    success: true,
+
+    sorteios: lista
+
+  };
+
+}
+
+
+/* ==========================================================
+   REGISTAR UTILIZADOR
+   ========================================================== */
+
+function registarUsuario(
+  nome,
+  telefone
+) {
+
+  if (!nome)
+    throw new Error(
+      'Nome obrigatório.'
+    );
+
+  if (!telefone)
+    throw new Error(
+      'Telefone obrigatório.'
+    );
+
+
+  const ss =
+    SpreadsheetApp.openById(
+      SPREADSHEET_ID
+    );
+
+  const sheet =
+    ss.getSheetByName(
+      SHEETS.USUARIOS
+    );
+
+
+  const dados =
+    sheet
+      .getDataRange()
+      .getValues();
+
+
+  const tel =
+    normalizarTelefone(
+      telefone
+    );
+
+
+  for (
+    let i = 1;
+    i < dados.length;
+    i++
+  ) {
+
+    if (
+      normalizarTelefone(
+        dados[i][3]
+      ) === tel
+    ) {
+
+      return {
+
+        success: true,
+
+        existente: true,
+
+        id: dados[i][0],
+
+        referencia: dados[i][4],
+
+        saldo:
+          Number(
+            dados[i][5]
+          ) || 0
+
+      };
+
+    }
+
+  }
+
+
+  const id =
+    'USR-' +
+    Utilities
+      .getUuid()
+      .substring(0, 8)
+      .toUpperCase();
+
+
+  const referencia =
+    gerarReferencia();
+
+
+  sheet.appendRow([
+
+    id,
+
+    new Date(),
+
+    nome,
+
+    tel,
+
+    referencia,
+
+    0,
+
+    'ATIVO'
+
+  ]);
+
+
+  return {
+
+    success: true,
+
+    existente: false,
+
+    id: id,
+
+    referencia: referencia,
+
+    saldo: 0
+
+  };
+
+}
+
+
+/* ==========================================================
+   REFERÊNCIA DO CLIENTE
+   ========================================================== */
+
+function gerarReferencia() {
+
+  const ss =
+    SpreadsheetApp.openById(
+      SPREADSHEET_ID
+    );
+
+  const sheet =
+    ss.getSheetByName(
+      SHEETS.USUARIOS
+    );
+
+
+  const numero =
+    sheet.getLastRow();
+
+
+  return (
+    'SMZ' +
+    String(
+      numero
+    ).padStart(6, '0')
+  );
+
+}
+
+
+/* ==========================================================
+   OBTER UTILIZADOR
+   ========================================================== */
+
+function obterUsuario(id) {
+
+  const ss =
+    SpreadsheetApp.openById(
+      SPREADSHEET_ID
+    );
+
+  const sheet =
+    ss.getSheetByName(
+      SHEETS.USUARIOS
+    );
+
+
+  const dados =
+    sheet
+      .getDataRange()
+      .getValues();
+
+
+  for (
+    let i = 1;
+    i < dados.length;
+    i++
+  ) {
+
+    if (
+      String(dados[i][0]) ===
+      String(id)
+    ) {
+
+      return {
+
+        success: true,
+
+        usuario: {
+
+          id: dados[i][0],
+
+          nome: dados[i][2],
+
+          telefone: dados[i][3],
+
+          referencia: dados[i][4],
+
+          saldo:
+            Number(
+              dados[i][5]
+            ) || 0
+
+        }
+
+      };
+
+    }
+
+  }
+
+
+  return {
+
+    success: false,
+
+    error:
+      'Utilizador não encontrado.'
+
+  };
+
+}
+
+
+/* ==========================================================
+   REGISTAR JOGADA
+   ========================================================== */
+
+function registarJogada(
+  usuarioId,
+  referencia,
+  sorteioId,
+  numeros,
+  valor
+) {
+
+  if (!usuarioId)
+    throw new Error(
+      'Utilizador obrigatório.'
+    );
+
+
+  if (!sorteioId)
+    throw new Error(
+      'Sorteio obrigatório.'
+    );
+
+
+  const nums =
+    normalizarNumeros(
+      numeros
+    );
+
+
+  if (nums.length !== 5)
+    throw new Error(
+      'Escolha exatamente 5 números.'
+    );
+
+
+  const valorAposta =
+    Number(valor) ||
+    CONFIG.VALOR_APOSTA;
+
+
+  if (
+    valorAposta !==
+    CONFIG.VALOR_APOSTA
+  ) {
+
+    throw new Error(
+      'Valor de aposta inválido.'
+    );
+
+  }
+
+
+  /*
+   * CONFIRMAR QUE O SORTEIO
+   * ESTÁ REALMENTE ABERTO.
+   *
+   * Não confiamos no JS.
+   */
+
+  const sorteio =
+    obterSorteioPorId(
+      sorteioId
+    );
+
+
+  if (!sorteio)
+    throw new Error(
+      'Sorteio não encontrado.'
+    );
+
+
+  const agora =
+    new Date();
+
+
+  const dataHoraSorteio =
+    calcularDataHora(
+      sorteio.data,
+      sorteio.hora
+    );
+
+
+  const abertura =
+    new Date(
+      dataHoraSorteio.getTime() -
+      CONFIG.MINUTOS_ABERTURA *
+      60000
+    );
+
+
+  if (
+    agora < abertura ||
+    agora >= dataHoraSorteio
+  ) {
+
+    throw new Error(
+      'Este sorteio não está aberto.'
+    );
+
+  }
+
+
+  const ss =
+    SpreadsheetApp.openById(
+      SPREADSHEET_ID
+    );
+
+
+  const usuarios =
+    ss.getSheetByName(
+      SHEETS.USUARIOS
+    );
+
+
+  const jogadas =
+    ss.getSheetByName(
+      SHEETS.JOGADAS
+    );
+
+
+  const dados =
+    usuarios
+      .getDataRange()
+      .getValues();
+
+
+  let linhaUsuario = -1;
+
+
+  for (
+    let i = 1;
+    i < dados.length;
+    i++
+  ) {
+
+    if (
+      String(dados[i][0]) ===
+      String(usuarioId)
+    ) {
+
+      linhaUsuario =
+        i + 1;
+
+      break;
+
+    }
+
+  }
+
+
+  if (
+    linhaUsuario === -1
+  ) {
+
+    throw new Error(
+      'Utilizador não encontrado.'
+    );
+
+  }
+
+
+  const saldo =
     Number(
-      dadosSorteios[
-        linhaSorteio - 1
-      ][6] || 0
+      usuarios
+        .getRange(
+          linhaUsuario,
+          6
+        )
+        .getValue()
+    ) || 0;
+
+
+  if (
+    saldo < valorAposta
+  ) {
+
+    throw new Error(
+      'Saldo insuficiente.'
+    );
+
+  }
+
+
+  /*
+   * DEBITAR SALDO
+   */
+
+  usuarios
+    .getRange(
+      linhaUsuario,
+      6
+    )
+    .setValue(
+      saldo -
+      valorAposta
     );
 
 
-  const saldoPremiosAtual =
+  /*
+   * REGISTAR APOSTA
+   */
+
+  const jogadaId =
+    'JOG-' +
+    Utilities
+      .getUuid()
+      .substring(0, 8)
+      .toUpperCase();
+
+
+  jogadas.appendRow([
+
+    jogadaId,
+
+    new Date(),
+
+    usuarioId,
+
+    referencia,
+
+    sorteioId,
+
+    nums.join(','),
+
+    valorAposta,
+
+    'CONFIRMADA',
+
+    '',
+
+    ''
+
+  ]);
+
+
+  /*
+   * ATUALIZAR ARRECADAÇÃO
+   */
+
+  atualizarFinanceiroSorteio(
+    sorteioId
+  );
+
+
+  return {
+
+    success: true,
+
+    jogadaId: jogadaId,
+
+    sorteioId: sorteioId,
+
+    saldoRestante:
+      saldo -
+      valorAposta
+
+  };
+
+}
+
+
+/* ==========================================================
+   ATUALIZAR FINANCEIRO DO SORTEIO
+   ========================================================== */
+
+function atualizarFinanceiroSorteio(
+  sorteioId
+) {
+
+  const ss =
+    SpreadsheetApp.openById(
+      SPREADSHEET_ID
+    );
+
+
+  const sorteios =
+    ss.getSheetByName(
+      SHEETS.SORTEIOS
+    );
+
+  const jogadas =
+    ss.getSheetByName(
+      SHEETS.JOGADAS
+    );
+
+
+  const dados =
+    jogadas
+      .getDataRange()
+      .getValues();
+
+
+  let total = 0;
+
+  let quantidade = 0;
+
+
+  for (
+    let i = 1;
+    i < dados.length;
+    i++
+  ) {
+
+    if (
+      String(dados[i][4]) ===
+      String(sorteioId) &&
+      String(dados[i][7]) ===
+      'CONFIRMADA'
+    ) {
+
+      total +=
+        Number(
+          dados[i][6]
+        ) || 0;
+
+      quantidade++;
+
+    }
+
+  }
+
+
+  const casa =
+    total *
+    CONFIG.PERCENTUAL_CASA;
+
+
+  const premios =
+    total *
+    CONFIG.PERCENTUAL_PREMIOS;
+
+
+  const dadosSorteios =
+    sorteios
+      .getDataRange()
+      .getValues();
+
+
+  for (
+    let i = 1;
+    i < dadosSorteios.length;
+    i++
+  ) {
+
+    if (
+      String(dadosSorteios[i][0]) ===
+      String(sorteioId)
+    ) {
+
+      sorteios
+        .getRange(
+          i + 1,
+          6,
+          1,
+          4
+        )
+        .setValues([[
+          quantidade,
+          total,
+          casa,
+          premios
+        ]]);
+
+      break;
+
+    }
+
+  }
+
+}
+
+
+/* ==========================================================
+   OBTER SORTEIO POR ID
+   ========================================================== */
+
+function obterSorteioPorId(
+  id
+) {
+
+  const ss =
+    SpreadsheetApp.openById(
+      SPREADSHEET_ID
+    );
+
+  const sheet =
+    ss.getSheetByName(
+      SHEETS.SORTEIOS
+    );
+
+
+  const dados =
+    sheet
+      .getDataRange()
+      .getValues();
+
+
+  for (
+    let i = 1;
+    i < dados.length;
+    i++
+  ) {
+
+    if (
+      String(dados[i][0]) ===
+      String(id)
+    ) {
+
+      return {
+
+        linha: i + 1,
+
+        id: dados[i][0],
+
+        data: dados[i][1],
+
+        hora: dados[i][2],
+
+        fechamento:
+          dados[i][3],
+
+        status:
+          dados[i][4]
+
+      };
+
+    }
+
+  }
+
+
+  return null;
+
+}
+
+
+/* ==========================================================
+   APURAR SORTEIO
+   ========================================================== */
+
+function apurarSorteio(
+  sorteioId
+) {
+
+  const sorteio =
+    obterSorteioPorId(
+      sorteioId
+    );
+
+
+  if (!sorteio)
+    throw new Error(
+      'Sorteio não encontrado.'
+    );
+
+
+  const ss =
+    SpreadsheetApp.openById(
+      SPREADSHEET_ID
+    );
+
+
+  const sorteios =
+    ss.getSheetByName(
+      SHEETS.SORTEIOS
+    );
+
+  const jogadas =
+    ss.getSheetByName(
+      SHEETS.JOGADAS
+    );
+
+  const resultados =
+    ss.getSheetByName(
+      SHEETS.RESULTADOS
+    );
+
+
+  /*
+   * GERAR 5 NÚMEROS ÚNICOS
+   */
+
+  const numeros = [];
+
+
+  while (
+    numeros.length < 5
+  ) {
+
+    const n =
+      Math.floor(
+        Math.random() *
+        55
+      ) + 1;
+
+
+    if (
+      !numeros.includes(n)
+    ) {
+
+      numeros.push(n);
+
+    }
+
+  }
+
+
+  numeros.sort(
+    (a, b) => a - b
+  );
+
+
+  const resultadoId =
+    'RES-' +
+    Utilities
+      .getUuid()
+      .substring(0, 8)
+      .toUpperCase();
+
+
+  resultados.appendRow([
+
+    resultadoId,
+
+    sorteioId,
+
+    sorteio.data,
+
+    sorteio.hora,
+
+    numeros.join(',')
+
+  ]);
+
+
+  /*
+   * CALCULAR FUNDO DE PRÉMIOS
+   */
+
+  atualizarFinanceiroSorteio(
+    sorteioId
+  );
+
+
+  const dadosSorteio =
+    sorteios
+      .getRange(
+        sorteio.linha,
+        1,
+        1,
+        10
+      )
+      .getValues()[0];
+
+
+  const fundoPremios =
     Number(
-      dadosSorteios[
-        linhaSorteio - 1
-      ][7] || 0
-    );
+      dadosSorteio[8]
+    ) || 0;
 
 
-  sheetSorteios
-    .getRange(linhaSorteio, 7)
+  /*
+   * PROCURAR APOSTAS
+   */
+
+  const dadosJogadas =
+    jogadas
+      .getDataRange()
+      .getValues();
+
+
+  const vencedores = [];
+
+
+  for (
+    let i = 1;
+    i < dadosJogadas.length;
+    i++
+  ) {
+
+    if (
+      String(dadosJogadas[i][4]) !==
+      String(sorteioId)
+    ) continue;
+
+
+    if (
+      String(dadosJogadas[i][7]) !==
+      'CONFIRMADA'
+    ) continue;
+
+
+    const apostados =
+      normalizarNumeros(
+        dadosJogadas[i][5]
+      );
+
+
+    const acertos =
+      apostados.filter(
+        n =>
+          numeros.includes(n)
+      ).length;
+
+
+    if (
+      acertos >= 3
+    ) {
+
+      vencedores.push({
+
+        linha: i + 1,
+
+        usuarioId:
+          dadosJogadas[i][2],
+
+        jogadaId:
+          dadosJogadas[i][0],
+
+        acertos: acertos
+
+      });
+
+    }
+
+
+    jogadas
+      .getRange(
+        i + 1,
+        9
+      )
+      .setValue(
+        acertos
+      );
+
+  }
+
+
+  /*
+   * DISTRIBUIÇÃO DO FUNDO
+   *
+   * O fundo de 50% é distribuído
+   * igualmente entre as apostas
+   * vencedoras.
+   */
+
+  if (
+    vencedores.length > 0 &&
+    fundoPremios > 0
+  ) {
+
+    const premioIndividual =
+      fundoPremios /
+      vencedores.length;
+
+
+    vencedores.forEach(v => {
+
+      creditarPremio(
+        v.usuarioId,
+        v.jogadaId,
+        sorteioId,
+        v.acertos,
+        premioIndividual
+      );
+
+
+      jogadas
+        .getRange(
+          v.linha,
+          10
+        )
+        .setValue(
+          premioIndividual
+        );
+
+    });
+
+  }
+
+
+  /*
+   * MARCAR SORTEIO
+   */
+
+  sorteios
+    .getRange(
+      sorteio.linha,
+      5
+    )
     .setValue(
-      premiosPagosAtual +
-      totalPremiosPagos
+      'REALIZADO'
     );
 
 
-  sheetSorteios
-    .getRange(linhaSorteio, 8)
+  sorteios
+    .getRange(
+      sorteio.linha,
+      10
+    )
     .setValue(
-      saldoPremiosAtual -
-      totalPremiosPagos
+      numeros.join(',')
     );
-
-
-  sheetSorteios
-    .getRange(linhaSorteio, 9)
-    .setValue('PAGO');
-
-
-  SpreadsheetApp.flush();
 
 
   return {
@@ -1160,595 +1836,611 @@ function processarSorteioCompleto(sorteioId) {
 
     sorteioId: sorteioId,
 
-    numeros: numerosSorteados,
+    numeros: numeros,
 
-    totalPremiosPagos:
-      totalPremiosPagos,
+    fundoPremios: fundoPremios,
 
-    fundoPremios:
-      fundoPremios
+    vencedores:
+      vencedores.length
+
   };
+
 }
 
 
-// ============================================================
-// GERAR COMBINAÇÃO ALEATÓRIA 1-55
-// ============================================================
+/* ==========================================================
+   CREDITAR PRÉMIO
+   ========================================================== */
 
-function gerarCombinacaoAleatoria() {
-
-  const nums =
-    new Set();
-
-
-  while (nums.size < 5) {
-
-    nums.add(
-      Math.floor(
-        Math.random() * 55
-      ) + 1
-    );
-  }
-
-
-  return [
-    ...nums
-  ].sort(
-    function(a, b) {
-      return a - b;
-    }
-  );
-}
-
-
-// ============================================================
-// CALCULAR CUSTO DOS PRÉMIOS
-// ============================================================
-
-function calcularCustoPremios(
-  numerosSorteados,
-  jogadas
+function creditarPremio(
+  usuarioId,
+  jogadaId,
+  sorteioId,
+  acertos,
+  valor
 ) {
 
-  let custo = 0;
+  const ss =
+    SpreadsheetApp.openById(
+      SPREADSHEET_ID
+    );
+
+
+  const usuarios =
+    ss.getSheetByName(
+      SHEETS.USUARIOS
+    );
+
+  const premios =
+    ss.getSheetByName(
+      SHEETS.PREMIOS
+    );
+
+  const movimentos =
+    ss.getSheetByName(
+      SHEETS.MOVIMENTOS
+    );
+
+
+  const dados =
+    usuarios
+      .getDataRange()
+      .getValues();
 
 
   for (
-    let i = 0;
-    i < jogadas.length;
+    let i = 1;
+    i < dados.length;
     i++
   ) {
 
-    const acertos =
-      jogadas[i].numeros.filter(
-        function(n) {
-          return numerosSorteados.includes(n);
-        }
-      ).length;
-
-
     if (
-      acertos >= 1 &&
-      PREMIOS[acertos]
-    ) {
+      String(dados[i][0]) !==
+      String(usuarioId)
+    ) continue;
 
-      custo +=
-        PREMIOS[acertos];
-    }
+
+    const saldo =
+      Number(
+        dados[i][5]
+      ) || 0;
+
+
+    usuarios
+      .getRange(
+        i + 1,
+        6
+      )
+      .setValue(
+        saldo +
+        valor
+      );
+
+
+    const premioId =
+      'PRE-' +
+      Utilities
+        .getUuid()
+        .substring(0, 8)
+        .toUpperCase();
+
+
+    premios.appendRow([
+
+      premioId,
+
+      new Date(),
+
+      usuarioId,
+
+      jogadaId,
+
+      sorteioId,
+
+      acertos,
+
+      valor,
+
+      'CREDITADO'
+
+    ]);
+
+
+    movimentos.appendRow([
+
+      'MOV-' +
+      Utilities
+        .getUuid()
+        .substring(0, 8)
+        .toUpperCase(),
+
+      new Date(),
+
+      usuarioId,
+
+      'PREMIO',
+
+      '',
+
+      valor,
+
+      'CONFIRMADO',
+
+      premioId,
+
+      'SORTEIO'
+
+    ]);
+
+
+    return true;
+
   }
 
 
-  return custo;
+  return false;
+
 }
 
 
-// ============================================================
-// COMBINAÇÃO NÃO APOSTADA
-// ============================================================
+/* ==========================================================
+   RESULTADO
+   ========================================================== */
 
-function gerarCombinacaoNaoApostada(
-  todosNumerosApostados
-) {
+function obterUltimoResultado() {
 
-  const naoApostados = [];
-
-
-  for (
-    let n = 1;
-    n <= 55;
-    n++
-  ) {
-
-    if (
-      !todosNumerosApostados.has(n)
-    ) {
-
-      naoApostados.push(n);
-    }
-  }
-
-
-  if (naoApostados.length >= 5) {
-
-    for (
-      let i = naoApostados.length - 1;
-      i > 0;
-      i--
-    ) {
-
-      const j =
-        Math.floor(
-          Math.random() * (i + 1)
-        );
-
-
-      [
-        naoApostados[i],
-        naoApostados[j]
-      ] = [
-        naoApostados[j],
-        naoApostados[i]
-      ];
-    }
-
-
-    return naoApostados
-      .slice(0, 5)
-      .sort(
-        function(a, b) {
-          return a - b;
-        }
-      );
-  }
-
-
-  return gerarCombinacaoAleatoria();
-}
-
-
-// ============================================================
-// SORTEIO CONDICIONADO
-// ============================================================
-
-function sorteioCondicionado(
-  jogadas,
-  fundoPremios,
-  todosNumerosApostados
-) {
-
-  const TENTATIVAS = 3000;
-
-  const validas = [];
-
-  const custoZero = [];
-
-
-  for (
-    let t = 0;
-    t < TENTATIVAS;
-    t++
-  ) {
-
-    const nums =
-      gerarCombinacaoAleatoria();
-
-
-    const custo =
-      calcularCustoPremios(
-        nums,
-        jogadas
-      );
-
-
-    if (custo === 0) {
-
-      custoZero.push(nums);
-
-    } else if (
-      custo <= fundoPremios
-    ) {
-
-      validas.push({
-        nums: nums,
-        custo: custo
-      });
-    }
-  }
-
-
-  if (validas.length > 0) {
-
-    const idx =
-      Math.floor(
-        Math.random() *
-        validas.length
-      );
-
-
-    return validas[idx].nums;
-  }
-
-
-  if (custoZero.length > 0) {
-
-    const idx =
-      Math.floor(
-        Math.random() *
-        custoZero.length
-      );
-
-
-    return custoZero[idx];
-  }
-
-
-  return gerarCombinacaoNaoApostada(
-    todosNumerosApostados
-  );
-}
-
-
-// ============================================================
-// CORS
-// ============================================================
-
-function doOptions(e) {
-
-  return ContentService
-    .createTextOutput('')
-    .setMimeType(
-      ContentService.MimeType.TEXT
+  const ss =
+    SpreadsheetApp.openById(
+      SPREADSHEET_ID
     );
-}
+
+  const sheet =
+    ss.getSheetByName(
+      SHEETS.RESULTADOS
+    );
 
 
-// ============================================================
-// DO GET
-// ============================================================
-
-function doGet(e) {
-
-  const action =
-    e &&
-    e.parameter
-      ? e.parameter.action
-      : '';
+  const dados =
+    sheet
+      .getDataRange()
+      .getValues();
 
 
-  try {
+  if (
+    dados.length <= 1
+  ) {
 
-    switch (action) {
+    return {
 
-      case 'config':
+      success: false
 
-        return json({
+    };
 
-          success: true,
-
-          jogo: 'SORTEMZ',
-
-          modalidade: '5/55',
-
-          sorteios:
-            HORARIOS_SORTEIO,
-
-          minutosFechamento:
-            MINUTOS_FECHAMENTO_ANTES,
-
-          premios:
-            PREMIOS
-        });
-
-
-      case 'sorteios':
-
-        return json(
-          obterSorteiosPublicos()
-        );
-
-
-      case 'sorteiosAbertos':
-
-        return json(
-          obterSorteiosAbertos()
-        );
-
-
-      case 'resultado':
-
-        return json(
-          obterUltimoResultado()
-        );
-
-
-      case 'resultadoSorteio':
-
-        return json(
-          obterResultadoSorteio(
-            e.parameter.sorteioId
-          )
-        );
-
-
-      case 'usuario':
-
-        return json(
-          obterUsuario(
-            e.parameter.id
-          )
-        );
-
-
-      case 'minhasJogadas':
-
-        return json(
-          obterJogadasUsuario(
-            e.parameter.id
-          )
-        );
-
-
-      case 'meusPremios':
-
-        return json(
-          obterPremiosUsuario(
-            e.parameter.id
-          )
-        );
-
-
-      case 'meusLevantamentos':
-
-        return json(
-          obterLevantamentosUsuario(
-            e.parameter.id
-          )
-        );
-
-
-      case 'levantamentosPendentes':
-
-        if (
-          e.parameter.adminKey !==
-          ADMIN_SECRET_KEY
-        ) {
-
-          throw new Error(
-            'Acesso não autorizado.'
-          );
-        }
-
-
-        return json(
-          obterLevantamentosPendentes()
-        );
-
-
-      default:
-
-        return json({
-
-          success: true,
-
-          app: 'SORTEMZ',
-
-          status: 'online'
-        });
-    }
-
-
-  } catch (err) {
-
-    return json({
-
-      success: false,
-
-      error: err.message
-    });
   }
-}
 
 
-// ============================================================
-// DO POST
-// ============================================================
-
-function doPost(e) {
-
-  try {
-
-    let data = {};
+  const linha =
+    dados[dados.length - 1];
 
 
-    if (
-      e.postData &&
-      e.postData.contents &&
-      e.postData.contents
-        .trim()
-        .startsWith('{')
-    ) {
+  return {
 
-      try {
+    success: true,
 
-        data =
-          JSON.parse(
-            e.postData.contents
-          );
+    resultado: {
 
-      } catch (erro) {
+      sorteioId:
+        linha[1],
 
-        data = {};
-      }
-    }
+      data:
+        linha[2],
 
+      hora:
+        linha[3],
 
-    if (
-      Object.keys(data).length === 0
-    ) {
-
-      data =
-        e.parameter || {};
-    }
-
-
-    if (
-      data.numeros &&
-      typeof data.numeros === 'string'
-    ) {
-
-      try {
-
-        data.numeros =
-          JSON.parse(
-            data.numeros
-          );
-
-      } catch (erro) {
-
-        data.numeros =
-          data.numeros
-            .split(',')
-            .map(Number);
-      }
-    }
-
-
-    const action =
-      data.action || '';
-
-
-    // WEBHOOK NETSHOP
-
-    if (
-      data.event &&
-      data.event.startsWith('charge.')
-    ) {
-
-      return json(
-        processarWebhookNetshop(
-          data
+      numeros:
+        normalizarNumeros(
+          linha[4]
         )
-      );
+
     }
 
+  };
 
-    switch (action) {
-
-      case 'registarUsuario':
-
-        return json(
-          registarUsuario(data)
-        );
-
-
-      case 'registarJogada':
-
-        return json(
-          registarJogada(data)
-        );
-
-
-      case 'solicitarLevantamento':
-
-        return json(
-          solicitarLevantamento(data)
-        );
-
-
-      case 'aprovarLevantamento':
-
-        if (
-          data.adminKey !==
-          ADMIN_SECRET_KEY
-        ) {
-
-          throw new Error(
-            'Acesso não autorizado.'
-          );
-        }
-
-
-        return json(
-          aprovarLevantamento(data)
-        );
-
-
-      case 'rejeitarLevantamento':
-
-        if (
-          data.adminKey !==
-          ADMIN_SECRET_KEY
-        ) {
-
-          throw new Error(
-            'Acesso não autorizado.'
-          );
-        }
-
-
-        return json(
-          rejeitarLevantamento(data)
-        );
-
-
-      case 'depositoNetshop':
-
-        return json(
-          processarDepositoNetshop(
-            data.referencia,
-            data.telefone,
-            data.valor,
-            data.metodo
-          )
-        );
-
-
-      case 'sortearManual':
-
-        if (
-          data.adminKey !==
-          ADMIN_SECRET_KEY
-        ) {
-
-          throw new Error(
-            'Acesso não autorizado.'
-          );
-        }
-
-
-        return json(
-          realizarSorteioManual(data)
-        );
-
-
-      default:
-
-        return json({
-
-          success: false,
-
-          error:
-            'Acao não reconhecida: ' +
-            action
-        });
-    }
-
-
-  } catch (err) {
-
-    return json({
-
-      success: false,
-
-      error: err.message
-    });
-  }
 }
 
 
-// ============================================================
-// NETSHOP - DEPÓSITO
-// ============================================================
+/* ==========================================================
+   MINHAS JOGADAS
+   ========================================================== */
+
+function obterMinhasJogadas(
+  usuarioId
+) {
+
+  const ss =
+    SpreadsheetApp.openById(
+      SPREADSHEET_ID
+    );
+
+  const sheet =
+    ss.getSheetByName(
+      SHEETS.JOGADAS
+    );
+
+
+  const dados =
+    sheet
+      .getDataRange()
+      .getValues();
+
+
+  const lista = [];
+
+
+  for (
+    let i = dados.length - 1;
+    i >= 1;
+    i--
+  ) {
+
+    if (
+      String(dados[i][2]) ===
+      String(usuarioId)
+    ) {
+
+      lista.push({
+
+        id: dados[i][0],
+
+        data:
+          formatarData(
+            dados[i][1]
+          ),
+
+        sorteioId:
+          dados[i][4],
+
+        numeros:
+          normalizarNumeros(
+            dados[i][5]
+          ),
+
+        valor:
+          Number(
+            dados[i][6]
+          ),
+
+        status:
+          dados[i][7],
+
+        acertos:
+          dados[i][8],
+
+        premio:
+          Number(
+            dados[i][9]
+          ) || 0
+
+      });
+
+    }
+
+  }
+
+
+  return {
+
+    success: true,
+
+    jogadas: lista
+
+  };
+
+}
+
+
+/* ==========================================================
+   MEUS PRÉMIOS
+   ========================================================== */
+
+function obterMeusPremios(
+  usuarioId
+) {
+
+  const ss =
+    SpreadsheetApp.openById(
+      SPREADSHEETS.PREMIOS
+    );
+
+}
+
+
+/*
+ * CORREÇÃO:
+ * função separada para evitar
+ * erro de referência.
+ */
+
+function obterMeusPremios(
+  usuarioId
+) {
+
+  const ss =
+    SpreadsheetApp.openById(
+      SPREADSHEET_ID
+    );
+
+  const sheet =
+    ss.getSheetByName(
+      SHEETS.PREMIOS
+    );
+
+
+  const dados =
+    sheet
+      .getDataRange()
+      .getValues();
+
+
+  const lista = [];
+
+
+  for (
+    let i = dados.length - 1;
+    i >= 1;
+    i--
+  ) {
+
+    if (
+      String(dados[i][2]) ===
+      String(usuarioId)
+    ) {
+
+      lista.push({
+
+        sorteioId:
+          dados[i][4],
+
+        acertos:
+          dados[i][5],
+
+        premio:
+          Number(
+            dados[i][6]
+          ) || 0,
+
+        data:
+          formatarData(
+            dados[i][1]
+          )
+
+      });
+
+    }
+
+  }
+
+
+  return {
+
+    success: true,
+
+    premios: lista
+
+  };
+
+}
+
+
+/* ==========================================================
+   LEVANTAMENTOS
+   ========================================================== */
+
+function solicitarLevantamento(
+  usuarioId,
+  valor,
+  telefone
+) {
+
+  valor =
+    Number(valor);
+
+
+  if (
+    valor < 50
+  ) {
+
+    throw new Error(
+      'Valor mínimo para levantamento: 50 MZN.'
+    );
+
+  }
+
+
+  const ss =
+    SpreadsheetApp.openById(
+      SPREADSHEET_ID
+    );
+
+
+  const usuarios =
+    ss.getSheetByName(
+      SHEETS.USUARIOS
+    );
+
+  const levantamentos =
+    ss.getSheetByName(
+      SHEETS.LEVANTAMENTOS
+    );
+
+
+  const dados =
+    usuarios
+      .getDataRange()
+      .getValues();
+
+
+  for (
+    let i = 1;
+    i < dados.length;
+    i++
+  ) {
+
+    if (
+      String(dados[i][0]) !==
+      String(usuarioId)
+    ) continue;
+
+
+    const saldo =
+      Number(
+        dados[i][5]
+      ) || 0;
+
+
+    if (
+      saldo < valor
+    ) {
+
+      throw new Error(
+        'Saldo insuficiente.'
+      );
+
+    }
+
+
+    usuarios
+      .getRange(
+        i + 1,
+        6
+      )
+      .setValue(
+        saldo -
+        valor
+      );
+
+
+    const id =
+      'LEV-' +
+      Utilities
+        .getUuid()
+        .substring(0, 8)
+        .toUpperCase();
+
+
+    levantamentos.appendRow([
+
+      id,
+
+      new Date(),
+
+      usuarioId,
+
+      normalizarTelefone(
+        telefone
+      ),
+
+      valor,
+
+      'PENDENTE'
+
+    ]);
+
+
+    return {
+
+      success: true,
+
+      novoSaldo:
+        saldo -
+        valor,
+
+      id: id
+
+    };
+
+  }
+
+
+  throw new Error(
+    'Utilizador não encontrado.'
+  );
+
+}
+
+
+function obterMeusLevantamentos(
+  usuarioId
+) {
+
+  const ss =
+    SpreadsheetApp.openById(
+      SPREADSHEET_ID
+    );
+
+  const sheet =
+    ss.getSheetByName(
+      SHEETS.LEVANTAMENTOS
+    );
+
+
+  const dados =
+    sheet
+      .getDataRange()
+      .getValues();
+
+
+  const lista = [];
+
+
+  for (
+    let i = dados.length - 1;
+    i >= 1;
+    i--
+  ) {
+
+    if (
+      String(dados[i][2]) ===
+      String(usuarioId)
+    ) {
+
+      lista.push({
+
+        data:
+          formatarData(
+            dados[i][1]
+          ),
+
+        valor:
+          Number(
+            dados[i][4]
+          ),
+
+        status:
+          dados[i][5]
+
+      });
+
+    }
+
+  }
+
+
+  return {
+
+    success: true,
+
+    levantamentos: lista
+
+  };
+
+}
+
+
+/* ==========================================================
+   NETSHOP — DEPÓSITO
+   ========================================================== */
 
 function processarDepositoNetshop(
   refCliente,
@@ -1759,31 +2451,25 @@ function processarDepositoNetshop(
 
   try {
 
-    if (!refCliente) {
-
+    if (!refCliente)
       throw new Error(
         'Referencia obrigatória.'
       );
-    }
 
 
     if (
       !valor ||
       Number(valor) <= 0
-    ) {
-
+    )
       throw new Error(
         'Valor deve ser maior que zero.'
       );
-    }
 
 
-    if (!telefone) {
-
+    if (!telefone)
       throw new Error(
         'Telefone obrigatório.'
       );
-    }
 
 
     let telFormatado =
@@ -1801,13 +2487,17 @@ function processarDepositoNetshop(
       ) {
 
         telFormatado =
-          '+' + telFormatado;
+          '+' +
+          telFormatado;
 
       } else {
 
         telFormatado =
-          '+258' + telFormatado;
+          '+258' +
+          telFormatado;
+
       }
+
     }
 
 
@@ -1835,7 +2525,9 @@ function processarDepositoNetshop(
 
         origem:
           'SORTEMZ_APP'
+
       }
+
     };
 
 
@@ -1855,6 +2547,7 @@ function processarDepositoNetshop(
 
         'X-Wallet-ID':
           NETSHOP_CONFIG.WALLET_ID
+
       },
 
       payload:
@@ -1862,6 +2555,7 @@ function processarDepositoNetshop(
 
       muteHttpExceptions:
         true
+
     };
 
 
@@ -1879,12 +2573,6 @@ function processarDepositoNetshop(
 
     const responseText =
       response.getContentText();
-
-
-    Logger.log(
-      'NetShop Status: ' +
-      statusCode
-    );
 
 
     if (
@@ -1919,6 +2607,7 @@ function processarDepositoNetshop(
             200
           ) ||
           erroMsg;
+
       }
 
 
@@ -1931,7 +2620,9 @@ function processarDepositoNetshop(
 
         httpStatus:
           statusCode
+
       };
+
     }
 
 
@@ -1960,6 +2651,7 @@ function processarDepositoNetshop(
           refCliente +
           ' não encontrada.'
         );
+
       }
 
 
@@ -1967,11 +2659,14 @@ function processarDepositoNetshop(
 
         success: true,
 
-        status: 'paid',
+        status:
+          'paid',
 
         message:
           'Pagamento efetuado com sucesso!'
+
       };
+
     }
 
 
@@ -1984,14 +2679,17 @@ function processarDepositoNetshop(
 
         success: true,
 
-        status: 'pending',
+        status:
+          'pending',
 
         charge_id:
           resJson.id,
 
         message:
           'Confirme a transação no seu celular.'
+
       };
+
     }
 
 
@@ -2008,7 +2706,9 @@ function processarDepositoNetshop(
           resJson.failed_reason ||
           resJson.message ||
           'Pagamento recusado.'
+
       };
+
     }
 
 
@@ -2022,6 +2722,7 @@ function processarDepositoNetshop(
 
       status:
         resJson.status
+
     };
 
 
@@ -2040,16 +2741,21 @@ function processarDepositoNetshop(
       message:
         'Erro: ' +
         error.toString()
+
     };
+
   }
+
 }
 
 
-// ============================================================
-// WEBHOOK NETSHOP
-// ============================================================
+/* ==========================================================
+   WEBHOOK NETSHOP
+   ========================================================== */
 
-function processarWebhookNetshop(data) {
+function processarWebhookNetshop(
+  data
+) {
 
   try {
 
@@ -2067,8 +2773,10 @@ function processarWebhookNetshop(data) {
 
 
     if (
-      evento !== 'charge.paid' &&
-      status !== 'paid'
+      evento !==
+        'charge.paid' &&
+      status !==
+        'paid'
     ) {
 
       return {
@@ -2078,7 +2786,9 @@ function processarWebhookNetshop(data) {
         message:
           'Evento ignorado: ' +
           evento
+
       };
+
     }
 
 
@@ -2119,30 +2829,24 @@ function processarWebhookNetshop(data) {
       ).toString();
 
 
-    if (!referencia) {
-
+    if (!referencia)
       throw new Error(
         'Referencia obrigatória no webhook.'
       );
-    }
 
 
-    if (!valor || valor <= 0) {
-
+    if (!valor || valor <= 0)
       throw new Error(
         'Valor inválido no webhook.'
       );
-    }
 
 
     if (
       !referencia.startsWith('SMZ')
-    ) {
-
+    )
       throw new Error(
         'Referencia inválida.'
       );
-    }
 
 
     const ss =
@@ -2163,6 +2867,10 @@ function processarWebhookNetshop(data) {
         .getValues();
 
 
+    /*
+     * EVITAR DUPLICAÇÃO
+     */
+
     for (
       let i = 1;
       i < movs.length;
@@ -2170,7 +2878,9 @@ function processarWebhookNetshop(data) {
     ) {
 
       if (
-        String(movs[i][7] || '') ===
+        String(
+          movs[i][7] || ''
+        ) ===
         transacaoId
       ) {
 
@@ -2182,8 +2892,11 @@ function processarWebhookNetshop(data) {
             'Transação já processada.',
 
           duplicado: true
+
         };
+
       }
+
     }
 
 
@@ -2194,14 +2907,12 @@ function processarWebhookNetshop(data) {
       );
 
 
-    if (!resultado.encontrado) {
-
+    if (!resultado.encontrado)
       throw new Error(
         'Referencia ' +
         referencia +
         ' não encontrada.'
       );
-    }
 
 
     const movId =
@@ -2231,6 +2942,7 @@ function processarWebhookNetshop(data) {
       transacaoId,
 
       'Netshop'
+
     ]);
 
 
@@ -2246,6 +2958,7 @@ function processarWebhookNetshop(data) {
 
       transacaoId:
         transacaoId
+
     };
 
 
@@ -2263,14 +2976,17 @@ function processarWebhookNetshop(data) {
 
       message:
         err.toString()
+
     };
+
   }
+
 }
 
 
-// ============================================================
-// CREDITAR SALDO
-// ============================================================
+/* ==========================================================
+   CREDITAR SALDO POR REFERÊNCIA
+   ========================================================== */
 
 function creditarSaldoPorReferencia(
   refCliente,
@@ -2303,7 +3019,7 @@ function creditarSaldoPorReferencia(
 
     const refPlanilha =
       String(
-        dados[i][3] || ''
+        dados[i][4] || ''
       )
       .trim()
       .toUpperCase();
@@ -2318,12 +3034,15 @@ function creditarSaldoPorReferencia(
 
       const saldoAtual =
         Number(
-          dados[i][4]
+          dados[i][5]
         ) || 0;
 
 
       abaUsuarios
-        .getRange(i + 1, 5)
+        .getRange(
+          i + 1,
+          6
+        )
         .setValue(
           saldoAtual +
           Number(valor)
@@ -2339,1420 +3058,341 @@ function creditarSaldoPorReferencia(
 
         saldoAnterior:
           saldoAtual
+
       };
+
     }
+
   }
 
 
   return {
+
     encontrado: false
+
   };
+
 }
 
 
-// ============================================================
-// USUÁRIOS
-// ============================================================
+/* ==========================================================
+   CONFIG API
+   ========================================================== */
 
-function registarUsuario(data) {
-
-  if (
-    !data.nome ||
-    !data.telefone
-  ) {
-
-    throw new Error(
-      'Nome e telefone obrigatórios.'
-    );
-  }
-
-
-  const ss =
-    SpreadsheetApp.openById(
-      SPREADSHEET_ID
-    );
-
-
-  const sheet =
-    ss.getSheetByName(
-      SHEETS.USUARIOS
-    );
-
-
-  const dados =
-    sheet
-      .getDataRange()
-      .getValues();
-
-
-  const telNormalizado =
-    normalizarTelefone(
-      data.telefone
-    );
-
-
-  if (
-    telNormalizado.length < 9
-  ) {
-
-    throw new Error(
-      'Telefone inválido.'
-    );
-  }
-
-
-  for (
-    let i = 1;
-    i < dados.length;
-    i++
-  ) {
-
-    const telPlanilha =
-      normalizarTelefone(
-        dados[i][2]
-      );
-
-
-    if (
-      telPlanilha ===
-      telNormalizado ||
-      telPlanilha.endsWith(
-        telNormalizado
-      ) ||
-      telNormalizado.endsWith(
-        telPlanilha
-      )
-    ) {
-
-      if (
-        data.nome &&
-        data.nome !==
-        dados[i][1]
-      ) {
-
-        sheet
-          .getRange(i + 1, 2)
-          .setValue(
-            data.nome
-          );
-      }
-
-
-      return {
-
-        success: true,
-
-        id:
-          dados[i][0],
-
-        nome:
-          data.nome ||
-          dados[i][1],
-
-        telefone:
-          dados[i][2],
-
-        referencia:
-          dados[i][3],
-
-        saldo:
-          Number(
-            dados[i][4] || 0
-          ),
-
-        existente:
-          true
-      };
-    }
-  }
-
-
-  const id =
-    'USR-' +
-    Utilities
-      .getUuid()
-      .substring(0, 8)
-      .toUpperCase();
-
-
-  const referencia =
-    'SMZ' +
-    Math.floor(
-      100000 +
-      Math.random() *
-      900000
-    );
-
-
-  sheet.appendRow([
-
-    id,
-
-    data.nome,
-
-    data.telefone,
-
-    referencia,
-
-    0,
-
-    new Date(),
-
-    'ATIVO'
-  ]);
-
+function obterConfig() {
 
   return {
 
     success: true,
 
-    id:
+    jogo: CONFIG.JOGO,
 
-      id,
-
-    nome:
-
-      data.nome,
-
-    telefone:
-
-      data.telefone,
-
-    referencia:
-
-      referencia,
-
-    saldo:
-
-      0
-  };
-}
-
-
-function obterUsuario(id) {
-
-  if (!id) {
-
-    return {
-
-      success: false,
-
-      error:
-        'ID obrigatório.'
-    };
-  }
-
-
-  const ss =
-    SpreadsheetApp.openById(
-      SPREADSHEET_ID
-    );
-
-
-  const sheet =
-    ss.getSheetByName(
-      SHEETS.USUARIOS
-    );
-
-
-  const dados =
-    sheet
-      .getDataRange()
-      .getValues();
-
-
-  for (
-    let i = 1;
-    i < dados.length;
-    i++
-  ) {
-
-    if (
-      String(dados[i][0]) ===
-      String(id)
-    ) {
-
-      return {
-
-        success: true,
-
-        usuario: {
-
-          id:
-            dados[i][0],
-
-          nome:
-            dados[i][1],
-
-          telefone:
-            dados[i][2],
-
-          referencia:
-            dados[i][3],
-
-          saldo:
-            Number(
-              dados[i][4] || 0
-            ),
-
-          status:
-            dados[i][6]
-        }
-      };
-    }
-  }
-
-
-  return {
-
-    success: false,
-
-    error:
-      'Usuário não encontrado.'
-  };
-}
-
-
-// ============================================================
-// JOGADAS
-// ============================================================
-
-function registarJogada(data) {
-
-  if (!data.usuarioId) {
-
-    throw new Error(
-      'Usuário não informado.'
-    );
-  }
-
-
-  if (!data.sorteioId) {
-
-    throw new Error(
-      'Sorteio não informado.'
-    );
-  }
-
-
-  if (!data.numeros) {
-
-    throw new Error(
-      'Números não informados.'
-    );
-  }
-
-
-  let numeros =
-    data.numeros;
-
-
-  if (
-    typeof numeros ===
-    'string'
-  ) {
-
-    numeros =
-      numeros
-        .split(',')
-        .map(Number);
-  }
-
-
-  if (
-    !Array.isArray(numeros) ||
-    numeros.length !== 5
-  ) {
-
-    throw new Error(
-      'Selecione exatamente 5 números.'
-    );
-  }
-
-
-  const unicos =
-    [...new Set(numeros)];
-
-
-  if (
-    unicos.length !== 5
-  ) {
-
-    throw new Error(
-      'Números não podem repetir.'
-    );
-  }
-
-
-  numeros.forEach(
-    function(n) {
-
-      if (
-        n < 1 ||
-        n > 55
-      ) {
-
-        throw new Error(
-          'Números entre 1 e 55.'
-        );
-      }
-    }
-  );
-
-
-  const sorteio =
-    obterSorteioPorIdInterno(
-      data.sorteioId
-    );
-
-
-  if (!sorteio) {
-
-    throw new Error(
-      'Sorteio não encontrado.'
-    );
-  }
-
-
-  if (
-    normalizarStatus(
-      sorteio.status
-    ) !== 'ABERTO'
-  ) {
-
-    throw new Error(
-      'Sorteio fechado.'
-    );
-  }
-
-
-  // Verificação adicional do horário
-  const agora =
-    new Date();
-
-
-  const dataHoraSorteio =
-    criarDataHora(
-      sorteio.data,
-      sorteio.hora
-    );
-
-
-  if (!dataHoraSorteio) {
-
-    throw new Error(
-      'Data ou hora do sorteio inválida.'
-    );
-  }
-
-
-  const fechamento =
-    new Date(
-      dataHoraSorteio.getTime() -
-      MINUTOS_FECHAMENTO_ANTES *
-      60000
-    );
-
-
-  if (agora >= fechamento) {
-
-    throw new Error(
-      'As apostas para este sorteio já estão fechadas.'
-    );
-  }
-
-
-  const ss =
-    SpreadsheetApp.openById(
-      SPREADSHEET_ID
-    );
-
-
-  const sheetUsuarios =
-    ss.getSheetByName(
-      SHEETS.USUARIOS
-    );
-
-
-  const dadosUsuarios =
-    sheetUsuarios
-      .getDataRange()
-      .getValues();
-
-
-  let linhaUsuario = -1;
-
-  let saldoAtual = 0;
-
-
-  for (
-    let i = 1;
-    i < dadosUsuarios.length;
-    i++
-  ) {
-
-    if (
-      String(
-        dadosUsuarios[i][0]
-      ) ===
-      String(
-        data.usuarioId
-      )
-    ) {
-
-      linhaUsuario =
-        i + 1;
-
-      saldoAtual =
-        Number(
-          dadosUsuarios[i][4] || 0
-        );
-
-      break;
-    }
-  }
-
-
-  if (
-    linhaUsuario === -1
-  ) {
-
-    throw new Error(
-      'Usuário não encontrado.'
-    );
-  }
-
-
-  const valor =
-    Number(
-      data.valor || 10
-    );
-
-
-  if (
-    saldoAtual < valor
-  ) {
-
-    throw new Error(
-      'Saldo insuficiente.'
-    );
-  }
-
-
-  const sheetJogadas =
-    ss.getSheetByName(
-      SHEETS.JOGADAS
-    );
-
-
-  const id =
-    'JOG-' +
-    Utilities
-      .getUuid()
-      .substring(0, 8)
-      .toUpperCase();
-
-
-  numeros =
-    numeros.sort(
-      function(a, b) {
-        return a - b;
-      }
-    );
-
-
-  sheetJogadas.appendRow([
-
-    id,
-
-    data.usuarioId,
-
-    data.referencia || '',
-
-    sorteio.id,
-
-    new Date(),
-
-    Utilities.formatDate(
-      new Date(),
-      Session.getScriptTimeZone(),
-      'HH:mm:ss'
-    ),
-
-    numeros.join(','),
-
-    valor,
-
-    'CONFIRMADA'
-  ]);
-
-
-  const novoSaldo =
-    saldoAtual - valor;
-
-
-  sheetUsuarios
-    .getRange(
-      linhaUsuario,
-      5
-    )
-    .setValue(
-      novoSaldo
-    );
-
-
-  const sheetMovimentos =
-    ss.getSheetByName(
-      SHEETS.MOVIMENTOS
-    );
-
-
-  sheetMovimentos.appendRow([
-
-    'MOV-' +
-    Utilities
-      .getUuid()
-      .substring(0, 8)
-      .toUpperCase(),
-
-    new Date(),
-
-    data.usuarioId,
-
-    'APOSTA',
-
-    data.referencia || '',
-
-    -valor,
-
-    'CONFIRMADO',
-
-    id,
-
-    'Sistema'
-  ]);
-
-
-  atualizarCofre(
-    sorteio.id,
-    valor
-  );
-
-
-  SpreadsheetApp.flush();
-
-
-  return {
-
-    success: true,
-
-    jogadaId:
-      id,
-
-    sorteioId:
-      sorteio.id,
+    valorAposta:
+      CONFIG.VALOR_APOSTA,
 
     numeros:
-      numeros,
+      CONFIG.NUMEROS,
 
-    saldoRestante:
-      novoSaldo
+    escolher:
+      CONFIG.ESCOLHER,
+
+    minutosAbertura:
+      CONFIG.MINUTOS_ABERTURA,
+
+    percentualCasa:
+      CONFIG.PERCENTUAL_CASA * 100,
+
+    percentualPremios:
+      CONFIG.PERCENTUAL_PREMIOS * 100
+
   };
+
 }
 
 
-function obterJogadasUsuario(
-  usuarioId
+/* ==========================================================
+   UTILITÁRIOS
+   ========================================================== */
+
+function normalizarTelefone(
+  telefone
 ) {
 
-  if (!usuarioId) {
-
-    return {
-
-      success: false,
-
-      error:
-        'UsuarioId obrigatório.'
-    };
-  }
-
-
-  const ss =
-    SpreadsheetApp.openById(
-      SPREADSHEET_ID
-    );
-
-
-  const sheet =
-    ss.getSheetByName(
-      SHEETS.JOGADAS
-    );
-
-
-  const dados =
-    sheet
-      .getDataRange()
-      .getValues();
-
-
-  const jogadas = [];
-
-
-  for (
-    let i = 1;
-    i < dados.length;
-    i++
-  ) {
-
-    if (
-      String(dados[i][1]) ===
-      String(usuarioId)
-    ) {
-
-      jogadas.push({
-
-        id:
-          dados[i][0],
-
-        sorteioId:
-          dados[i][3],
-
-        data:
-          dataParaString(
-            dados[i][4]
-          ),
-
-        hora:
-          normalizarHora(
-            dados[i][5]
-          ),
-
-        numeros:
-          String(
-            dados[i][6] || ''
-          )
-          .split(',')
-          .map(Number),
-
-        valor:
-          dados[i][7],
-
-        status:
-          dados[i][8]
-      });
-    }
-  }
-
-
-  return {
-
-    success: true,
-
-    jogadas:
-      jogadas.reverse()
-  };
-}
-
-
-// ============================================================
-// SORTEIOS
-// ============================================================
-
-function obterSorteioPorIdInterno(
-  id
-) {
-
-  const ss =
-    SpreadsheetApp.openById(
-      SPREADSHEET_ID
-    );
-
-
-  const sheet =
-    ss.getSheetByName(
-      SHEETS.SORTEIOS
-    );
-
-
-  if (!sheet) return null;
-
-
-  const dados =
-    sheet
-      .getDataRange()
-      .getValues();
-
-
-  for (
-    let i = 1;
-    i < dados.length;
-    i++
-  ) {
-
-    if (
-      String(
-        dados[i][0]
-      ).trim() ===
-      String(id).trim()
-    ) {
-
-      return {
-
-        id:
-          dados[i][0],
-
-        data:
-          dados[i][1],
-
-        hora:
-          dados[i][2],
-
-        status:
-          dados[i][8]
-      };
-    }
-  }
-
-
-  return null;
-}
-
-
-// ============================================================
-// SORTEIOS PÚBLICOS
-// ============================================================
-
-function obterSorteiosPublicos() {
-
-  const ss =
-    SpreadsheetApp.openById(
-      SPREADSHEET_ID
-    );
-
-
-  const sheet =
-    ss.getSheetByName(
-      SHEETS.SORTEIOS
-    );
-
-
-  if (!sheet) return [];
-
-
-  const dados =
-    sheet
-      .getDataRange()
-      .getValues();
-
-
-  return dados
-    .slice(1)
-    .filter(function(row) {
-
-      return row[0];
-
-    })
-    .map(function(row) {
-
-      return {
-
-        id:
-          row[0],
-
-        data:
-          dataParaString(
-            row[1]
-          ),
-
-        hora:
-          normalizarHora(
-            row[2]
-          ),
-
-        status:
-          normalizarStatus(
-            row[8]
-          )
-      };
-    });
-}
-
-
-// ============================================================
-// SORTEIOS ABERTOS
-// ============================================================
-
-function obterSorteiosAbertos() {
-
-  const sorteios =
-    obterSorteiosPublicos();
-
-
-  const agora =
-    new Date();
-
-
-  const abertos =
-    sorteios
-      .filter(function(s) {
-
-        if (
-          normalizarStatus(
-            s.status
-          ) !== 'ABERTO'
-        ) {
-
-          return false;
-        }
-
-
-        const dataHora =
-          criarDataHora(
-            s.data,
-            s.hora
-          );
-
-
-        if (!dataHora) {
-
-          return false;
-        }
-
-
-        const fechamento =
-          new Date(
-            dataHora.getTime() -
-            MINUTOS_FECHAMENTO_ANTES *
-            60000
-          );
-
-
-        return agora < fechamento;
-
-      })
-      .map(function(s) {
-
-        const dataHora =
-          criarDataHora(
-            s.data,
-            s.hora
-          );
-
-
-        const fechamento =
-          new Date(
-            dataHora.getTime() -
-            MINUTOS_FECHAMENTO_ANTES *
-            60000
-          );
-
-
-        return {
-
-          id:
-            s.id,
-
-          data:
-            s.data,
-
-          hora:
-            s.hora,
-
-          status:
-            'ABERTO',
-
-          fechamento:
-            Utilities.formatDate(
-              fechamento,
-              Session.getScriptTimeZone(),
-              'yyyy-MM-dd HH:mm'
-            )
-        };
-      });
-
-
-  return {
-
-    success: true,
-
-    sorteios:
-      abertos,
-
-    total:
-      abertos.length
-  };
-}
-
-
-// ============================================================
-// RESULTADO
-// ============================================================
-
-function obterUltimoResultado() {
-
-  const ss =
-    SpreadsheetApp.openById(
-      SPREADSHEET_ID
-    );
-
-
-  const sheet =
-    ss.getSheetByName(
-      SHEETS.RESULTADOS
-    );
-
-
-  if (!sheet) {
-
-    return {
-
-      success: true,
-
-      resultado: null
-    };
-  }
-
-
-  const dados =
-    sheet
-      .getDataRange()
-      .getValues();
+  let t =
+    String(
+      telefone || ''
+    )
+    .trim()
+    .replace(/\D/g, '');
 
 
   if (
-    dados.length <= 1
+    t.startsWith('258') &&
+    t.length > 9
   ) {
 
-    return {
+    t =
+      t.substring(3);
 
-      success: true,
-
-      resultado: null
-    };
   }
 
 
-  const row =
-    dados[dados.length - 1];
+  return t;
 
-
-  return {
-
-    success: true,
-
-    resultado: {
-
-      sorteioId:
-        row[0],
-
-      data:
-        dataParaString(
-          row[1]
-        ),
-
-      hora:
-        normalizarHora(
-          row[2]
-        ),
-
-      numeros: [
-
-        Number(row[3]),
-
-        Number(row[4]),
-
-        Number(row[5]),
-
-        Number(row[6]),
-
-        Number(row[7])
-      ]
-    }
-  };
 }
 
 
-function obterResultadoSorteio(
-  sorteioId
+function normalizarNumeros(
+  numeros
 ) {
 
-  if (!sorteioId) {
-
-    return {
-
-      success: false,
-
-      error:
-        'SorteioId obrigatório.'
-    };
-  }
-
-
-  const ss =
-    SpreadsheetApp.openById(
-      SPREADSHEET_ID
-    );
-
-
-  const sheet =
-    ss.getSheetByName(
-      SHEETS.RESULTADOS
-    );
-
-
-  const dados =
-    sheet
-      .getDataRange()
-      .getValues();
-
-
-  for (
-    let i = 1;
-    i < dados.length;
-    i++
+  if (
+    Array.isArray(numeros)
   ) {
 
-    if (
-      String(
-        dados[i][0]
-      ).trim() ===
-      String(sorteioId).trim()
-    ) {
+    return numeros
+      .map(Number)
+      .filter(
+        n =>
+          Number.isInteger(n) &&
+          n >= 1 &&
+          n <= 55
+      )
+      .filter(
+        (n, i, arr) =>
+          arr.indexOf(n) === i
+      )
+      .sort(
+        (a, b) => a - b
+      );
 
-      return {
-
-        success: true,
-
-        resultado: {
-
-          sorteioId:
-            dados[i][0],
-
-          data:
-            dataParaString(
-              dados[i][1]
-            ),
-
-          hora:
-            normalizarHora(
-              dados[i][2]
-            ),
-
-          numeros: [
-
-            Number(dados[i][3]),
-
-            Number(dados[i][4]),
-
-            Number(dados[i][5]),
-
-            Number(dados[i][6]),
-
-            Number(dados[i][7])
-          ]
-        }
-      };
-    }
   }
 
 
-  return {
+  return String(
+    numeros || ''
+  )
+    .split(',')
+    .map(
+      x => Number(
+        String(x).trim()
+      )
+    )
+    .filter(
+      n =>
+        Number.isInteger(n) &&
+        n >= 1 &&
+        n <= 55
+    )
+    .filter(
+      (n, i, arr) =>
+        arr.indexOf(n) === i
+    )
+    .sort(
+      (a, b) => a - b
+    );
 
-    success: false,
-
-    error:
-      'Resultado não encontrado.'
-  };
 }
 
 
-// ============================================================
-// PRÉMIOS
-// ============================================================
-
-function obterPremiosUsuario(
-  usuarioId
+function calcularDataHora(
+  data,
+  hora
 ) {
 
-  if (!usuarioId) {
-
-    return {
-
-      success: false,
-
-      error:
-        'UsuarioId obrigatório.'
-    };
-  }
+  const partesData =
+    String(data)
+      .split('-')
+      .map(Number);
 
 
-  const ss =
-    SpreadsheetApp.openById(
-      SPREADSHEET_ID
-    );
+  const partesHora =
+    String(hora)
+      .split(':')
+      .map(Number);
 
 
-  const sheet =
-    ss.getSheetByName(
-      SHEETS.PREMIOS
-    );
+  return new Date(
 
+    partesData[0],
 
-  const dados =
-    sheet
-      .getDataRange()
-      .getValues();
+    partesData[1] - 1,
 
+    partesData[2],
 
-  const premios = [];
+    partesHora[0] || 0,
 
+    partesHora[1] || 0,
 
-  for (
-    let i = 1;
-    i < dados.length;
-    i++
-  ) {
+    0
 
-    if (
-      String(
-        dados[i][2]
-      ) ===
-      String(usuarioId)
-    ) {
+  );
 
-      premios.push({
-
-        id:
-          dados[i][0],
-
-        sorteioId:
-          dados[i][1],
-
-        acertos:
-          dados[i][3],
-
-        premio:
-          dados[i][5],
-
-        status:
-          dados[i][6],
-
-        data:
-          dados[i][7]
-      });
-    }
-  }
-
-
-  return {
-
-    success: true,
-
-    premios:
-      premios.reverse()
-  };
 }
 
 
-// ============================================================
-// LEVANTAMENTOS
-// ============================================================
-
-function solicitarLevantamento(
+function formatarDataHora(
   data
 ) {
 
-  if (!data.usuarioId) {
+  return Utilities.formatDate(
 
-    throw new Error(
-      'Usuário não informado.'
-    );
-  }
+    new Date(data),
 
+    Session.getScriptTimeZone(),
+
+    'yyyy-MM-dd HH:mm:ss'
+
+  );
+
+}
+
+
+function formatarData(
+  data
+) {
+
+  if (!data)
+    return '';
+
+
+  return Utilities.formatDate(
+
+    new Date(data),
+
+    Session.getScriptTimeZone(),
+
+    'dd/MM/yyyy HH:mm'
+
+  );
+
+}
+
+
+/* ==========================================================
+   WEBHOOK — INTERPRETAR PAYLOAD
+   ========================================================== */
+
+function interpretarWebhook(p) {
+
+  let data = p;
+
+
+  /*
+   * Caso a NetShop envie JSON
+   * dentro de um parâmetro.
+   */
 
   if (
-    !data.valor ||
-    Number(data.valor) <= 0
+    p &&
+    p.payload
   ) {
 
-    throw new Error(
-      'Valor obrigatório.'
-    );
-  }
+    try {
 
-
-  if (!data.telefone) {
-
-    throw new Error(
-      'Telefone M-Pesa obrigatório.'
-    );
-  }
-
-
-  const valor =
-    Number(data.valor);
-
-
-  const taxa = 0;
-
-
-  const valorLiquido =
-    valor - taxa;
-
-
-  const ss =
-    SpreadsheetApp.openById(
-      SPREADSHEET_ID
-    );
-
-
-  const sheetUsuarios =
-    ss.getSheetByName(
-      SHEETS.USUARIOS
-    );
-
-
-  const sheetLevantamentos =
-    ss.getSheetByName(
-      SHEETS.LEVANTAMENTOS
-    );
-
-
-  const dados =
-    sheetUsuarios
-      .getDataRange()
-      .getValues();
-
-
-  let linhaUsuario = -1;
-
-  let saldoAtual = 0;
-
-
-  for (
-    let i = 1;
-    i < dados.length;
-    i++
-  ) {
-
-    if (
-      String(
-        dados[i][0]
-      ) ===
-      String(
-        data.usuarioId
-      )
-    ) {
-
-      linhaUsuario =
-        i + 1;
-
-      saldoAtual =
-        Number(
-          dados[i][4] || 0
+      data =
+        JSON.parse(
+          p.payload
         );
 
-      break;
-    }
+    } catch (e) {}
+
   }
 
 
-  if (
-    linhaUsuario === -1
-  ) {
+  return data;
 
-    throw new Error(
-      'Usuário não encontrado.'
-    );
-  }
+}
 
 
-  if (
-    saldoAtual < valor
-  ) {
+/* ==========================================================
+   TESTE DO SISTEMA
+   ========================================================== */
 
-    throw new Error(
-      'Saldo insuficiente para levantamento.'
-    );
-  }
+function testarSistema() {
+
+  criarEstruturaPlanilha();
+
+  criarSorteiosDoDia();
+
+  atualizarStatusSorteios();
 
 
-  const novoSaldo =
-    saldoAtual - valor;
+  const abertos =
+    obterSorteiosAbertos();
 
 
-  sheetUsuarios
-    .getRange(
-      linhaUsuario,
-      5
+  Logger.log(
+    JSON.stringify(
+      abertos,
+      null,
+      2
     )
-    .setValue(
-      novoSaldo
-    );
+  );
 
 
-  const id =
-    'LEV-' +
-    Utilities
-      .getUuid()
-      .substring(0, 8)
-      .toUpperCase();
+  return abertos;
+
+}
 
 
-  sheetLevantamentos.appendRow([
+/* ==========================================================
+   CRIAR TRIGGER AUTOMÁTICO
+   ========================================================== */
 
-    id,
+function instalarTriggers() {
 
-    new Date(),
-
-    data.usuarioId,
-
-    data.telefone,
-
-    valor,
-
-    taxa,
-
-    valorLiquido,
-
-    'PENDENTE',
-
-    '',
-
-    ''
-  ]);
+  const triggers =
+    ScriptApp
+      .getProjectTriggers();
 
 
-  const sheetMovimentos =
-    ss.getSheetByName(
-      SHEETS.MOVIMENTOS
-    );
+  triggers.forEach(
+    trigger => {
+
+      const nome =
+        trigger
+          .getHandlerFunction();
 
 
-  sheetMovimentos.appendRow([
+      if (
+        nome ===
+          'criarSorteiosDoDia' ||
+        nome ===
+          'atualizarStatusSorteios'
+      ) {
 
-    'MOV-' +
-    Utilities
-      .getUuid()
-      .substring(0, 8)
-      .toUpperCase(),
+        ScriptApp
+          .deleteTrigger(
+            trigger
+          );
 
-    new Date(),
+      }
 
-    data.usuarioId,
+    }
+  );
 
-    'LEVANTAMENTO',
 
-    id,
+  /*
+   * A cada 5 minutos:
+   * - cria os sorteios
+   * - atualiza o estado
+   */
 
-    -valor,
+  ScriptApp.newTrigger(
+    'criarSorteiosDoDia'
+  )
+    .timeBased()
+    .everyMinutes(5)
+    .create();
 
-    'PENDENTE',
 
-    id,
-
-    'Sistema'
-  ]);
+  ScriptApp.newTrigger(
+    'atualizarStatusSorteios'
+  )
+    .timeBased()
+    .everyMinutes(5)
+    .create();
 
 
   return {
@@ -3760,650 +3400,8 @@ function solicitarLevantamento(
     success: true,
 
     message:
-      'Pedido de levantamento registado.',
+      'Triggers instalados.'
 
-    levantamentoId:
-      id,
-
-    valor:
-      valor,
-
-    valorLiquido:
-      valorLiquido,
-
-    novoSaldo:
-      novoSaldo
   };
+
 }
-
-
-function obterLevantamentosUsuario(
-  usuarioId
-) {
-
-  if (!usuarioId) {
-
-    return {
-
-      success: false,
-
-      error:
-        'UsuarioId obrigatório.'
-    };
-  }
-
-
-  const ss =
-    SpreadsheetApp.openById(
-      SPREADSHEET_ID
-    );
-
-
-  const sheet =
-    ss.getSheetByName(
-      SHEETS.LEVANTAMENTOS
-    );
-
-
-  const dados =
-    sheet
-      .getDataRange()
-      .getValues();
-
-
-  const levs = [];
-
-
-  for (
-    let i = 1;
-    i < dados.length;
-    i++
-  ) {
-
-    if (
-      String(
-        dados[i][2]
-      ) ===
-      String(usuarioId)
-    ) {
-
-      levs.push({
-
-        id:
-          dados[i][0],
-
-        data:
-          dados[i][1] instanceof Date
-            ? Utilities.formatDate(
-                dados[i][1],
-                Session.getScriptTimeZone(),
-                'yyyy-MM-dd HH:mm'
-              )
-            : dados[i][1],
-
-        telefone:
-          dados[i][3],
-
-        valor:
-          dados[i][4],
-
-        taxa:
-          dados[i][5],
-
-        valorLiquido:
-          dados[i][6],
-
-        status:
-          dados[i][7]
-      });
-    }
-  }
-
-
-  return {
-
-    success: true,
-
-    levantamentos:
-      levs.reverse()
-  };
-}
-
-
-function obterLevantamentosPendentes() {
-
-  const ss =
-    SpreadsheetApp.openById(
-      SPREADSHEET_ID
-    );
-
-
-  const sheet =
-    ss.getSheetByName(
-      SHEETS.LEVANTAMENTOS
-    );
-
-
-  const dados =
-    sheet
-      .getDataRange()
-      .getValues();
-
-
-  const pendentes = [];
-
-
-  for (
-    let i = 1;
-    i < dados.length;
-    i++
-  ) {
-
-    if (
-      normalizarStatus(
-        dados[i][7]
-      ) === 'PENDENTE'
-    ) {
-
-      pendentes.push({
-
-        id:
-          dados[i][0],
-
-        data:
-          dados[i][1] instanceof Date
-            ? Utilities.formatDate(
-                dados[i][1],
-                Session.getScriptTimeZone(),
-                'yyyy-MM-dd HH:mm'
-              )
-            : dados[i][1],
-
-        usuarioId:
-          dados[i][2],
-
-        telefone:
-          dados[i][3],
-
-        valor:
-          dados[i][4],
-
-        taxa:
-          dados[i][5],
-
-        valorLiquido:
-          dados[i][6]
-      });
-    }
-  }
-
-
-  return {
-
-    success: true,
-
-    pendentes:
-      pendentes,
-
-    total:
-      pendentes.length
-  };
-}
-
-
-function aprovarLevantamento(
-  data
-) {
-
-  if (!data.levId) {
-
-    throw new Error(
-      'levId obrigatório.'
-    );
-  }
-
-
-  const ss =
-    SpreadsheetApp.openById(
-      SPREADSHEET_ID
-    );
-
-
-  const sheet =
-    ss.getSheetByName(
-      SHEETS.LEVANTAMENTOS
-    );
-
-
-  const dados =
-    sheet
-      .getDataRange()
-      .getValues();
-
-
-  for (
-    let i = 1;
-    i < dados.length;
-    i++
-  ) {
-
-    if (
-      String(
-        dados[i][0]
-      ) ===
-      String(
-        data.levId
-      )
-    ) {
-
-      if (
-        normalizarStatus(
-          dados[i][7]
-        ) !== 'PENDENTE'
-      ) {
-
-        throw new Error(
-          'Levantamento já processado.'
-        );
-      }
-
-
-      sheet
-        .getRange(
-          i + 1,
-          8
-        )
-        .setValue(
-          'APROVADO'
-        );
-
-
-      sheet
-        .getRange(
-          i + 1,
-          9
-        )
-        .setValue(
-          new Date()
-        );
-
-
-      sheet
-        .getRange(
-          i + 1,
-          10
-        )
-        .setValue(
-          data.obs ||
-          'Pago via M-Pesa'
-        );
-
-
-      return {
-
-        success: true,
-
-        message:
-          'Levantamento aprovado.',
-
-        levId:
-          data.levId
-      };
-    }
-  }
-
-
-  throw new Error(
-    'Levantamento não encontrado.'
-  );
-}
-
-
-function rejeitarLevantamento(
-  data
-) {
-
-  if (!data.levId) {
-
-    throw new Error(
-      'levId obrigatório.'
-    );
-  }
-
-
-  const ss =
-    SpreadsheetApp.openById(
-      SPREADSHEET_ID
-    );
-
-
-  const sheetLev =
-    ss.getSheetByName(
-      SHEETS.LEVANTAMENTOS
-    );
-
-
-  const sheetUsuarios =
-    ss.getSheetByName(
-      SHEETS.USUARIOS
-    );
-
-
-  const dados =
-    sheetLev
-      .getDataRange()
-      .getValues();
-
-
-  for (
-    let i = 1;
-    i < dados.length;
-    i++
-  ) {
-
-    if (
-      String(
-        dados[i][0]
-      ) ===
-      String(
-        data.levId
-      )
-    ) {
-
-      if (
-        normalizarStatus(
-          dados[i][7]
-        ) !== 'PENDENTE'
-      ) {
-
-        throw new Error(
-          'Levantamento já processado.'
-        );
-      }
-
-
-      const usuarioId =
-        dados[i][2];
-
-
-      const valor =
-        Number(
-          dados[i][4] || 0
-        );
-
-
-      const dadosUsuarios =
-        sheetUsuarios
-          .getDataRange()
-          .getValues();
-
-
-      for (
-        let u = 1;
-        u < dadosUsuarios.length;
-        u++
-      ) {
-
-        if (
-          String(
-            dadosUsuarios[u][0]
-          ) ===
-          String(usuarioId)
-        ) {
-
-          const saldoAtual =
-            Number(
-              dadosUsuarios[u][4] ||
-              0
-            );
-
-
-          sheetUsuarios
-            .getRange(
-              u + 1,
-              5
-            )
-            .setValue(
-              saldoAtual +
-              valor
-            );
-
-
-          break;
-        }
-      }
-
-
-      sheetLev
-        .getRange(
-          i + 1,
-          8
-        )
-        .setValue(
-          'REJEITADO'
-        );
-
-
-      sheetLev
-        .getRange(
-          i + 1,
-          9
-        )
-        .setValue(
-          new Date()
-        );
-
-
-      sheetLev
-        .getRange(
-          i + 1,
-          10
-        )
-        .setValue(
-          data.obs ||
-          'Rejeitado'
-        );
-
-
-      const sheetMovimentos =
-        ss.getSheetByName(
-          SHEETS.MOVIMENTOS
-        );
-
-
-      sheetMovimentos.appendRow([
-
-        'MOV-' +
-        Utilities
-          .getUuid()
-          .substring(0, 8)
-          .toUpperCase(),
-
-        new Date(),
-
-        usuarioId,
-
-        'ESTORNO',
-
-        data.levId,
-
-        valor,
-
-        'CONFIRMADO',
-
-        data.levId,
-
-        'Sistema'
-      ]);
-
-
-      return {
-
-        success: true,
-
-        message:
-          'Levantamento rejeitado e saldo devolvido.',
-
-        levId:
-          data.levId
-      };
-    }
-  }
-
-
-  throw new Error(
-    'Levantamento não encontrado.'
-  );
-}
-
-
-// ============================================================
-// COFRE
-// ============================================================
-
-function atualizarCofre(
-  sorteioId,
-  valor
-) {
-
-  const ss =
-    SpreadsheetApp.openById(
-      SPREADSHEET_ID
-    );
-
-
-  const sheet =
-    ss.getSheetByName(
-      SHEETS.SORTEIOS
-    );
-
-
-  const dados =
-    sheet
-      .getDataRange()
-      .getValues();
-
-
-  for (
-    let i = 1;
-    i < dados.length;
-    i++
-  ) {
-
-    if (
-      String(
-        dados[i][0]
-      ).trim() ===
-      String(
-        sorteioId
-      ).trim()
-    ) {
-
-      const arrecadacao =
-        Number(
-          dados[i][3] || 0
-        ) +
-        Number(valor);
-
-
-      const casa =
-        arrecadacao * 0.50;
-
-
-      const fundo =
-        arrecadacao * 0.50;
-
-
-      const pagos =
-        Number(
-          dados[i][6] || 0
-        );
-
-
-      const saldo =
-        fundo - pagos;
-
-
-      sheet
-        .getRange(
-          i + 1,
-          4
-        )
-        .setValue(
-          arrecadacao
-        );
-
-
-      sheet
-        .getRange(
-          i + 1,
-          5
-        )
-        .setValue(
-          casa
-        );
-
-
-      sheet
-        .getRange(
-          i + 1,
-          6
-        )
-        .setValue(
-          fundo
-        );
-
-
-      sheet
-        .getRange(
-          i + 1,
-          8
-        )
-        .setValue(
-          saldo
-        );
-
-
-      break;
-    }
-  }
-}
-
-
-// ============================================================
-// SORTEIO MANUAL ADMIN
-// ============================================================
-
-function realizarSorteioManual(
-  data
-) {
-
-  if (!data.sorteioId) {
-
-    throw new Error(
-      'sorteioId obrigatório.'
-    );
-  }
-
-
-  if (
-    resultadoExiste(
-      data.sorteioId
-    )
-  ) {
-
-    throw new Error(
-      'Sorteio já foi realizado.'
-    );
-  }
-
-
-  return processarSorteioCompleto(
-    data.sorteioId
-  );
-}
-
-
-// ============================================================
-// FIM DO CODE.GS
-// ============================================================
