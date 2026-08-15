@@ -2,7 +2,7 @@
    SORTEMZ — Frontend Otimizado para GAS v2.0
    ============================================ */
 
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbybWMpFd7ujU72EHhbw5cZPRxBNjsediytH-mNneXd2F1f3e2vkbPrH0uWHdrpvplr9YA/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbw_-727m5U95u81UruW7cbg43VBWiOx7izRezmz89UsfKezZ_0YgP3J9S1CkItwVp-YnA/exec';
 
 const app = {
   user: null,
