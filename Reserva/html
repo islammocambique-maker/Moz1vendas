@@ -1,0 +1,4409 @@
+// ============================================================
+// SORTEMZ - CODE.GS COMPLETO
+// JOGO: 5 NÚMEROS DE 1 A 55
+// SORTEIOS: 10:00 | 15:00 | 19:00
+// FECHAMENTO: 15 MINUTOS ANTES
+// ============================================================
+
+
+// ============================================================
+// CONFIGURAÇÕES PRINCIPAIS
+// ============================================================
+
+const SPREADSHEET_ID = '1QrHg2UIimGQULhQp8bZng2l1Kh453d_SS1EcImoP8Jo';
+
+// COLOQUE AQUI A MESMA CHAVE ADMINISTRATIVA QUE JÁ USAVA
+const ADMIN_SECRET_KEY = 'Sueila6300';
+
+const SHEETS = {
+  USUARIOS: 'USUARIOS',
+  JOGADAS: 'JOGADAS',
+  SORTEIOS: 'SORTEIOS',
+  RESULTADOS: 'RESULTADOS',
+  PREMIOS: 'PREMIOS',
+  MOVIMENTOS: 'MOVIMENTOS',
+  LEVANTAMENTOS: 'LEVANTAMENTOS'
+};
+
+const HORARIOS_SORTEIO = ['10:00', '15:00', '19:00'];
+
+const MINUTOS_FECHAMENTO_ANTES = 15;
+
+const PREMIOS = {
+  1: 10,
+  2: 50,
+  3: 500,
+  4: 5000,
+  5: 500000
+};
+
+
+// ============================================================
+// NETSHOP
+// ============================================================
+
+// COLOQUE AQUI A MESMA API KEY DA SUA CONTA NETSHOP
+const NETSHOP_CONFIG = {
+  WALLET_ID: 'coloca a carteira',
+  API_KEY: 'coloca api aqui',
+  BASE_URL: 'https://www.netshop.co.mz/api/v1'
+};
+
+
+// ============================================================
+// UTILITÁRIOS
+// ============================================================
+
+function normalizarTelefone(tel) {
+  if (!tel) return '';
+  return String(tel).trim().replace(/\D/g, '');
+}
+
+
+function normalizarStatus(status) {
+  return String(status || '').trim().toUpperCase();
+}
+
+
+function normalizarHora(hora) {
+  if (!hora) return '';
+
+  if (hora instanceof Date) {
+    return Utilities.formatDate(
+      hora,
+      Session.getScriptTimeZone(),
+      'HH:mm'
+    );
+  }
+
+  let texto = String(hora).trim();
+
+  // Caso venha como 10:00:00
+  if (/^\d{1,2}:\d{2}:\d{2}$/.test(texto)) {
+    texto = texto.substring(0, 5);
+  }
+
+  // Caso venha como 10:0
+  const partes = texto.split(':');
+
+  if (partes.length >= 2) {
+    const hh = Number(partes[0]);
+    const mm = Number(partes[1]);
+
+    if (!isNaN(hh) && !isNaN(mm)) {
+      return (
+        String(hh).padStart(2, '0') +
+        ':' +
+        String(mm).padStart(2, '0')
+      );
+    }
+  }
+
+  return texto;
+}
+
+
+function dataParaString(data) {
+  if (!data) return '';
+
+  if (data instanceof Date && !isNaN(data.getTime())) {
+    return Utilities.formatDate(
+      data,
+      Session.getScriptTimeZone(),
+      'yyyy-MM-dd'
+    );
+  }
+
+  const texto = String(data).trim();
+
+  // yyyy-MM-dd
+  if (/^\d{4}-\d{2}-\d{2}$/.test(texto)) {
+    return texto;
+  }
+
+  // dd/MM/yyyy
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(texto)) {
+    const p = texto.split('/');
+    return p[2] + '-' + p[1] + '-' + p[0];
+  }
+
+  // dd-MM-yyyy
+  if (/^\d{2}-\d{2}-\d{4}$/.test(texto)) {
+    const p = texto.split('-');
+    return p[2] + '-' + p[1] + '-' + p[0];
+  }
+
+  const tentativa = new Date(texto);
+
+  if (!isNaN(tentativa.getTime())) {
+    return Utilities.formatDate(
+      tentativa,
+      Session.getScriptTimeZone(),
+      'yyyy-MM-dd'
+    );
+  }
+
+  return texto;
+}
+
+
+function criarDataHora(data, hora) {
+  const dataStr = dataParaString(data);
+  const horaStr = normalizarHora(hora);
+
+  if (!dataStr || !horaStr) return null;
+
+  const partesData = dataStr.split('-');
+  const partesHora = horaStr.split(':');
+
+  if (partesData.length !== 3 || partesHora.length < 2) {
+    return null;
+  }
+
+  const ano = Number(partesData[0]);
+  const mes = Number(partesData[1]);
+  const dia = Number(partesData[2]);
+
+  const hh = Number(partesHora[0]);
+  const mm = Number(partesHora[1]);
+
+  if (
+    isNaN(ano) ||
+    isNaN(mes) ||
+    isNaN(dia) ||
+    isNaN(hh) ||
+    isNaN(mm)
+  ) {
+    return null;
+  }
+
+  return new Date(
+    ano,
+    mes - 1,
+    dia,
+    hh,
+    mm,
+    0,
+    0
+  );
+}
+
+
+function dataHoje() {
+  const agora = new Date();
+
+  const texto = Utilities.formatDate(
+    agora,
+    Session.getScriptTimeZone(),
+    'yyyy-MM-dd'
+  );
+
+  const p = texto.split('-');
+
+  return new Date(
+    Number(p[0]),
+    Number(p[1]) - 1,
+    Number(p[2]),
+    0,
+    0,
+    0,
+    0
+  );
+}
+
+
+function json(obj) {
+  return ContentService
+    .createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+
+// ============================================================
+// SETUP
+// ============================================================
+
+function setup() {
+
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+
+  criarAba(
+    ss,
+    SHEETS.USUARIOS,
+    [
+      'ID',
+      'Nome',
+      'Telefone',
+      'Referencia',
+      'Saldo',
+      'Data Registo',
+      'Status'
+    ]
+  );
+
+  criarAba(
+    ss,
+    SHEETS.JOGADAS,
+    [
+      'ID',
+      'UsuarioID',
+      'Referencia',
+      'SorteioID',
+      'Data',
+      'Hora',
+      'Numeros',
+      'Valor',
+      'Status'
+    ]
+  );
+
+  criarAba(
+    ss,
+    SHEETS.SORTEIOS,
+    [
+      'ID',
+      'Data',
+      'Hora',
+      'Arrecadacao',
+      'Casa',
+      'FundoPremios',
+      'PremiosPagos',
+      'SaldoPremios',
+      'Status'
+    ]
+  );
+
+  criarAba(
+    ss,
+    SHEETS.RESULTADOS,
+    [
+      'SorteioID',
+      'Data',
+      'Hora',
+      'N1',
+      'N2',
+      'N3',
+      'N4',
+      'N5'
+    ]
+  );
+
+  criarAba(
+    ss,
+    SHEETS.PREMIOS,
+    [
+      'ID',
+      'SorteioID',
+      'UsuarioID',
+      'Acertos',
+      'PremioTeorico',
+      'PremioPago',
+      'Status',
+      'Data'
+    ]
+  );
+
+  criarAba(
+    ss,
+    SHEETS.MOVIMENTOS,
+    [
+      'ID',
+      'Data',
+      'UsuarioID',
+      'Tipo',
+      'Referencia',
+      'Valor',
+      'Status',
+      'TransacaoID',
+      'Origem'
+    ]
+  );
+
+  criarAba(
+    ss,
+    SHEETS.LEVANTAMENTOS,
+    [
+      'ID',
+      'Data',
+      'UsuarioID',
+      'Telefone',
+      'Valor',
+      'Taxa',
+      'ValorLiquido',
+      'Status',
+      'ProcessadoEm',
+      'Obs'
+    ]
+  );
+
+
+  // Cria os sorteios de hoje e amanhã
+  criarSorteiosDia(new Date());
+  
+  const amanha = new Date();
+  amanha.setDate(amanha.getDate() + 1);
+
+  criarSorteiosDia(amanha);
+
+
+  // Instala os triggers automaticamente
+  instalarTriggers();
+
+
+  SpreadsheetApp.flush();
+
+  return {
+    success: true,
+    message: 'SORTEMZ configurado com sucesso.'
+  };
+}
+
+
+// ============================================================
+// CRIAÇÃO DAS ABAS
+// ============================================================
+
+function criarAba(ss, nome, cabecalho) {
+
+  let sheet = ss.getSheetByName(nome);
+
+  if (!sheet) {
+
+    sheet = ss.insertSheet(nome);
+
+    sheet
+      .getRange(1, 1, 1, cabecalho.length)
+      .setValues([cabecalho]);
+
+    sheet.setFrozenRows(1);
+  }
+}
+
+
+// ============================================================
+// TRIGGERS
+// ============================================================
+
+function instalarTriggers() {
+
+  const triggers = ScriptApp.getProjectTriggers();
+
+  triggers.forEach(function(trigger) {
+
+    const funcao = trigger.getHandlerFunction();
+
+    if (
+      funcao === 'triggerDiarioSorteios' ||
+      funcao === 'triggerFecharSorteios' ||
+      funcao === 'triggerSorteioAutomatico'
+    ) {
+      ScriptApp.deleteTrigger(trigger);
+    }
+
+  });
+
+
+  // Todos os dias de madrugada cria os sorteios
+  ScriptApp.newTrigger('triggerDiarioSorteios')
+    .timeBased()
+    .everyDays(1)
+    .atHour(0)
+    .create();
+
+
+  // Verifica fechamento a cada 5 minutos
+  ScriptApp.newTrigger('triggerFecharSorteios')
+    .timeBased()
+    .everyMinutes(5)
+    .create();
+
+
+  // Verifica sorteios a cada 5 minutos
+  ScriptApp.newTrigger('triggerSorteioAutomatico')
+    .timeBased()
+    .everyMinutes(5)
+    .create();
+
+
+  Logger.log('Triggers instalados com sucesso.');
+}
+
+
+// ============================================================
+// CRIAÇÃO DOS SORTEIOS DIÁRIOS
+// ============================================================
+
+function triggerDiarioSorteios() {
+
+  try {
+
+    criarSorteiosDia(new Date());
+
+    const amanha = new Date();
+    amanha.setDate(amanha.getDate() + 1);
+
+    criarSorteiosDia(amanha);
+
+    Logger.log('triggerDiarioSorteios: OK');
+
+  } catch (e) {
+
+    Logger.log(
+      'ERRO triggerDiarioSorteios: ' +
+      e.message
+    );
+  }
+}
+
+
+function criarSorteiosDia(dataBase) {
+
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+
+  const sheet = ss.getSheetByName(SHEETS.SORTEIOS);
+
+  if (!sheet) {
+    throw new Error('Aba SORTEIOS não existe.');
+  }
+
+
+  const dataAlvo = dataParaString(dataBase);
+
+  const dados = sheet.getDataRange().getValues();
+
+  const existentes = {};
+
+
+  // Lê todos os sorteios existentes
+  for (let i = 1; i < dados.length; i++) {
+
+    const dataLinha = dataParaString(dados[i][1]);
+
+    const horaLinha = normalizarHora(dados[i][2]);
+
+    if (dataLinha === dataAlvo && horaLinha) {
+
+      existentes[horaLinha] = true;
+    }
+  }
+
+
+  // Cria individualmente os horários que estiverem faltando
+  HORARIOS_SORTEIO.forEach(function(hora) {
+
+    if (!existentes[hora]) {
+
+      const id =
+        'SRT-' +
+        Utilities
+          .getUuid()
+          .substring(0, 6)
+          .toUpperCase();
+
+
+      const dataReal = criarDataHora(
+        dataAlvo,
+        '00:00'
+      );
+
+
+      sheet.appendRow([
+        id,
+        dataReal,
+        hora,
+        0,
+        0,
+        0,
+        0,
+        0,
+        'ABERTO'
+      ]);
+
+      Logger.log(
+        'Sorteio criado: ' +
+        dataAlvo +
+        ' ' +
+        hora
+      );
+    }
+  });
+
+
+  SpreadsheetApp.flush();
+}
+
+
+// ============================================================
+// FECHAMENTO AUTOMÁTICO
+// ============================================================
+
+function triggerFecharSorteios() {
+
+  try {
+
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sheet = ss.getSheetByName(SHEETS.SORTEIOS);
+
+    if (!sheet) {
+      throw new Error('Aba SORTEIOS não encontrada.');
+    }
+
+    const dados = sheet.getDataRange().getValues();
+    const agora = new Date();
+
+    for (let i = 1; i < dados.length; i++) {
+
+      const id = String(dados[i][0] || '').trim();
+      const data = dados[i][1];
+      const hora = dados[i][2];
+
+      if (!id || !data || !hora) {
+        continue;
+      }
+
+      const dataHoraSorteio =
+        criarDataHora(data, hora);
+
+      if (!dataHoraSorteio) {
+        continue;
+      }
+
+      // Fecha 15 minutos antes do sorteio
+      const fechamento =
+        new Date(
+          dataHoraSorteio.getTime() -
+          MINUTOS_FECHAMENTO_ANTES * 60000
+        );
+
+      const statusAtual =
+        normalizarStatus(dados[i][8]);
+
+      // =====================================================
+      // AINDA ESTÁ DENTRO DO PERÍODO DE APOSTAS
+      // =====================================================
+
+      if (agora < fechamento) {
+
+        if (statusAtual !== 'ABERTO') {
+
+          sheet
+            .getRange(i + 1, 9)
+            .setValue('ABERTO');
+
+          Logger.log(
+            'Sorteio ABERTO: ' +
+            id +
+            ' | ' +
+            dataParaString(data) +
+            ' ' +
+            normalizarHora(hora)
+          );
+        }
+
+        continue;
+      }
+
+      // =====================================================
+      // JÁ CHEGOU AOS 15 MINUTOS ANTES
+      // =====================================================
+
+      if (
+        agora >= fechamento &&
+        agora < dataHoraSorteio &&
+        statusAtual === 'ABERTO'
+      ) {
+
+        sheet
+          .getRange(i + 1, 9)
+          .setValue('FECHADO');
+
+        Logger.log(
+          'Sorteio FECHADO: ' +
+          id
+        );
+      }
+    }
+
+    SpreadsheetApp.flush();
+
+  } catch (e) {
+
+    Logger.log(
+      'ERRO triggerFecharSorteios: ' +
+      e.message
+    );
+  }
+}
+
+
+// ============================================================
+// SORTEIO AUTOMÁTICO
+// ============================================================
+
+function triggerSorteioAutomatico() {
+
+  try {
+
+    const ss =
+      SpreadsheetApp.openById(SPREADSHEET_ID);
+
+    const sheet =
+      ss.getSheetByName(SHEETS.SORTEIOS);
+
+    if (!sheet) return;
+
+
+    const dados =
+      sheet.getDataRange().getValues();
+
+    const agora = new Date();
+
+    let sorteados = 0;
+
+
+    for (let i = 1; i < dados.length; i++) {
+
+      const status =
+        normalizarStatus(dados[i][8]);
+
+      if (status !== 'FECHADO') {
+        continue;
+      }
+
+
+      const sorteioId =
+        String(dados[i][0] || '').trim();
+
+      if (!sorteioId) continue;
+
+
+      const dataHoraSorteio =
+        criarDataHora(
+          dados[i][1],
+          dados[i][2]
+        );
+
+      if (!dataHoraSorteio) continue;
+
+
+      if (
+        agora >= dataHoraSorteio &&
+        !resultadoExiste(sorteioId)
+      ) {
+
+        try {
+
+          processarSorteioCompleto(
+            sorteioId
+          );
+
+          sorteados++;
+
+        } catch (erroSorteio) {
+
+          Logger.log(
+            'Erro no sorteio ' +
+            sorteioId +
+            ': ' +
+            erroSorteio.message
+          );
+        }
+      }
+    }
+
+
+    if (sorteados > 0) {
+
+      Logger.log(
+        'Sorteios processados: ' +
+        sorteados
+      );
+    }
+
+  } catch (e) {
+
+    Logger.log(
+      'ERRO triggerSorteioAutomatico: ' +
+      e.message
+    );
+  }
+}
+
+
+// ============================================================
+// VERIFICA SE JÁ EXISTE RESULTADO
+// ============================================================
+
+function resultadoExiste(sorteioId) {
+
+  const ss =
+    SpreadsheetApp.openById(SPREADSHEET_ID);
+
+  const sheet =
+    ss.getSheetByName(SHEETS.RESULTADOS);
+
+  if (!sheet) return false;
+
+
+  const dados =
+    sheet.getDataRange().getValues();
+
+
+  for (let i = 1; i < dados.length; i++) {
+
+    if (
+      String(dados[i][0]).trim() ===
+      String(sorteioId).trim()
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+
+// ============================================================
+// PROCESSAR SORTEIO COMPLETO
+// ============================================================
+
+function processarSorteioCompleto(sorteioId) {
+
+  const ss =
+    SpreadsheetApp.openById(SPREADSHEET_ID);
+
+  const sheetSorteios =
+    ss.getSheetByName(SHEETS.SORTEIOS);
+
+  const sheetResultados =
+    ss.getSheetByName(SHEETS.RESULTADOS);
+
+  const sheetJogadas =
+    ss.getSheetByName(SHEETS.JOGADAS);
+
+  const sheetPremios =
+    ss.getSheetByName(SHEETS.PREMIOS);
+
+  const sheetUsuarios =
+    ss.getSheetByName(SHEETS.USUARIOS);
+
+  const sheetMovimentos =
+    ss.getSheetByName(SHEETS.MOVIMENTOS);
+
+
+  const dadosSorteios =
+    sheetSorteios.getDataRange().getValues();
+
+
+  let linhaSorteio = -1;
+  let fundoPremios = 0;
+
+
+  for (let i = 1; i < dadosSorteios.length; i++) {
+
+    if (
+      String(dadosSorteios[i][0]).trim() ===
+      String(sorteioId).trim()
+    ) {
+
+      linhaSorteio = i + 1;
+
+      fundoPremios =
+        Number(dadosSorteios[i][5] || 0);
+
+      break;
+    }
+  }
+
+
+  if (linhaSorteio === -1) {
+
+    throw new Error(
+      'Sorteio não encontrado.'
+    );
+  }
+
+
+  if (resultadoExiste(sorteioId)) {
+
+    throw new Error(
+      'Este sorteio já possui resultado.'
+    );
+  }
+
+
+  // ==========================================================
+  // BUSCAR JOGADAS
+  // ==========================================================
+
+  const dadosJogadas =
+    sheetJogadas.getDataRange().getValues();
+
+  const jogadasDoSorteio = [];
+
+  const todosNumerosApostados =
+    new Set();
+
+
+  for (let i = 1; i < dadosJogadas.length; i++) {
+
+    const idJogadaSorteio =
+      String(dadosJogadas[i][3] || '').trim();
+
+    const status =
+      normalizarStatus(dadosJogadas[i][8]);
+
+
+    if (
+      idJogadaSorteio ===
+      String(sorteioId).trim() &&
+      status === 'CONFIRMADA'
+    ) {
+
+      const textoNumeros =
+        String(dadosJogadas[i][6] || '');
+
+      const nums =
+        textoNumeros
+          .split(',')
+          .map(Number)
+          .filter(function(n) {
+            return n >= 1 && n <= 55;
+          });
+
+
+      if (nums.length === 5) {
+
+        jogadasDoSorteio.push({
+
+          linha: i + 1,
+
+          usuarioId:
+            dadosJogadas[i][1],
+
+          jogadaId:
+            dadosJogadas[i][0],
+
+          numeros:
+            nums,
+
+          valor:
+            Number(dadosJogadas[i][7] || 0)
+        });
+
+
+        nums.forEach(function(n) {
+
+          todosNumerosApostados.add(n);
+
+        });
+      }
+    }
+  }
+
+
+  // ==========================================================
+  // GERAR NÚMEROS
+  // ==========================================================
+
+  let numerosSorteados;
+
+
+  if (jogadasDoSorteio.length === 0) {
+
+    numerosSorteados =
+      gerarCombinacaoAleatoria();
+
+    Logger.log(
+      'Sorteio ' +
+      sorteioId +
+      ': sem apostas.'
+    );
+
+  } else {
+
+    numerosSorteados =
+      sorteioCondicionado(
+        jogadasDoSorteio,
+        fundoPremios,
+        todosNumerosApostados
+      );
+
+    Logger.log(
+      'Sorteio ' +
+      sorteioId +
+      ': ' +
+      numerosSorteados.join(',')
+    );
+  }
+
+
+  // ==========================================================
+  // GRAVAR RESULTADO
+  // ==========================================================
+
+  sheetResultados.appendRow([
+
+    sorteioId,
+
+    new Date(),
+
+    Utilities.formatDate(
+      new Date(),
+      Session.getScriptTimeZone(),
+      'HH:mm:ss'
+    ),
+
+    numerosSorteados[0],
+    numerosSorteados[1],
+    numerosSorteados[2],
+    numerosSorteados[3],
+    numerosSorteados[4]
+
+  ]);
+
+
+  sheetSorteios
+    .getRange(linhaSorteio, 9)
+    .setValue('SORTEADO');
+
+
+  // ==========================================================
+  // PAGAR PRÉMIOS
+  // ==========================================================
+
+  let totalPremiosPagos = 0;
+
+
+  for (
+    let i = 0;
+    i < jogadasDoSorteio.length;
+    i++
+  ) {
+
+    const jogada =
+      jogadasDoSorteio[i];
+
+
+    const acertos =
+      jogada.numeros.filter(
+        function(n) {
+          return numerosSorteados.includes(n);
+        }
+      ).length;
+
+
+    if (
+      acertos >= 1 &&
+      PREMIOS[acertos]
+    ) {
+
+      const premio =
+        PREMIOS[acertos];
+
+
+      const premioId =
+        'PRM-' +
+        Utilities
+          .getUuid()
+          .substring(0, 8)
+          .toUpperCase();
+
+
+      sheetPremios.appendRow([
+
+        premioId,
+
+        sorteioId,
+
+        jogada.usuarioId,
+
+        acertos,
+
+        premio,
+
+        premio,
+
+        'PAGO',
+
+        new Date()
+
+      ]);
+
+
+      const dadosUsuarios =
+        sheetUsuarios
+          .getDataRange()
+          .getValues();
+
+
+      for (
+        let u = 1;
+        u < dadosUsuarios.length;
+        u++
+      ) {
+
+        if (
+          String(dadosUsuarios[u][0]) ===
+          String(jogada.usuarioId)
+        ) {
+
+          const saldoAtual =
+            Number(
+              dadosUsuarios[u][4] || 0
+            );
+
+
+          sheetUsuarios
+            .getRange(u + 1, 5)
+            .setValue(
+              saldoAtual + premio
+            );
+
+          break;
+        }
+      }
+
+
+      sheetMovimentos.appendRow([
+
+        'MOV-' +
+        Utilities
+          .getUuid()
+          .substring(0, 8)
+          .toUpperCase(),
+
+        new Date(),
+
+        jogada.usuarioId,
+
+        'PREMIO',
+
+        jogada.jogadaId,
+
+        premio,
+
+        'PAGO',
+
+        premioId,
+
+        'Sistema'
+
+      ]);
+
+
+      totalPremiosPagos += premio;
+
+
+      sheetJogadas
+        .getRange(jogada.linha, 9)
+        .setValue(
+          'GANHOU_' + acertos
+        );
+
+    } else {
+
+      sheetJogadas
+        .getRange(jogada.linha, 9)
+        .setValue('PERDEU');
+    }
+  }
+
+
+  // ==========================================================
+  // ATUALIZAR COFRE
+  // ==========================================================
+
+  const premiosPagosAtual =
+    Number(
+      dadosSorteios[
+        linhaSorteio - 1
+      ][6] || 0
+    );
+
+
+  const saldoPremiosAtual =
+    Number(
+      dadosSorteios[
+        linhaSorteio - 1
+      ][7] || 0
+    );
+
+
+  sheetSorteios
+    .getRange(linhaSorteio, 7)
+    .setValue(
+      premiosPagosAtual +
+      totalPremiosPagos
+    );
+
+
+  sheetSorteios
+    .getRange(linhaSorteio, 8)
+    .setValue(
+      saldoPremiosAtual -
+      totalPremiosPagos
+    );
+
+
+  sheetSorteios
+    .getRange(linhaSorteio, 9)
+    .setValue('PAGO');
+
+
+  SpreadsheetApp.flush();
+
+
+  return {
+
+    success: true,
+
+    sorteioId: sorteioId,
+
+    numeros: numerosSorteados,
+
+    totalPremiosPagos:
+      totalPremiosPagos,
+
+    fundoPremios:
+      fundoPremios
+  };
+}
+
+
+// ============================================================
+// GERAR COMBINAÇÃO ALEATÓRIA 1-55
+// ============================================================
+
+function gerarCombinacaoAleatoria() {
+
+  const nums =
+    new Set();
+
+
+  while (nums.size < 5) {
+
+    nums.add(
+      Math.floor(
+        Math.random() * 55
+      ) + 1
+    );
+  }
+
+
+  return [
+    ...nums
+  ].sort(
+    function(a, b) {
+      return a - b;
+    }
+  );
+}
+
+
+// ============================================================
+// CALCULAR CUSTO DOS PRÉMIOS
+// ============================================================
+
+function calcularCustoPremios(
+  numerosSorteados,
+  jogadas
+) {
+
+  let custo = 0;
+
+
+  for (
+    let i = 0;
+    i < jogadas.length;
+    i++
+  ) {
+
+    const acertos =
+      jogadas[i].numeros.filter(
+        function(n) {
+          return numerosSorteados.includes(n);
+        }
+      ).length;
+
+
+    if (
+      acertos >= 1 &&
+      PREMIOS[acertos]
+    ) {
+
+      custo +=
+        PREMIOS[acertos];
+    }
+  }
+
+
+  return custo;
+}
+
+
+// ============================================================
+// COMBINAÇÃO NÃO APOSTADA
+// ============================================================
+
+function gerarCombinacaoNaoApostada(
+  todosNumerosApostados
+) {
+
+  const naoApostados = [];
+
+
+  for (
+    let n = 1;
+    n <= 55;
+    n++
+  ) {
+
+    if (
+      !todosNumerosApostados.has(n)
+    ) {
+
+      naoApostados.push(n);
+    }
+  }
+
+
+  if (naoApostados.length >= 5) {
+
+    for (
+      let i = naoApostados.length - 1;
+      i > 0;
+      i--
+    ) {
+
+      const j =
+        Math.floor(
+          Math.random() * (i + 1)
+        );
+
+
+      [
+        naoApostados[i],
+        naoApostados[j]
+      ] = [
+        naoApostados[j],
+        naoApostados[i]
+      ];
+    }
+
+
+    return naoApostados
+      .slice(0, 5)
+      .sort(
+        function(a, b) {
+          return a - b;
+        }
+      );
+  }
+
+
+  return gerarCombinacaoAleatoria();
+}
+
+
+// ============================================================
+// SORTEIO CONDICIONADO
+// ============================================================
+
+function sorteioCondicionado(
+  jogadas,
+  fundoPremios,
+  todosNumerosApostados
+) {
+
+  const TENTATIVAS = 3000;
+
+  const validas = [];
+
+  const custoZero = [];
+
+
+  for (
+    let t = 0;
+    t < TENTATIVAS;
+    t++
+  ) {
+
+    const nums =
+      gerarCombinacaoAleatoria();
+
+
+    const custo =
+      calcularCustoPremios(
+        nums,
+        jogadas
+      );
+
+
+    if (custo === 0) {
+
+      custoZero.push(nums);
+
+    } else if (
+      custo <= fundoPremios
+    ) {
+
+      validas.push({
+        nums: nums,
+        custo: custo
+      });
+    }
+  }
+
+
+  if (validas.length > 0) {
+
+    const idx =
+      Math.floor(
+        Math.random() *
+        validas.length
+      );
+
+
+    return validas[idx].nums;
+  }
+
+
+  if (custoZero.length > 0) {
+
+    const idx =
+      Math.floor(
+        Math.random() *
+        custoZero.length
+      );
+
+
+    return custoZero[idx];
+  }
+
+
+  return gerarCombinacaoNaoApostada(
+    todosNumerosApostados
+  );
+}
+
+
+// ============================================================
+// CORS
+// ============================================================
+
+function doOptions(e) {
+
+  return ContentService
+    .createTextOutput('')
+    .setMimeType(
+      ContentService.MimeType.TEXT
+    );
+}
+
+
+// ============================================================
+// DO GET
+// ============================================================
+
+function doGet(e) {
+
+  const action =
+    e &&
+    e.parameter
+      ? e.parameter.action
+      : '';
+
+
+  try {
+
+    switch (action) {
+
+      case 'config':
+
+        return json({
+
+          success: true,
+
+          jogo: 'SORTEMZ',
+
+          modalidade: '5/55',
+
+          sorteios:
+            HORARIOS_SORTEIO,
+
+          minutosFechamento:
+            MINUTOS_FECHAMENTO_ANTES,
+
+          premios:
+            PREMIOS
+        });
+
+
+      case 'sorteios':
+
+        return json(
+          obterSorteiosPublicos()
+        );
+
+
+      case 'sorteiosAbertos':
+
+        return json(
+          obterSorteiosAbertos()
+        );
+
+
+      case 'resultado':
+
+        return json(
+          obterUltimoResultado()
+        );
+
+
+      case 'resultadoSorteio':
+
+        return json(
+          obterResultadoSorteio(
+            e.parameter.sorteioId
+          )
+        );
+
+
+      case 'usuario':
+
+        return json(
+          obterUsuario(
+            e.parameter.id
+          )
+        );
+
+
+      case 'minhasJogadas':
+
+        return json(
+          obterJogadasUsuario(
+            e.parameter.id
+          )
+        );
+
+
+      case 'meusPremios':
+
+        return json(
+          obterPremiosUsuario(
+            e.parameter.id
+          )
+        );
+
+
+      case 'meusLevantamentos':
+
+        return json(
+          obterLevantamentosUsuario(
+            e.parameter.id
+          )
+        );
+
+
+      case 'levantamentosPendentes':
+
+        if (
+          e.parameter.adminKey !==
+          ADMIN_SECRET_KEY
+        ) {
+
+          throw new Error(
+            'Acesso não autorizado.'
+          );
+        }
+
+
+        return json(
+          obterLevantamentosPendentes()
+        );
+
+
+      default:
+
+        return json({
+
+          success: true,
+
+          app: 'SORTEMZ',
+
+          status: 'online'
+        });
+    }
+
+
+  } catch (err) {
+
+    return json({
+
+      success: false,
+
+      error: err.message
+    });
+  }
+}
+
+
+// ============================================================
+// DO POST
+// ============================================================
+
+function doPost(e) {
+
+  try {
+
+    let data = {};
+
+
+    if (
+      e.postData &&
+      e.postData.contents &&
+      e.postData.contents
+        .trim()
+        .startsWith('{')
+    ) {
+
+      try {
+
+        data =
+          JSON.parse(
+            e.postData.contents
+          );
+
+      } catch (erro) {
+
+        data = {};
+      }
+    }
+
+
+    if (
+      Object.keys(data).length === 0
+    ) {
+
+      data =
+        e.parameter || {};
+    }
+
+
+    if (
+      data.numeros &&
+      typeof data.numeros === 'string'
+    ) {
+
+      try {
+
+        data.numeros =
+          JSON.parse(
+            data.numeros
+          );
+
+      } catch (erro) {
+
+        data.numeros =
+          data.numeros
+            .split(',')
+            .map(Number);
+      }
+    }
+
+
+    const action =
+      data.action || '';
+
+
+    // WEBHOOK NETSHOP
+
+    if (
+      data.event &&
+      data.event.startsWith('charge.')
+    ) {
+
+      return json(
+        processarWebhookNetshop(
+          data
+        )
+      );
+    }
+
+
+    switch (action) {
+
+      case 'registarUsuario':
+
+        return json(
+          registarUsuario(data)
+        );
+
+
+      case 'registarJogada':
+
+        return json(
+          registarJogada(data)
+        );
+
+
+      case 'solicitarLevantamento':
+
+        return json(
+          solicitarLevantamento(data)
+        );
+
+
+      case 'aprovarLevantamento':
+
+        if (
+          data.adminKey !==
+          ADMIN_SECRET_KEY
+        ) {
+
+          throw new Error(
+            'Acesso não autorizado.'
+          );
+        }
+
+
+        return json(
+          aprovarLevantamento(data)
+        );
+
+
+      case 'rejeitarLevantamento':
+
+        if (
+          data.adminKey !==
+          ADMIN_SECRET_KEY
+        ) {
+
+          throw new Error(
+            'Acesso não autorizado.'
+          );
+        }
+
+
+        return json(
+          rejeitarLevantamento(data)
+        );
+
+
+      case 'depositoNetshop':
+
+        return json(
+          processarDepositoNetshop(
+            data.referencia,
+            data.telefone,
+            data.valor,
+            data.metodo
+          )
+        );
+
+
+      case 'sortearManual':
+
+        if (
+          data.adminKey !==
+          ADMIN_SECRET_KEY
+        ) {
+
+          throw new Error(
+            'Acesso não autorizado.'
+          );
+        }
+
+
+        return json(
+          realizarSorteioManual(data)
+        );
+
+
+      default:
+
+        return json({
+
+          success: false,
+
+          error:
+            'Acao não reconhecida: ' +
+            action
+        });
+    }
+
+
+  } catch (err) {
+
+    return json({
+
+      success: false,
+
+      error: err.message
+    });
+  }
+}
+
+
+// ============================================================
+// NETSHOP - DEPÓSITO
+// ============================================================
+
+function processarDepositoNetshop(
+  refCliente,
+  telefone,
+  valor,
+  metodo
+) {
+
+  try {
+
+    if (!refCliente) {
+
+      throw new Error(
+        'Referencia obrigatória.'
+      );
+    }
+
+
+    if (
+      !valor ||
+      Number(valor) <= 0
+    ) {
+
+      throw new Error(
+        'Valor deve ser maior que zero.'
+      );
+    }
+
+
+    if (!telefone) {
+
+      throw new Error(
+        'Telefone obrigatório.'
+      );
+    }
+
+
+    let telFormatado =
+      String(telefone)
+        .trim()
+        .replace(/\s+/g, '');
+
+
+    if (
+      !telFormatado.startsWith('+258')
+    ) {
+
+      if (
+        telFormatado.startsWith('258')
+      ) {
+
+        telFormatado =
+          '+' + telFormatado;
+
+      } else {
+
+        telFormatado =
+          '+258' + telFormatado;
+      }
+    }
+
+
+    const payload = {
+
+      amount:
+        Number(valor),
+
+      currency:
+        'MZN',
+
+      method:
+        metodo || 'mpesa',
+
+      msisdn:
+        telFormatado,
+
+      reference:
+        refCliente,
+
+      metadata: {
+
+        cliente_ref:
+          refCliente,
+
+        origem:
+          'SORTEMZ_APP'
+      }
+    };
+
+
+    const options = {
+
+      method:
+        'post',
+
+      contentType:
+        'application/json',
+
+      headers: {
+
+        'Authorization':
+          'Bearer ' +
+          NETSHOP_CONFIG.API_KEY,
+
+        'X-Wallet-ID':
+          NETSHOP_CONFIG.WALLET_ID
+      },
+
+      payload:
+        JSON.stringify(payload),
+
+      muteHttpExceptions:
+        true
+    };
+
+
+    const response =
+      UrlFetchApp.fetch(
+        NETSHOP_CONFIG.BASE_URL +
+        '/charges',
+        options
+      );
+
+
+    const statusCode =
+      response.getResponseCode();
+
+
+    const responseText =
+      response.getContentText();
+
+
+    Logger.log(
+      'NetShop Status: ' +
+      statusCode
+    );
+
+
+    if (
+      statusCode < 200 ||
+      statusCode >= 300
+    ) {
+
+      let erroMsg =
+        'Erro ' +
+        statusCode +
+        ' na NetShop';
+
+
+      try {
+
+        const erroJson =
+          JSON.parse(
+            responseText
+          );
+
+
+        erroMsg =
+          erroJson.message ||
+          erroJson.error ||
+          erroMsg;
+
+      } catch (e) {
+
+        erroMsg =
+          responseText.substring(
+            0,
+            200
+          ) ||
+          erroMsg;
+      }
+
+
+      return {
+
+        success: false,
+
+        message:
+          erroMsg,
+
+        httpStatus:
+          statusCode
+      };
+    }
+
+
+    const resJson =
+      JSON.parse(
+        responseText
+      );
+
+
+    if (
+      resJson.status ===
+      'paid'
+    ) {
+
+      const creditado =
+        creditarSaldoPorReferencia(
+          refCliente,
+          Number(valor)
+        );
+
+
+      if (!creditado.encontrado) {
+
+        throw new Error(
+          'Referencia ' +
+          refCliente +
+          ' não encontrada.'
+        );
+      }
+
+
+      return {
+
+        success: true,
+
+        status: 'paid',
+
+        message:
+          'Pagamento efetuado com sucesso!'
+      };
+    }
+
+
+    if (
+      resJson.status ===
+      'pending'
+    ) {
+
+      return {
+
+        success: true,
+
+        status: 'pending',
+
+        charge_id:
+          resJson.id,
+
+        message:
+          'Confirme a transação no seu celular.'
+      };
+    }
+
+
+    if (
+      resJson.status ===
+      'failed'
+    ) {
+
+      return {
+
+        success: false,
+
+        message:
+          resJson.failed_reason ||
+          resJson.message ||
+          'Pagamento recusado.'
+      };
+    }
+
+
+    return {
+
+      success: false,
+
+      message:
+        resJson.message ||
+        'Resposta inesperada da NetShop.',
+
+      status:
+        resJson.status
+    };
+
+
+  } catch (error) {
+
+    Logger.log(
+      'Erro NetShop: ' +
+      error.toString()
+    );
+
+
+    return {
+
+      success: false,
+
+      message:
+        'Erro: ' +
+        error.toString()
+    };
+  }
+}
+
+
+// ============================================================
+// WEBHOOK NETSHOP
+// ============================================================
+
+function processarWebhookNetshop(data) {
+
+  try {
+
+    const evento =
+      data.event || '';
+
+
+    const status =
+      data.status ||
+      (
+        data.data &&
+        data.data.status
+      ) ||
+      '';
+
+
+    if (
+      evento !== 'charge.paid' &&
+      status !== 'paid'
+    ) {
+
+      return {
+
+        success: true,
+
+        message:
+          'Evento ignorado: ' +
+          evento
+      };
+    }
+
+
+    const referencia =
+      (
+        data.reference ||
+        (
+          data.data &&
+          data.data.reference
+        ) ||
+        ''
+      )
+      .toString()
+      .trim()
+      .toUpperCase();
+
+
+    const valor =
+      Number(
+        data.amount ||
+        (
+          data.data &&
+          data.data.amount
+        ) ||
+        0
+      );
+
+
+    const transacaoId =
+      (
+        data.id ||
+        (
+          data.data &&
+          data.data.id
+        ) ||
+        'NET-' +
+        Date.now()
+      ).toString();
+
+
+    if (!referencia) {
+
+      throw new Error(
+        'Referencia obrigatória no webhook.'
+      );
+    }
+
+
+    if (!valor || valor <= 0) {
+
+      throw new Error(
+        'Valor inválido no webhook.'
+      );
+    }
+
+
+    if (
+      !referencia.startsWith('SMZ')
+    ) {
+
+      throw new Error(
+        'Referencia inválida.'
+      );
+    }
+
+
+    const ss =
+      SpreadsheetApp.openById(
+        SPREADSHEET_ID
+      );
+
+
+    const sheetMovimentos =
+      ss.getSheetByName(
+        SHEETS.MOVIMENTOS
+      );
+
+
+    const movs =
+      sheetMovimentos
+        .getDataRange()
+        .getValues();
+
+
+    for (
+      let i = 1;
+      i < movs.length;
+      i++
+    ) {
+
+      if (
+        String(movs[i][7] || '') ===
+        transacaoId
+      ) {
+
+        return {
+
+          success: true,
+
+          message:
+            'Transação já processada.',
+
+          duplicado: true
+        };
+      }
+    }
+
+
+    const resultado =
+      creditarSaldoPorReferencia(
+        referencia,
+        valor
+      );
+
+
+    if (!resultado.encontrado) {
+
+      throw new Error(
+        'Referencia ' +
+        referencia +
+        ' não encontrada.'
+      );
+    }
+
+
+    const movId =
+      'MOV-' +
+      Utilities
+        .getUuid()
+        .substring(0, 8)
+        .toUpperCase();
+
+
+    sheetMovimentos.appendRow([
+
+      movId,
+
+      new Date(),
+
+      resultado.usuarioId,
+
+      'DEPOSITO',
+
+      referencia,
+
+      valor,
+
+      'CONFIRMADO',
+
+      transacaoId,
+
+      'Netshop'
+    ]);
+
+
+    return {
+
+      success: true,
+
+      message:
+        'Depósito creditado.',
+
+      referencia:
+        referencia,
+
+      transacaoId:
+        transacaoId
+    };
+
+
+  } catch (err) {
+
+    Logger.log(
+      'Erro webhook: ' +
+      err.toString()
+    );
+
+
+    return {
+
+      success: false,
+
+      message:
+        err.toString()
+    };
+  }
+}
+
+
+// ============================================================
+// CREDITAR SALDO
+// ============================================================
+
+function creditarSaldoPorReferencia(
+  refCliente,
+  valor
+) {
+
+  const ss =
+    SpreadsheetApp.openById(
+      SPREADSHEET_ID
+    );
+
+
+  const abaUsuarios =
+    ss.getSheetByName(
+      SHEETS.USUARIOS
+    );
+
+
+  const dados =
+    abaUsuarios
+      .getDataRange()
+      .getValues();
+
+
+  for (
+    let i = 1;
+    i < dados.length;
+    i++
+  ) {
+
+    const refPlanilha =
+      String(
+        dados[i][3] || ''
+      )
+      .trim()
+      .toUpperCase();
+
+
+    if (
+      refPlanilha ===
+      String(refCliente)
+        .trim()
+        .toUpperCase()
+    ) {
+
+      const saldoAtual =
+        Number(
+          dados[i][4]
+        ) || 0;
+
+
+      abaUsuarios
+        .getRange(i + 1, 5)
+        .setValue(
+          saldoAtual +
+          Number(valor)
+        );
+
+
+      return {
+
+        encontrado: true,
+
+        usuarioId:
+          dados[i][0],
+
+        saldoAnterior:
+          saldoAtual
+      };
+    }
+  }
+
+
+  return {
+    encontrado: false
+  };
+}
+
+
+// ============================================================
+// USUÁRIOS
+// ============================================================
+
+function registarUsuario(data) {
+
+  if (
+    !data.nome ||
+    !data.telefone
+  ) {
+
+    throw new Error(
+      'Nome e telefone obrigatórios.'
+    );
+  }
+
+
+  const ss =
+    SpreadsheetApp.openById(
+      SPREADSHEET_ID
+    );
+
+
+  const sheet =
+    ss.getSheetByName(
+      SHEETS.USUARIOS
+    );
+
+
+  const dados =
+    sheet
+      .getDataRange()
+      .getValues();
+
+
+  const telNormalizado =
+    normalizarTelefone(
+      data.telefone
+    );
+
+
+  if (
+    telNormalizado.length < 9
+  ) {
+
+    throw new Error(
+      'Telefone inválido.'
+    );
+  }
+
+
+  for (
+    let i = 1;
+    i < dados.length;
+    i++
+  ) {
+
+    const telPlanilha =
+      normalizarTelefone(
+        dados[i][2]
+      );
+
+
+    if (
+      telPlanilha ===
+      telNormalizado ||
+      telPlanilha.endsWith(
+        telNormalizado
+      ) ||
+      telNormalizado.endsWith(
+        telPlanilha
+      )
+    ) {
+
+      if (
+        data.nome &&
+        data.nome !==
+        dados[i][1]
+      ) {
+
+        sheet
+          .getRange(i + 1, 2)
+          .setValue(
+            data.nome
+          );
+      }
+
+
+      return {
+
+        success: true,
+
+        id:
+          dados[i][0],
+
+        nome:
+          data.nome ||
+          dados[i][1],
+
+        telefone:
+          dados[i][2],
+
+        referencia:
+          dados[i][3],
+
+        saldo:
+          Number(
+            dados[i][4] || 0
+          ),
+
+        existente:
+          true
+      };
+    }
+  }
+
+
+  const id =
+    'USR-' +
+    Utilities
+      .getUuid()
+      .substring(0, 8)
+      .toUpperCase();
+
+
+  const referencia =
+    'SMZ' +
+    Math.floor(
+      100000 +
+      Math.random() *
+      900000
+    );
+
+
+  sheet.appendRow([
+
+    id,
+
+    data.nome,
+
+    data.telefone,
+
+    referencia,
+
+    0,
+
+    new Date(),
+
+    'ATIVO'
+  ]);
+
+
+  return {
+
+    success: true,
+
+    id:
+
+      id,
+
+    nome:
+
+      data.nome,
+
+    telefone:
+
+      data.telefone,
+
+    referencia:
+
+      referencia,
+
+    saldo:
+
+      0
+  };
+}
+
+
+function obterUsuario(id) {
+
+  if (!id) {
+
+    return {
+
+      success: false,
+
+      error:
+        'ID obrigatório.'
+    };
+  }
+
+
+  const ss =
+    SpreadsheetApp.openById(
+      SPREADSHEET_ID
+    );
+
+
+  const sheet =
+    ss.getSheetByName(
+      SHEETS.USUARIOS
+    );
+
+
+  const dados =
+    sheet
+      .getDataRange()
+      .getValues();
+
+
+  for (
+    let i = 1;
+    i < dados.length;
+    i++
+  ) {
+
+    if (
+      String(dados[i][0]) ===
+      String(id)
+    ) {
+
+      return {
+
+        success: true,
+
+        usuario: {
+
+          id:
+            dados[i][0],
+
+          nome:
+            dados[i][1],
+
+          telefone:
+            dados[i][2],
+
+          referencia:
+            dados[i][3],
+
+          saldo:
+            Number(
+              dados[i][4] || 0
+            ),
+
+          status:
+            dados[i][6]
+        }
+      };
+    }
+  }
+
+
+  return {
+
+    success: false,
+
+    error:
+      'Usuário não encontrado.'
+  };
+}
+
+
+// ============================================================
+// JOGADAS
+// ============================================================
+
+function registarJogada(data) {
+
+  if (!data.usuarioId) {
+
+    throw new Error(
+      'Usuário não informado.'
+    );
+  }
+
+
+  if (!data.sorteioId) {
+
+    throw new Error(
+      'Sorteio não informado.'
+    );
+  }
+
+
+  if (!data.numeros) {
+
+    throw new Error(
+      'Números não informados.'
+    );
+  }
+
+
+  let numeros =
+    data.numeros;
+
+
+  if (
+    typeof numeros ===
+    'string'
+  ) {
+
+    numeros =
+      numeros
+        .split(',')
+        .map(Number);
+  }
+
+
+  if (
+    !Array.isArray(numeros) ||
+    numeros.length !== 5
+  ) {
+
+    throw new Error(
+      'Selecione exatamente 5 números.'
+    );
+  }
+
+
+  const unicos =
+    [...new Set(numeros)];
+
+
+  if (
+    unicos.length !== 5
+  ) {
+
+    throw new Error(
+      'Números não podem repetir.'
+    );
+  }
+
+
+  numeros.forEach(
+    function(n) {
+
+      if (
+        n < 1 ||
+        n > 55
+      ) {
+
+        throw new Error(
+          'Números entre 1 e 55.'
+        );
+      }
+    }
+  );
+
+
+  const sorteio =
+    obterSorteioPorIdInterno(
+      data.sorteioId
+    );
+
+
+  if (!sorteio) {
+
+    throw new Error(
+      'Sorteio não encontrado.'
+    );
+  }
+
+
+  if (
+    normalizarStatus(
+      sorteio.status
+    ) !== 'ABERTO'
+  ) {
+
+    throw new Error(
+      'Sorteio fechado.'
+    );
+  }
+
+
+  // Verificação adicional do horário
+  const agora =
+    new Date();
+
+
+  const dataHoraSorteio =
+    criarDataHora(
+      sorteio.data,
+      sorteio.hora
+    );
+
+
+  if (!dataHoraSorteio) {
+
+    throw new Error(
+      'Data ou hora do sorteio inválida.'
+    );
+  }
+
+
+  const fechamento =
+    new Date(
+      dataHoraSorteio.getTime() -
+      MINUTOS_FECHAMENTO_ANTES *
+      60000
+    );
+
+
+  if (agora >= fechamento) {
+
+    throw new Error(
+      'As apostas para este sorteio já estão fechadas.'
+    );
+  }
+
+
+  const ss =
+    SpreadsheetApp.openById(
+      SPREADSHEET_ID
+    );
+
+
+  const sheetUsuarios =
+    ss.getSheetByName(
+      SHEETS.USUARIOS
+    );
+
+
+  const dadosUsuarios =
+    sheetUsuarios
+      .getDataRange()
+      .getValues();
+
+
+  let linhaUsuario = -1;
+
+  let saldoAtual = 0;
+
+
+  for (
+    let i = 1;
+    i < dadosUsuarios.length;
+    i++
+  ) {
+
+    if (
+      String(
+        dadosUsuarios[i][0]
+      ) ===
+      String(
+        data.usuarioId
+      )
+    ) {
+
+      linhaUsuario =
+        i + 1;
+
+      saldoAtual =
+        Number(
+          dadosUsuarios[i][4] || 0
+        );
+
+      break;
+    }
+  }
+
+
+  if (
+    linhaUsuario === -1
+  ) {
+
+    throw new Error(
+      'Usuário não encontrado.'
+    );
+  }
+
+
+  const valor =
+    Number(
+      data.valor || 10
+    );
+
+
+  if (
+    saldoAtual < valor
+  ) {
+
+    throw new Error(
+      'Saldo insuficiente.'
+    );
+  }
+
+
+  const sheetJogadas =
+    ss.getSheetByName(
+      SHEETS.JOGADAS
+    );
+
+
+  const id =
+    'JOG-' +
+    Utilities
+      .getUuid()
+      .substring(0, 8)
+      .toUpperCase();
+
+
+  numeros =
+    numeros.sort(
+      function(a, b) {
+        return a - b;
+      }
+    );
+
+
+  sheetJogadas.appendRow([
+
+    id,
+
+    data.usuarioId,
+
+    data.referencia || '',
+
+    sorteio.id,
+
+    new Date(),
+
+    Utilities.formatDate(
+      new Date(),
+      Session.getScriptTimeZone(),
+      'HH:mm:ss'
+    ),
+
+    numeros.join(','),
+
+    valor,
+
+    'CONFIRMADA'
+  ]);
+
+
+  const novoSaldo =
+    saldoAtual - valor;
+
+
+  sheetUsuarios
+    .getRange(
+      linhaUsuario,
+      5
+    )
+    .setValue(
+      novoSaldo
+    );
+
+
+  const sheetMovimentos =
+    ss.getSheetByName(
+      SHEETS.MOVIMENTOS
+    );
+
+
+  sheetMovimentos.appendRow([
+
+    'MOV-' +
+    Utilities
+      .getUuid()
+      .substring(0, 8)
+      .toUpperCase(),
+
+    new Date(),
+
+    data.usuarioId,
+
+    'APOSTA',
+
+    data.referencia || '',
+
+    -valor,
+
+    'CONFIRMADO',
+
+    id,
+
+    'Sistema'
+  ]);
+
+
+  atualizarCofre(
+    sorteio.id,
+    valor
+  );
+
+
+  SpreadsheetApp.flush();
+
+
+  return {
+
+    success: true,
+
+    jogadaId:
+      id,
+
+    sorteioId:
+      sorteio.id,
+
+    numeros:
+      numeros,
+
+    saldoRestante:
+      novoSaldo
+  };
+}
+
+
+function obterJogadasUsuario(
+  usuarioId
+) {
+
+  if (!usuarioId) {
+
+    return {
+
+      success: false,
+
+      error:
+        'UsuarioId obrigatório.'
+    };
+  }
+
+
+  const ss =
+    SpreadsheetApp.openById(
+      SPREADSHEET_ID
+    );
+
+
+  const sheet =
+    ss.getSheetByName(
+      SHEETS.JOGADAS
+    );
+
+
+  const dados =
+    sheet
+      .getDataRange()
+      .getValues();
+
+
+  const jogadas = [];
+
+
+  for (
+    let i = 1;
+    i < dados.length;
+    i++
+  ) {
+
+    if (
+      String(dados[i][1]) ===
+      String(usuarioId)
+    ) {
+
+      jogadas.push({
+
+        id:
+          dados[i][0],
+
+        sorteioId:
+          dados[i][3],
+
+        data:
+          dataParaString(
+            dados[i][4]
+          ),
+
+        hora:
+          normalizarHora(
+            dados[i][5]
+          ),
+
+        numeros:
+          String(
+            dados[i][6] || ''
+          )
+          .split(',')
+          .map(Number),
+
+        valor:
+          dados[i][7],
+
+        status:
+          dados[i][8]
+      });
+    }
+  }
+
+
+  return {
+
+    success: true,
+
+    jogadas:
+      jogadas.reverse()
+  };
+}
+
+
+// ============================================================
+// SORTEIOS
+// ============================================================
+
+function obterSorteioPorIdInterno(
+  id
+) {
+
+  const ss =
+    SpreadsheetApp.openById(
+      SPREADSHEET_ID
+    );
+
+
+  const sheet =
+    ss.getSheetByName(
+      SHEETS.SORTEIOS
+    );
+
+
+  if (!sheet) return null;
+
+
+  const dados =
+    sheet
+      .getDataRange()
+      .getValues();
+
+
+  for (
+    let i = 1;
+    i < dados.length;
+    i++
+  ) {
+
+    if (
+      String(
+        dados[i][0]
+      ).trim() ===
+      String(id).trim()
+    ) {
+
+      return {
+
+        id:
+          dados[i][0],
+
+        data:
+          dados[i][1],
+
+        hora:
+          dados[i][2],
+
+        status:
+          dados[i][8]
+      };
+    }
+  }
+
+
+  return null;
+}
+
+
+// ============================================================
+// SORTEIOS PÚBLICOS
+// ============================================================
+
+function obterSorteiosPublicos() {
+
+  const ss =
+    SpreadsheetApp.openById(
+      SPREADSHEET_ID
+    );
+
+
+  const sheet =
+    ss.getSheetByName(
+      SHEETS.SORTEIOS
+    );
+
+
+  if (!sheet) return [];
+
+
+  const dados =
+    sheet
+      .getDataRange()
+      .getValues();
+
+
+  return dados
+    .slice(1)
+    .filter(function(row) {
+
+      return row[0];
+
+    })
+    .map(function(row) {
+
+      return {
+
+        id:
+          row[0],
+
+        data:
+          dataParaString(
+            row[1]
+          ),
+
+        hora:
+          normalizarHora(
+            row[2]
+          ),
+
+        status:
+          normalizarStatus(
+            row[8]
+          )
+      };
+    });
+}
+
+
+// ============================================================
+// SORTEIOS ABERTOS
+// ============================================================
+
+function obterSorteiosAbertos() {
+
+  const sorteios =
+    obterSorteiosPublicos();
+
+
+  const agora =
+    new Date();
+
+
+  const abertos =
+    sorteios
+      .filter(function(s) {
+
+        if (
+          normalizarStatus(
+            s.status
+          ) !== 'ABERTO'
+        ) {
+
+          return false;
+        }
+
+
+        const dataHora =
+          criarDataHora(
+            s.data,
+            s.hora
+          );
+
+
+        if (!dataHora) {
+
+          return false;
+        }
+
+
+        const fechamento =
+          new Date(
+            dataHora.getTime() -
+            MINUTOS_FECHAMENTO_ANTES *
+            60000
+          );
+
+
+        return agora < fechamento;
+
+      })
+      .map(function(s) {
+
+        const dataHora =
+          criarDataHora(
+            s.data,
+            s.hora
+          );
+
+
+        const fechamento =
+          new Date(
+            dataHora.getTime() -
+            MINUTOS_FECHAMENTO_ANTES *
+            60000
+          );
+
+
+        return {
+
+          id:
+            s.id,
+
+          data:
+            s.data,
+
+          hora:
+            s.hora,
+
+          status:
+            'ABERTO',
+
+          fechamento:
+            Utilities.formatDate(
+              fechamento,
+              Session.getScriptTimeZone(),
+              'yyyy-MM-dd HH:mm'
+            )
+        };
+      });
+
+
+  return {
+
+    success: true,
+
+    sorteios:
+      abertos,
+
+    total:
+      abertos.length
+  };
+}
+
+
+// ============================================================
+// RESULTADO
+// ============================================================
+
+function obterUltimoResultado() {
+
+  const ss =
+    SpreadsheetApp.openById(
+      SPREADSHEET_ID
+    );
+
+
+  const sheet =
+    ss.getSheetByName(
+      SHEETS.RESULTADOS
+    );
+
+
+  if (!sheet) {
+
+    return {
+
+      success: true,
+
+      resultado: null
+    };
+  }
+
+
+  const dados =
+    sheet
+      .getDataRange()
+      .getValues();
+
+
+  if (
+    dados.length <= 1
+  ) {
+
+    return {
+
+      success: true,
+
+      resultado: null
+    };
+  }
+
+
+  const row =
+    dados[dados.length - 1];
+
+
+  return {
+
+    success: true,
+
+    resultado: {
+
+      sorteioId:
+        row[0],
+
+      data:
+        dataParaString(
+          row[1]
+        ),
+
+      hora:
+        normalizarHora(
+          row[2]
+        ),
+
+      numeros: [
+
+        Number(row[3]),
+
+        Number(row[4]),
+
+        Number(row[5]),
+
+        Number(row[6]),
+
+        Number(row[7])
+      ]
+    }
+  };
+}
+
+
+function obterResultadoSorteio(
+  sorteioId
+) {
+
+  if (!sorteioId) {
+
+    return {
+
+      success: false,
+
+      error:
+        'SorteioId obrigatório.'
+    };
+  }
+
+
+  const ss =
+    SpreadsheetApp.openById(
+      SPREADSHEET_ID
+    );
+
+
+  const sheet =
+    ss.getSheetByName(
+      SHEETS.RESULTADOS
+    );
+
+
+  const dados =
+    sheet
+      .getDataRange()
+      .getValues();
+
+
+  for (
+    let i = 1;
+    i < dados.length;
+    i++
+  ) {
+
+    if (
+      String(
+        dados[i][0]
+      ).trim() ===
+      String(sorteioId).trim()
+    ) {
+
+      return {
+
+        success: true,
+
+        resultado: {
+
+          sorteioId:
+            dados[i][0],
+
+          data:
+            dataParaString(
+              dados[i][1]
+            ),
+
+          hora:
+            normalizarHora(
+              dados[i][2]
+            ),
+
+          numeros: [
+
+            Number(dados[i][3]),
+
+            Number(dados[i][4]),
+
+            Number(dados[i][5]),
+
+            Number(dados[i][6]),
+
+            Number(dados[i][7])
+          ]
+        }
+      };
+    }
+  }
+
+
+  return {
+
+    success: false,
+
+    error:
+      'Resultado não encontrado.'
+  };
+}
+
+
+// ============================================================
+// PRÉMIOS
+// ============================================================
+
+function obterPremiosUsuario(
+  usuarioId
+) {
+
+  if (!usuarioId) {
+
+    return {
+
+      success: false,
+
+      error:
+        'UsuarioId obrigatório.'
+    };
+  }
+
+
+  const ss =
+    SpreadsheetApp.openById(
+      SPREADSHEET_ID
+    );
+
+
+  const sheet =
+    ss.getSheetByName(
+      SHEETS.PREMIOS
+    );
+
+
+  const dados =
+    sheet
+      .getDataRange()
+      .getValues();
+
+
+  const premios = [];
+
+
+  for (
+    let i = 1;
+    i < dados.length;
+    i++
+  ) {
+
+    if (
+      String(
+        dados[i][2]
+      ) ===
+      String(usuarioId)
+    ) {
+
+      premios.push({
+
+        id:
+          dados[i][0],
+
+        sorteioId:
+          dados[i][1],
+
+        acertos:
+          dados[i][3],
+
+        premio:
+          dados[i][5],
+
+        status:
+          dados[i][6],
+
+        data:
+          dados[i][7]
+      });
+    }
+  }
+
+
+  return {
+
+    success: true,
+
+    premios:
+      premios.reverse()
+  };
+}
+
+
+// ============================================================
+// LEVANTAMENTOS
+// ============================================================
+
+function solicitarLevantamento(
+  data
+) {
+
+  if (!data.usuarioId) {
+
+    throw new Error(
+      'Usuário não informado.'
+    );
+  }
+
+
+  if (
+    !data.valor ||
+    Number(data.valor) <= 0
+  ) {
+
+    throw new Error(
+      'Valor obrigatório.'
+    );
+  }
+
+
+  if (!data.telefone) {
+
+    throw new Error(
+      'Telefone M-Pesa obrigatório.'
+    );
+  }
+
+
+  const valor =
+    Number(data.valor);
+
+
+  const taxa = 0;
+
+
+  const valorLiquido =
+    valor - taxa;
+
+
+  const ss =
+    SpreadsheetApp.openById(
+      SPREADSHEET_ID
+    );
+
+
+  const sheetUsuarios =
+    ss.getSheetByName(
+      SHEETS.USUARIOS
+    );
+
+
+  const sheetLevantamentos =
+    ss.getSheetByName(
+      SHEETS.LEVANTAMENTOS
+    );
+
+
+  const dados =
+    sheetUsuarios
+      .getDataRange()
+      .getValues();
+
+
+  let linhaUsuario = -1;
+
+  let saldoAtual = 0;
+
+
+  for (
+    let i = 1;
+    i < dados.length;
+    i++
+  ) {
+
+    if (
+      String(
+        dados[i][0]
+      ) ===
+      String(
+        data.usuarioId
+      )
+    ) {
+
+      linhaUsuario =
+        i + 1;
+
+      saldoAtual =
+        Number(
+          dados[i][4] || 0
+        );
+
+      break;
+    }
+  }
+
+
+  if (
+    linhaUsuario === -1
+  ) {
+
+    throw new Error(
+      'Usuário não encontrado.'
+    );
+  }
+
+
+  if (
+    saldoAtual < valor
+  ) {
+
+    throw new Error(
+      'Saldo insuficiente para levantamento.'
+    );
+  }
+
+
+  const novoSaldo =
+    saldoAtual - valor;
+
+
+  sheetUsuarios
+    .getRange(
+      linhaUsuario,
+      5
+    )
+    .setValue(
+      novoSaldo
+    );
+
+
+  const id =
+    'LEV-' +
+    Utilities
+      .getUuid()
+      .substring(0, 8)
+      .toUpperCase();
+
+
+  sheetLevantamentos.appendRow([
+
+    id,
+
+    new Date(),
+
+    data.usuarioId,
+
+    data.telefone,
+
+    valor,
+
+    taxa,
+
+    valorLiquido,
+
+    'PENDENTE',
+
+    '',
+
+    ''
+  ]);
+
+
+  const sheetMovimentos =
+    ss.getSheetByName(
+      SHEETS.MOVIMENTOS
+    );
+
+
+  sheetMovimentos.appendRow([
+
+    'MOV-' +
+    Utilities
+      .getUuid()
+      .substring(0, 8)
+      .toUpperCase(),
+
+    new Date(),
+
+    data.usuarioId,
+
+    'LEVANTAMENTO',
+
+    id,
+
+    -valor,
+
+    'PENDENTE',
+
+    id,
+
+    'Sistema'
+  ]);
+
+
+  return {
+
+    success: true,
+
+    message:
+      'Pedido de levantamento registado.',
+
+    levantamentoId:
+      id,
+
+    valor:
+      valor,
+
+    valorLiquido:
+      valorLiquido,
+
+    novoSaldo:
+      novoSaldo
+  };
+}
+
+
+function obterLevantamentosUsuario(
+  usuarioId
+) {
+
+  if (!usuarioId) {
+
+    return {
+
+      success: false,
+
+      error:
+        'UsuarioId obrigatório.'
+    };
+  }
+
+
+  const ss =
+    SpreadsheetApp.openById(
+      SPREADSHEET_ID
+    );
+
+
+  const sheet =
+    ss.getSheetByName(
+      SHEETS.LEVANTAMENTOS
+    );
+
+
+  const dados =
+    sheet
+      .getDataRange()
+      .getValues();
+
+
+  const levs = [];
+
+
+  for (
+    let i = 1;
+    i < dados.length;
+    i++
+  ) {
+
+    if (
+      String(
+        dados[i][2]
+      ) ===
+      String(usuarioId)
+    ) {
+
+      levs.push({
+
+        id:
+          dados[i][0],
+
+        data:
+          dados[i][1] instanceof Date
+            ? Utilities.formatDate(
+                dados[i][1],
+                Session.getScriptTimeZone(),
+                'yyyy-MM-dd HH:mm'
+              )
+            : dados[i][1],
+
+        telefone:
+          dados[i][3],
+
+        valor:
+          dados[i][4],
+
+        taxa:
+          dados[i][5],
+
+        valorLiquido:
+          dados[i][6],
+
+        status:
+          dados[i][7]
+      });
+    }
+  }
+
+
+  return {
+
+    success: true,
+
+    levantamentos:
+      levs.reverse()
+  };
+}
+
+
+function obterLevantamentosPendentes() {
+
+  const ss =
+    SpreadsheetApp.openById(
+      SPREADSHEET_ID
+    );
+
+
+  const sheet =
+    ss.getSheetByName(
+      SHEETS.LEVANTAMENTOS
+    );
+
+
+  const dados =
+    sheet
+      .getDataRange()
+      .getValues();
+
+
+  const pendentes = [];
+
+
+  for (
+    let i = 1;
+    i < dados.length;
+    i++
+  ) {
+
+    if (
+      normalizarStatus(
+        dados[i][7]
+      ) === 'PENDENTE'
+    ) {
+
+      pendentes.push({
+
+        id:
+          dados[i][0],
+
+        data:
+          dados[i][1] instanceof Date
+            ? Utilities.formatDate(
+                dados[i][1],
+                Session.getScriptTimeZone(),
+                'yyyy-MM-dd HH:mm'
+              )
+            : dados[i][1],
+
+        usuarioId:
+          dados[i][2],
+
+        telefone:
+          dados[i][3],
+
+        valor:
+          dados[i][4],
+
+        taxa:
+          dados[i][5],
+
+        valorLiquido:
+          dados[i][6]
+      });
+    }
+  }
+
+
+  return {
+
+    success: true,
+
+    pendentes:
+      pendentes,
+
+    total:
+      pendentes.length
+  };
+}
+
+
+function aprovarLevantamento(
+  data
+) {
+
+  if (!data.levId) {
+
+    throw new Error(
+      'levId obrigatório.'
+    );
+  }
+
+
+  const ss =
+    SpreadsheetApp.openById(
+      SPREADSHEET_ID
+    );
+
+
+  const sheet =
+    ss.getSheetByName(
+      SHEETS.LEVANTAMENTOS
+    );
+
+
+  const dados =
+    sheet
+      .getDataRange()
+      .getValues();
+
+
+  for (
+    let i = 1;
+    i < dados.length;
+    i++
+  ) {
+
+    if (
+      String(
+        dados[i][0]
+      ) ===
+      String(
+        data.levId
+      )
+    ) {
+
+      if (
+        normalizarStatus(
+          dados[i][7]
+        ) !== 'PENDENTE'
+      ) {
+
+        throw new Error(
+          'Levantamento já processado.'
+        );
+      }
+
+
+      sheet
+        .getRange(
+          i + 1,
+          8
+        )
+        .setValue(
+          'APROVADO'
+        );
+
+
+      sheet
+        .getRange(
+          i + 1,
+          9
+        )
+        .setValue(
+          new Date()
+        );
+
+
+      sheet
+        .getRange(
+          i + 1,
+          10
+        )
+        .setValue(
+          data.obs ||
+          'Pago via M-Pesa'
+        );
+
+
+      return {
+
+        success: true,
+
+        message:
+          'Levantamento aprovado.',
+
+        levId:
+          data.levId
+      };
+    }
+  }
+
+
+  throw new Error(
+    'Levantamento não encontrado.'
+  );
+}
+
+
+function rejeitarLevantamento(
+  data
+) {
+
+  if (!data.levId) {
+
+    throw new Error(
+      'levId obrigatório.'
+    );
+  }
+
+
+  const ss =
+    SpreadsheetApp.openById(
+      SPREADSHEET_ID
+    );
+
+
+  const sheetLev =
+    ss.getSheetByName(
+      SHEETS.LEVANTAMENTOS
+    );
+
+
+  const sheetUsuarios =
+    ss.getSheetByName(
+      SHEETS.USUARIOS
+    );
+
+
+  const dados =
+    sheetLev
+      .getDataRange()
+      .getValues();
+
+
+  for (
+    let i = 1;
+    i < dados.length;
+    i++
+  ) {
+
+    if (
+      String(
+        dados[i][0]
+      ) ===
+      String(
+        data.levId
+      )
+    ) {
+
+      if (
+        normalizarStatus(
+          dados[i][7]
+        ) !== 'PENDENTE'
+      ) {
+
+        throw new Error(
+          'Levantamento já processado.'
+        );
+      }
+
+
+      const usuarioId =
+        dados[i][2];
+
+
+      const valor =
+        Number(
+          dados[i][4] || 0
+        );
+
+
+      const dadosUsuarios =
+        sheetUsuarios
+          .getDataRange()
+          .getValues();
+
+
+      for (
+        let u = 1;
+        u < dadosUsuarios.length;
+        u++
+      ) {
+
+        if (
+          String(
+            dadosUsuarios[u][0]
+          ) ===
+          String(usuarioId)
+        ) {
+
+          const saldoAtual =
+            Number(
+              dadosUsuarios[u][4] ||
+              0
+            );
+
+
+          sheetUsuarios
+            .getRange(
+              u + 1,
+              5
+            )
+            .setValue(
+              saldoAtual +
+              valor
+            );
+
+
+          break;
+        }
+      }
+
+
+      sheetLev
+        .getRange(
+          i + 1,
+          8
+        )
+        .setValue(
+          'REJEITADO'
+        );
+
+
+      sheetLev
+        .getRange(
+          i + 1,
+          9
+        )
+        .setValue(
+          new Date()
+        );
+
+
+      sheetLev
+        .getRange(
+          i + 1,
+          10
+        )
+        .setValue(
+          data.obs ||
+          'Rejeitado'
+        );
+
+
+      const sheetMovimentos =
+        ss.getSheetByName(
+          SHEETS.MOVIMENTOS
+        );
+
+
+      sheetMovimentos.appendRow([
+
+        'MOV-' +
+        Utilities
+          .getUuid()
+          .substring(0, 8)
+          .toUpperCase(),
+
+        new Date(),
+
+        usuarioId,
+
+        'ESTORNO',
+
+        data.levId,
+
+        valor,
+
+        'CONFIRMADO',
+
+        data.levId,
+
+        'Sistema'
+      ]);
+
+
+      return {
+
+        success: true,
+
+        message:
+          'Levantamento rejeitado e saldo devolvido.',
+
+        levId:
+          data.levId
+      };
+    }
+  }
+
+
+  throw new Error(
+    'Levantamento não encontrado.'
+  );
+}
+
+
+// ============================================================
+// COFRE
+// ============================================================
+
+function atualizarCofre(
+  sorteioId,
+  valor
+) {
+
+  const ss =
+    SpreadsheetApp.openById(
+      SPREADSHEET_ID
+    );
+
+
+  const sheet =
+    ss.getSheetByName(
+      SHEETS.SORTEIOS
+    );
+
+
+  const dados =
+    sheet
+      .getDataRange()
+      .getValues();
+
+
+  for (
+    let i = 1;
+    i < dados.length;
+    i++
+  ) {
+
+    if (
+      String(
+        dados[i][0]
+      ).trim() ===
+      String(
+        sorteioId
+      ).trim()
+    ) {
+
+      const arrecadacao =
+        Number(
+          dados[i][3] || 0
+        ) +
+        Number(valor);
+
+
+      const casa =
+        arrecadacao * 0.50;
+
+
+      const fundo =
+        arrecadacao * 0.50;
+
+
+      const pagos =
+        Number(
+          dados[i][6] || 0
+        );
+
+
+      const saldo =
+        fundo - pagos;
+
+
+      sheet
+        .getRange(
+          i + 1,
+          4
+        )
+        .setValue(
+          arrecadacao
+        );
+
+
+      sheet
+        .getRange(
+          i + 1,
+          5
+        )
+        .setValue(
+          casa
+        );
+
+
+      sheet
+        .getRange(
+          i + 1,
+          6
+        )
+        .setValue(
+          fundo
+        );
+
+
+      sheet
+        .getRange(
+          i + 1,
+          8
+        )
+        .setValue(
+          saldo
+        );
+
+
+      break;
+    }
+  }
+}
+
+
+// ============================================================
+// SORTEIO MANUAL ADMIN
+// ============================================================
+
+function realizarSorteioManual(
+  data
+) {
+
+  if (!data.sorteioId) {
+
+    throw new Error(
+      'sorteioId obrigatório.'
+    );
+  }
+
+
+  if (
+    resultadoExiste(
+      data.sorteioId
+    )
+  ) {
+
+    throw new Error(
+      'Sorteio já foi realizado.'
+    );
+  }
+
+
+  return processarSorteioCompleto(
+    data.sorteioId
+  );
+}
+
+
+// ============================================================
+// FIM DO CODE.GS
+// ============================================================
