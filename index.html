@@ -3,85 +3,171 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MOZ1VENDAS — Marketplace de Moçambique</title>
-  <meta name="description" content="Compre e venda produtos físicos e digitais em Moçambique. Pagamentos via M-Pesa, e-Mola, mKesh e cartão.">
-  <link rel="stylesheet" href="css/style.css">
-<base target="_blank">
+  <title>MOZ1VENDAS - Catálogo & Marketplace</title>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-  <!-- Header -->
-  <header class="header" id="appHeader">
-    <div class="header-inner">
-      <div class="logo" onclick="navigate('home')">
-        <div class="logo-icon">🛒</div>
-        <span>MOZ1VENDAS</span>
+<body class="bg-gray-100 font-sans min-h-screen flex flex-col">
+
+  <!-- HEADER -->
+  <header class="bg-blue-600 text-white p-4 shadow-md sticky top-0 z-50">
+    <div class="container mx-auto flex justify-between items-center">
+      <h1 class="text-xl font-bold tracking-wide">MOZ1VENDAS</h1>
+      <div id="authArea">
+        <button onclick="abrirModalAuth()" class="bg-white text-blue-600 px-4 py-2 rounded-lg font-semibold hover:bg-gray-100 transition">Entrar / Registar</button>
       </div>
-      <nav class="nav-links">
-        <a onclick="navigate('home')">Início</a>
-        <a onclick="navigate('produtos')">Produtos</a>
-        <a onclick="navigate('vender')">Vender na MOZ1VENDAS</a>
-        <a onclick="navigate('login')">Entrar</a>
-      </nav>
-      <button class="mobile-menu-btn" onclick="toggleMobileMenu()">☰</button>
     </div>
   </header>
 
-  <!-- Banner de debug (aparece se API_URL nao configurada) -->
-  <div id="apiWarning" style="display:none; background:#dc2626; color:#fff; text-align:center; padding:12px; font-weight:600; font-size:0.9rem;">
-    ⚠️ Configure a URL da API no ficheiro js/app.js (linha API_URL)
-  </div>
+  <!-- FILTROS E BUSCA -->
+  <main class="container mx-auto p-4 flex-grow">
+    <div class="bg-white p-4 rounded-xl shadow mb-6 flex flex-col md:flex-row gap-4">
+      <input type="text" id="inputBusca" placeholder="Buscar produtos..." class="flex-grow border p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+      <select id="selectCategoria" class="border p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <option value="">Todas Categorias</option>
+        <option value="FISICO">Produtos Físicos</option>
+        <option value="DIGITAL">Produtos Digitais</option>
+      </select>
+      <button onclick="carregarProdutos()" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition">Filtrar</button>
+    </div>
 
-  <!-- Paginas -->
-  <main>
-    <div class="page" id="pageHome"></div>
-    <div class="page hidden" id="pageProdutos"></div>
-    <div class="page hidden" id="pageProduto"></div>
-    <div class="page hidden" id="pageLogin"></div>
-    <div class="page hidden" id="pageRegisto"></div>
-    <div class="page hidden" id="pageDashboard"></div>
-    <div class="page hidden" id="pageMeusProdutos"></div>
-    <div class="page hidden" id="pageAdicionarProduto"></div>
-    <div class="page hidden" id="pageEditarProduto"></div>
-    <div class="page hidden" id="pageMinhasVendas"></div>
-    <div class="page hidden" id="pageCarteira"></div>
-    <div class="page hidden" id="pagePlano"></div>
-    <div class="page hidden" id="pageVender"></div>
+    <!-- LISTA DE PRODUTOS -->
+    <div id="gridProdutos" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      <p class="text-gray-500 col-span-full text-center py-8">Carregando produtos...</p>
+    </div>
   </main>
 
-  <!-- Footer -->
-  <footer class="footer">
-    <div class="footer-inner">
-      <div>
-        <h3>MOZ1VENDAS</h3>
-        <p style="color: rgba(255,255,255,0.7); margin-bottom: 16px;">O marketplace mais simples e seguro para comprar e vender em Moçambique.</p>
-      </div>
-      <div>
-        <h3>Links Rápidos</h3>
-        <a onclick="navigate('home')">Início</a>
-        <a onclick="navigate('produtos')">Produtos</a>
-        <a onclick="navigate('vender')">Vender</a>
-      </div>
-      <div>
-        <h3>Vendedor</h3>
-        <a onclick="navigate('login')">Entrar</a>
-        <a onclick="navigate('registo')">Registar-se</a>
-      </div>
-      <div>
-        <h3>Contacto</h3>
-        <a href="https://wa.me/258860407269" target="_blank">WhatsApp Admin</a>
-        <p style="color: rgba(255,255,255,0.6); margin-top: 8px; font-size: 0.9rem;">© 2026 MOZ1VENDAS</p>
-      </div>
+  <!-- MODAL DE CHECKOUT / COMPRA -->
+  <div id="modalCompra" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center p-4 z-50">
+    <div class="bg-white p-6 rounded-xl max-w-md w-full relative">
+      <button onclick="fecharModal('modalCompra')" class="absolute top-2 right-4 text-2xl font-bold text-gray-500">&times;</button>
+      <h2 id="modalTitulo" class="text-xl font-bold mb-2">Comprar Produto</h2>
+      <p id="modalPreco" class="text-lg text-blue-600 font-bold mb-4"></p>
+      
+      <form id="formCheckout" onsubmit="processarCompra(event)">
+        <input type="hidden" id="compraProdutoId">
+        <div class="mb-4">
+          <label class="block text-sm font-medium mb-1">Telefone M-Pesa / e-Mola</label>
+          <input type="tel" id="clienteTelefone" placeholder="841234567" required class="w-full border p-2 rounded-lg">
+        </div>
+        <div class="mb-4">
+          <label class="block text-sm font-medium mb-1">Método de Pagamento</label>
+          <select id="metodoPagamento" class="w-full border p-2 rounded-lg">
+            <option value="mpesa">M-Pesa</option>
+            <option value="emola">e-Mola</option>
+          </select>
+        </div>
+        <button type="submit" id="btnPagar" class="w-full bg-green-600 text-white py-3 rounded-lg font-bold hover:bg-green-700 transition">Pagar com Netshop</button>
+      </form>
     </div>
-    <div class="footer-bottom">
-      <p>Feito com ❤️ em Moçambique</p>
-    </div>
-  </footer>
+  </div>
 
-  <script src="js/app.js"></script>
+  <!-- SCRIPT INTEGRADO COM O GAS -->
   <script>
-    // Mostrar aviso se API_URL nao foi configurada
-    if (typeof CONFIG !== 'undefined' && CONFIG.API_URL.includes('SEU_ID_AQUI')) {
-      document.getElementById('apiWarning').style.display = 'block';
+    // URL DE DEPLOY DO SEU GOOGLE APPS SCRIPT (Web App URL)
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbz62rB-RTzLg-h6fXMogftj01-z-sCOtTz0PFo7BoTdalzoVQvnIoOfi5a7vcBhOGMh/exec";
+
+    document.addEventListener("DOMContentLoaded", () => {
+      carregarProdutos();
+      verificarSessao();
+    });
+
+    async function carregarProdutos() {
+      const grid = document.getElementById("gridProdutos");
+      grid.innerHTML = `<p class="text-gray-500 col-span-full text-center py-8">Carregando produtos...</p>`;
+
+      const busca = document.getElementById("inputBusca").value;
+      const cat = document.getElementById("selectCategoria").value;
+
+      try {
+        const res = await fetch(`${GAS_URL}?action=produtos&search=${encodeURIComponent(busca)}&categoria=${encodeURIComponent(cat)}`);
+        const json = await res.json();
+
+        if (json.ok && json.produtos.length > 0) {
+          grid.innerHTML = json.produtos.map(p => `
+            <div class="bg-white rounded-xl shadow overflow-hidden flex flex-col justify-between">
+              <img src="${p.imagemUrl || 'https://via.placeholder.com/300'}" alt="${p.nome}" class="w-full h-48 object-cover">
+              <div class="p-4 flex-grow">
+                <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded font-bold">${p.tipo}</span>
+                <h3 class="font-bold text-lg mt-2">${p.nome}</h3>
+                <p class="text-gray-600 text-sm mt-1 line-clamp-2">${p.descricao}</p>
+                <p class="text-blue-600 font-bold text-xl mt-3">${p.preco} MT</p>
+                <p class="text-xs text-gray-400 mt-1">Vendedor: ${p.marca}</p>
+              </div>
+              <div class="p-4 border-t">
+                ${p.metodoPagamento === 'NETSHOP' 
+                  ? `<button onclick="abrirCompra('${p.produtoId}', '${p.nome}', ${p.preco})" class="w-full bg-blue-600 text-white py-2 rounded-lg font-bold hover:bg-blue-700 transition">Comprar Agora</button>`
+                  : `<a href="https://wa.me/${p.whatsapp}?text=Olá! Tenho interesse no produto: ${encodeURIComponent(p.nome)}" target="_blank" class="w-full block text-center bg-green-500 text-white py-2 rounded-lg font-bold hover:bg-green-600 transition">Contactar WhatsApp</a>`
+                }
+              </div>
+            </div>
+          `).join('');
+        } else {
+          grid.innerHTML = `<p class="text-gray-500 col-span-full text-center py-8">Nenhum produto encontrado.</p>`;
+        }
+      } catch (e) {
+        grid.innerHTML = `<p class="text-red-500 col-span-full text-center py-8">Erro ao carregar produtos.</p>`;
+      }
+    }
+
+    function abrirCompra(id, nome, preco) {
+      document.getElementById("compraProdutoId").value = id;
+      document.getElementById("modalTitulo").innerText = nome;
+      document.getElementById("modalPreco").innerText = `${preco} MT`;
+      document.getElementById("modalCompra").classList.remove("hidden");
+    }
+
+    function fecharModal(id) {
+      document.getElementById(id).classList.add("hidden");
+    }
+
+    async function processarCompra(e) {
+      e.preventDefault();
+      const btn = document.getElementById("btnPagar");
+      btn.disabled = true;
+      btn.innerText = "Processando...";
+
+      const payload = {
+        action: "criarPagamento",
+        produtoId: document.getElementById("compraProdutoId").value,
+        clienteTelefone: document.getElementById("clienteTelefone").value,
+        metodo: document.getElementById("metodoPagamento").value
+      };
+
+      try {
+        const res = await fetch(GAS_URL, {
+          method: "POST",
+          body: JSON.stringify(payload)
+        });
+        const json = await res.json();
+
+        if (json.ok && json.checkoutUrl) {
+          window.location.href = json.checkoutUrl;
+        } else if (json.ok) {
+          alert("Solicitação de pagamento enviada ao seu telefone!");
+          fecharModal("modalCompra");
+        } else {
+          alert("Erro: " + (json.erro || "Falha ao processar"));
+        }
+      } catch (err) {
+        alert("Erro na comunicação com o servidor.");
+      } finally {
+        btn.disabled = false;
+        btn.innerText = "Pagar com Netshop";
+      }
+    }
+
+    function verificarSessao() {
+      const token = localStorage.getItem("moz1_token");
+      if (token) {
+        document.getElementById("authArea").innerHTML = `
+          <button onclick="sair()" class="bg-red-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-red-600 transition">Sair</button>
+        `;
+      }
+    }
+
+    function sair() {
+      localStorage.removeItem("moz1_token");
+      location.reload();
     }
   </script>
 </body>
