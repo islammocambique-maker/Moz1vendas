@@ -11,8 +11,8 @@
   <!-- HEADER -->
   <header class="bg-blue-600 text-white p-4 shadow-md sticky top-0 z-50">
     <div class="container mx-auto flex justify-between items-center">
-      <h1 class="text-xl font-bold tracking-wide">MOZ1VENDAS</h1>
-      <div id="authArea">
+      <h1 class="text-xl font-bold tracking-wide cursor-pointer" onclick="carregarProdutos()">MOZ1VENDAS</h1>
+      <div id="authArea" class="flex gap-2">
         <button onclick="abrirModalAuth()" class="bg-white text-blue-600 px-4 py-2 rounded-lg font-semibold hover:bg-gray-100 transition">Entrar / Registar</button>
       </div>
     </div>
@@ -30,13 +30,13 @@
       <button onclick="carregarProdutos()" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition">Filtrar</button>
     </div>
 
-    <!-- LISTA DE PRODUTOS -->
+    <!-- LISTA DE PRODUTOS DA LOJA -->
     <div id="gridProdutos" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
       <p class="text-gray-500 col-span-full text-center py-8">Carregando produtos...</p>
     </div>
   </main>
 
-  <!-- MODAL DE SELEÇÃO AUTH (ENTRAR OU REGISTAR) -->
+  <!-- MODAL SELEÇÃO AUTH -->
   <div id="modalAuth" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center p-4 z-50">
     <div class="bg-white p-6 rounded-xl max-w-sm w-full relative text-center">
       <button onclick="fecharModal('modalAuth')" class="absolute top-2 right-4 text-2xl font-bold text-gray-500">&times;</button>
@@ -56,7 +56,7 @@
       <h2 class="text-xl font-bold mb-4">Entrar como Vendedor</h2>
       <form onsubmit="fazerLogin(event)">
         <div class="mb-4">
-          <label class="block text-sm font-medium mb-1">Nome de Usuário ou Telefone</label>
+          <label class="block text-sm font-medium mb-1">Empresa ou Telefone</label>
           <input type="text" id="loginIdentificador" required class="w-full border p-2 rounded-lg">
         </div>
         <div class="mb-4">
@@ -91,7 +91,7 @@
           <input type="text" id="regEmpresa" required class="w-full border p-2 rounded-lg">
         </div>
         <div class="mb-3">
-          <label class="block text-sm font-medium mb-1">PIN Secreto (Numérico)</label>
+          <label class="block text-sm font-medium mb-1">PIN Secreto</label>
           <input type="password" id="regPin" required class="w-full border p-2 rounded-lg">
         </div>
         <div class="mb-4">
@@ -101,6 +101,73 @@
           </select>
         </div>
         <button type="submit" id="btnRegisto" class="w-full bg-green-600 text-white py-3 rounded-lg font-bold hover:bg-green-700 transition">Registar Conta</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL PAINEL DO VENDEDOR (MEUS PRODUTOS / ADICIONAR PRODUTO) -->
+  <div id="modalPainelVendedor" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center p-4 z-50">
+    <div class="bg-white p-6 rounded-xl max-w-2xl w-full relative max-h-[90vh] overflow-y-auto">
+      <button onclick="fecharModal('modalPainelVendedor')" class="absolute top-2 right-4 text-2xl font-bold text-gray-500">&times;</button>
+      
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-xl font-bold">Painel do Vendedor</h2>
+        <button onclick="abrirModalCriarProduto()" class="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-700 transition">+ Adicionar Produto</button>
+      </div>
+
+      <h3 class="font-bold text-lg mb-3">Meus Produtos Cadastrados</h3>
+      <div id="listaMeusProdutos" class="space-y-3">
+        <p class="text-gray-500 text-center py-4">Carregando seus produtos...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL FORMULÁRIO DE CRIAR PRODUTO -->
+  <div id="modalCriarProduto" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center p-4 z-50">
+    <div class="bg-white p-6 rounded-xl max-w-md w-full relative max-h-[90vh] overflow-y-auto">
+      <button onclick="fecharModal('modalCriarProduto')" class="absolute top-2 right-4 text-2xl font-bold text-gray-500">&times;</button>
+      <h2 class="text-xl font-bold mb-4">Novo Produto</h2>
+      
+      <form onsubmit="salvarProduto(event)">
+        <div class="mb-3">
+          <label class="block text-sm font-medium mb-1">Nome do Produto</label>
+          <input type="text" id="prodNome" required class="w-full border p-2 rounded-lg">
+        </div>
+        <div class="mb-3">
+          <label class="block text-sm font-medium mb-1">Descrição</label>
+          <textarea id="prodDescricao" required class="w-full border p-2 rounded-lg" rows="2"></textarea>
+        </div>
+        <div class="mb-3">
+          <label class="block text-sm font-medium mb-1">URL da Imagem</label>
+          <input type="url" id="prodImagem" placeholder="https://exemplo.com/imagem.jpg" class="w-full border p-2 rounded-lg">
+        </div>
+        <div class="mb-3">
+          <label class="block text-sm font-medium mb-1">Preço (MT)</label>
+          <input type="number" step="0.01" id="prodPreco" required class="w-full border p-2 rounded-lg">
+        </div>
+        <div class="mb-3">
+          <label class="block text-sm font-medium mb-1">Tipo de Produto</label>
+          <select id="prodTipo" onchange="alternarCamposTipo()" class="w-full border p-2 rounded-lg">
+            <option value="FISICO">Físico</option>
+            <option value="DIGITAL">Digital</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="block text-sm font-medium mb-1">Método de Recebimento</label>
+          <select id="prodMetodo" onchange="alternarCamposTipo()" class="w-full border p-2 rounded-lg">
+            <option value="NETSHOP">Netshop (M-Pesa / e-Mola)</option>
+            <option value="WHATSAPP">WhatsApp Direto</option>
+          </select>
+        </div>
+        <div class="mb-3" id="campoWhatsapp">
+          <label class="block text-sm font-medium mb-1">WhatsApp para Contato</label>
+          <input type="tel" id="prodWhatsapp" placeholder="258841234567" class="w-full border p-2 rounded-lg">
+        </div>
+        <div class="mb-4 hidden" id="campoDownload">
+          <label class="block text-sm font-medium mb-1">Link de Download (Para Produtos Digitais)</label>
+          <input type="url" id="prodDownload" placeholder="https://drive.google.com/..." class="w-full border p-2 rounded-lg">
+        </div>
+        <button type="submit" id="btnSalvarProd" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition">Publicar Produto</button>
       </form>
     </div>
   </div>
@@ -139,7 +206,6 @@
       verificarSessao();
     });
 
-    // --- CONTROLE DOS MODAIS DE AUTENTICAÇÃO ---
     function abrirModalAuth() {
       document.getElementById("modalAuth").classList.remove("hidden");
     }
@@ -153,7 +219,7 @@
       document.getElementById(id).classList.add("hidden");
     }
 
-    // --- AUTENTICAÇÃO (LOGIN E REGISTO VIA POST NO GAS) ---
+    // --- AUTENTICAÇÃO ---
     async function fazerLogin(e) {
       e.preventDefault();
       const btn = document.getElementById("btnLogin");
@@ -167,17 +233,14 @@
       };
 
       try {
-        const res = await fetch(GAS_URL, {
-          method: "POST",
-          body: JSON.stringify(payload)
-        });
+        const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify(payload) });
         const json = await res.json();
 
         if (json.ok && json.token) {
           localStorage.setItem("moz1_token", json.token);
-          alert("Login efetuado com sucesso!");
           fecharModal("modalLogin");
           verificarSessao();
+          abrirPainelVendedor();
         } else {
           alert("Erro: " + (json.erro || "PIN ou utilizador incorreto"));
         }
@@ -206,14 +269,11 @@
       };
 
       try {
-        const res = await fetch(GAS_URL, {
-          method: "POST",
-          body: JSON.stringify(payload)
-        });
+        const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify(payload) });
         const json = await res.json();
 
         if (json.ok) {
-          alert(json.msg || "Conta criada com sucesso! Faça login para continuar.");
+          alert(json.msg || "Conta criada com sucesso! Faça login.");
           fecharModal("modalRegisto");
           trocarModalAuth('modalRegisto', 'modalLogin');
         } else {
@@ -227,7 +287,109 @@
       }
     }
 
-    // --- CARREGAR E FILTRAR PRODUTOS ---
+    // --- GESTÃO DE PRODUTOS DO VENDEDOR ---
+    function abrirPainelVendedor() {
+      document.getElementById("modalPainelVendedor").classList.remove("hidden");
+      carregarMeusProdutos();
+    }
+
+    async function carregarMeusProdutos() {
+      const container = document.getElementById("listaMeusProdutos");
+      const token = localStorage.getItem("moz1_token");
+      if (!token) return;
+
+      container.innerHTML = `<p class="text-gray-500 text-center py-4">Carregando seus produtos...</p>`;
+
+      try {
+        const res = await fetch(`${GAS_URL}?action=meusProdutos&token=${encodeURIComponent(token)}`);
+        const produtos = await res.json();
+
+        if (Array.isArray(produtos) && produtos.length > 0) {
+          container.innerHTML = produtos.map(p => `
+            <div class="border p-3 rounded-lg flex justify-between items-center bg-gray-50">
+              <div>
+                <p class="font-bold">${p.nome}</p>
+                <p class="text-sm text-gray-600">${p.preco} MT | Status: <span class="font-bold text-${p.status === 'ATIVO' ? 'green' : 'red'}-600">${p.status}</span></p>
+              </div>
+              <span class="text-xs bg-gray-200 px-2 py-1 rounded">${p.tipo}</span>
+            </div>
+          `).join('');
+        } else {
+          container.innerHTML = `<p class="text-gray-500 text-center py-4">Você ainda não tem produtos cadastrados.</p>`;
+        }
+      } catch (err) {
+        container.innerHTML = `<p class="text-red-500 text-center py-4">Erro ao carregar produtos.</p>`;
+      }
+    }
+
+    function abrirModalCriarProduto() {
+      document.getElementById("modalCriarProduto").classList.remove("hidden");
+      alternarCamposTipo();
+    }
+
+    function alternarCamposTipo() {
+      const tipo = document.getElementById("prodTipo").value;
+      const metodo = document.getElementById("prodMetodo");
+      const campoDownload = document.getElementById("campoDownload");
+      const campoWhatsapp = document.getElementById("campoWhatsapp");
+
+      if (tipo === "DIGITAL") {
+        metodo.value = "NETSHOP";
+        metodo.disabled = true;
+        campoDownload.classList.remove("hidden");
+        campoWhatsapp.classList.add("hidden");
+      } else {
+        metodo.disabled = false;
+        campoDownload.classList.add("hidden");
+        if (metodo.value === "WHATSAPP") {
+          campoWhatsapp.classList.remove("hidden");
+        } else {
+          campoWhatsapp.classList.add("hidden");
+        }
+      }
+    }
+
+    async function salvarProduto(e) {
+      e.preventDefault();
+      const btn = document.getElementById("btnSalvarProd");
+      const token = localStorage.getItem("moz1_token");
+      btn.disabled = true;
+      btn.innerText = "Salvando...";
+
+      const payload = {
+        action: "criarProduto",
+        token: token,
+        nome: document.getElementById("prodNome").value,
+        descricao: document.getElementById("prodDescricao").value,
+        imagemUrl: document.getElementById("prodImagem").value,
+        preco: parseFloat(document.getElementById("prodPreco").value),
+        tipo: document.getElementById("prodTipo").value,
+        metodoPagamento: document.getElementById("prodMetodo").value,
+        whatsapp: document.getElementById("prodWhatsapp").value,
+        downloadUrl: document.getElementById("prodDownload").value
+      };
+
+      try {
+        const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify(payload) });
+        const json = await res.json();
+
+        if (json.ok) {
+          alert(json.msg || "Produto cadastrado com sucesso!");
+          fecharModal("modalCriarProduto");
+          carregarMeusProdutos();
+          carregarProdutos();
+        } else {
+          alert("Erro: " + (json.erro || "Falha ao criar produto"));
+        }
+      } catch (err) {
+        alert("Erro na comunicação com o servidor.");
+      } finally {
+        btn.disabled = false;
+        btn.innerText = "Publicar Produto";
+      }
+    }
+
+    // --- CARREGAR PRODUTOS PÚBLICOS NA VITRINE ---
     async function carregarProdutos() {
       const grid = document.getElementById("gridProdutos");
       grid.innerHTML = `<p class="text-gray-500 col-span-full text-center py-8">Carregando produtos...</p>`;
@@ -287,10 +449,7 @@
       };
 
       try {
-        const res = await fetch(GAS_URL, {
-          method: "POST",
-          body: JSON.stringify(payload)
-        });
+        const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify(payload) });
         const json = await res.json();
 
         if (json.ok && json.checkoutUrl) {
@@ -311,12 +470,15 @@
 
     function verificarSessao() {
       const token = localStorage.getItem("moz1_token");
+      const authArea = document.getElementById("authArea");
+
       if (token) {
-        document.getElementById("authArea").innerHTML = `
+        authArea.innerHTML = `
+          <button onclick="abrirPainelVendedor()" class="bg-white text-blue-600 px-4 py-2 rounded-lg font-semibold hover:bg-gray-100 transition">Meus Produtos</button>
           <button onclick="sair()" class="bg-red-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-red-600 transition">Sair</button>
         `;
       } else {
-        document.getElementById("authArea").innerHTML = `
+        authArea.innerHTML = `
           <button onclick="abrirModalAuth()" class="bg-white text-blue-600 px-4 py-2 rounded-lg font-semibold hover:bg-gray-100 transition">Entrar / Registar</button>
         `;
       }
