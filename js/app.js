@@ -29,7 +29,7 @@
 var CONFIG = {
 
   API_URL:
-    'https://script.google.com/macros/s/AKfycbzjEcGPI6LoR1JbaMG8MyK9yLmgGPoyOlGOkcJ2feQLQlXWEFLF3IBZcosrI7gmyR8Q/exec',
+    'https://script.google.com/macros/s/AKfycby4uo-ZDP3WthCVWoOTPsGOkxJnpJzr16vJvxCnEd6WR5uw91qXPBeImc1I6rWFPKoL/exec',
 
   APP_NAME: 'MOZ1VENDAS',
 
