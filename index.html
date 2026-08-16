@@ -201,6 +201,22 @@
   <script>
     const GAS_URL = "https://script.google.com/macros/s/AKfycbz62rB-RTzLg-h6fXMogftj01-z-sCOtTz0PFo7BoTdalzoVQvnIoOfi5a7vcBhOGMh/exec";
 
+    function formatarUrlDownload(url) {
+      if (!url) return '';
+      
+      // Converte link do Google Drive para Download Direto
+      if (url.includes('drive.google.com') && url.includes('/file/d/')) {
+        const fileId = url.split('/file/d/')[1].split('/')[0];
+        return `https://drive.google.com/uc?export=download&id=${fileId}`;
+      }
+      
+      // Garante o download direto no Dropbox
+      if (url.includes('dropbox.com') && url.endsWith('dl=0')) {
+        return url.replace('dl=0', 'dl=1');
+      }
+      
+      return url;
+    }
     document.addEventListener("DOMContentLoaded", () => {
       carregarProdutos();
       verificarSessao();
