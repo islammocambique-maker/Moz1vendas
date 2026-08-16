@@ -1,160 +1,76 @@
 /**
- * MOZ1VENDAS - Frontend JavaScript (CORRIGIDO)
- * SPA completa para marketplace
+ * MOZ1VENDAS - Frontend
+ * Comunica com GAS proxy. Regras de negocio estao no Google Sheets.
  */
 
-// ==================== CONFIGURACAO ====================
-const CONFIG = {
-  // SUBSTITUA PELA URL DO SEU WEB APP DO GOOGLE APPS SCRIPT
-  // Exemplo: 'https://script.google.com/macros/s/AKfycbxXXXXXXXX/exec'
+var CONFIG = {
+  // SUBSTITUA PELA URL DO SEU WEB APP
   API_URL: 'https://script.google.com/macros/s/AKfycbxIhiGNTxlvo-EOUsx_sNAy2y2jzYQmnxQ7OebswTg0Czc5_gzCN0JDFwvseH8yjT0u/exec',
   APP_NAME: 'MOZ1VENDAS'
 };
 
-// ==================== ESTADO ====================
-const state = {
+var state = {
   token: localStorage.getItem('mz1_token') || null,
   vendedor: JSON.parse(localStorage.getItem('mz1_vendedor') || 'null'),
   produtos: [],
   produtoAtual: null,
-  planos: {},
-  currentPage: 'home',
-  apiConnected: false
+  currentPage: 'home'
 };
 
-// ==================== UTILITARIOS ====================
-function $(selector) { return document.querySelector(selector); }
-function $$(selector) { return document.querySelectorAll(selector); }
+function $(sel){ return document.querySelector(sel); }
+function $$(sel){ return document.querySelectorAll(sel); }
 
-function formatMoney(valor) {
-  return parseFloat(valor || 0).toLocaleString('pt-MZ') + ' MT';
+function fmtMoney(v){ return (parseFloat(v)||0).toLocaleString('pt-MZ') + ' MT'; }
+function fmtDate(s){ if(!s) return '-'; return new Date(s).toLocaleDateString('pt-MZ'); }
+function esc(t){ if(!t) return ''; var d=document.createElement('div'); d.textContent=t; return d.innerHTML; }
+
+function toast(msg, type){
+  type = type || 'success';
+  var c = document.getElementById('toastContainer');
+  if(!c){ c=document.createElement('div'); c.id='toastContainer'; c.className='toast-container'; document.body.appendChild(c); }
+  var t=document.createElement('div'); t.className='toast ' + type; t.textContent=msg; c.appendChild(t);
+  setTimeout(function(){ t.remove(); }, 4000);
 }
 
-function formatDate(dateStr) {
-  if (!dateStr) return '-';
-  const d = new Date(dateStr);
-  return d.toLocaleDateString('pt-MZ');
-}
-
-function showToast(message, type = 'success') {
-  const container = $('#toastContainer') || createToastContainer();
-  const toast = document.createElement('div');
-  toast.className = `toast ${type}`;
-  toast.textContent = message;
-  container.appendChild(toast);
-  setTimeout(() => toast.remove(), 4000);
-}
-
-function createToastContainer() {
-  const div = document.createElement('div');
-  div.id = 'toastContainer';
-  div.className = 'toast-container';
-  document.body.appendChild(div);
-  return div;
-}
-
-function showLoading(container) {
-  if (container) container.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
-}
-
-function escapeHtml(text) {
-  if (!text) return '';
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
-}
-
-// ==================== API CLIENT (CORRIGIDO) ====================
-async function apiGet(action, params = {}) {
-  const url = new URL(CONFIG.API_URL);
-  url.searchParams.append('action', action);
-  Object.keys(params).forEach(k => {
-    if (params[k] !== undefined && params[k] !== null) {
-      url.searchParams.append(k, params[k]);
-    }
+/* ---------- API ---------- */
+function apiGet(action, params){
+  params = params || {};
+  var url = CONFIG.API_URL + '?action=' + encodeURIComponent(action);
+  for(var k in params){ if(params[k] != null) url += '&' + encodeURIComponent(k) + '=' + encodeURIComponent(params[k]); }
+  return fetch(url, {method:'GET', mode:'cors', cache:'no-cache'}).then(function(r){
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    return r.text();
+  }).then(function(txt){
+    if(!txt || txt.trim()==='') throw new Error('Resposta vazia');
+    if(txt.trim().charAt(0)==='<') throw new Error('Servidor retornou HTML. Verifique a URL do Web App.');
+    return JSON.parse(txt);
   });
-
-  try {
-    const res = await fetch(url.toString(), {
-      method: 'GET',
-      mode: 'cors',
-      cache: 'no-cache'
-    });
-
-    if (!res.ok) {
-      throw new Error('HTTP ' + res.status);
-    }
-
-    const text = await res.text();
-    if (!text || text.trim() === '') {
-      throw new Error('Resposta vazia do servidor');
-    }
-
-    // O GAS as vezes retorna HTML em vez de JSON quando ha erro
-    if (text.trim().startsWith('<')) {
-      throw new Error('O servidor retornou HTML em vez de JSON. Verifique a URL do Web App.');
-    }
-
-    return JSON.parse(text);
-  } catch (err) {
-    console.error('API GET Error:', action, err);
-    throw err;
-  }
 }
 
-async function apiPost(action, data = {}) {
-  try {
-    const res = await fetch(CONFIG.API_URL, {
-      method: 'POST',
-      mode: 'cors',
-      cache: 'no-cache',
-      headers: {
-        'Content-Type': 'text/plain;charset=utf-8'
-      },
-      body: JSON.stringify({ action, ...data })
-    });
-
-    if (!res.ok) {
-      throw new Error('HTTP ' + res.status);
-    }
-
-    const text = await res.text();
-    if (!text || text.trim() === '') {
-      throw new Error('Resposta vazia do servidor');
-    }
-
-    if (text.trim().startsWith('<')) {
-      throw new Error('O servidor retornou HTML em vez de JSON. Verifique a URL do Web App.');
-    }
-
-    return JSON.parse(text);
-  } catch (err) {
-    console.error('API POST Error:', action, err);
-    throw err;
-  }
+function apiPost(action, data){
+  data = data || {};
+  return fetch(CONFIG.API_URL, {
+    method:'POST', mode:'cors', cache:'no-cache',
+    headers: {'Content-Type':'text/plain;charset=utf-8'},
+    body: JSON.stringify({action: action, ...data})
+  }).then(function(r){
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    return r.text();
+  }).then(function(txt){
+    if(!txt || txt.trim()==='') throw new Error('Resposta vazia');
+    if(txt.trim().charAt(0)==='<') throw new Error('Servidor retornou HTML. Verifique a URL do Web App.');
+    return JSON.parse(txt);
+  });
 }
 
-// ==================== TESTE DE CONEXAO ====================
-async function testConnection() {
-  try {
-    const res = await apiGet('ping');
-    state.apiConnected = res.success === true;
-    return state.apiConnected;
-  } catch (err) {
-    state.apiConnected = false;
-    return false;
-  }
-}
-
-// ==================== ROUTER ====================
-function navigate(page, params = {}) {
+/* ---------- ROUTER ---------- */
+function navigate(page, params){
+  params = params || {};
   state.currentPage = page;
-  window.scrollTo(0, 0);
-
-  $$('.page').forEach(p => p.classList.add('hidden'));
+  window.scrollTo(0,0);
+  $$('.page').forEach(function(p){ p.classList.add('hidden'); });
   updateHeader();
-
-  switch(page) {
+  switch(page){
     case 'home': renderHome(); break;
     case 'produtos': renderProdutos(params); break;
     case 'produto': renderProduto(params.id); break;
@@ -172,1021 +88,467 @@ function navigate(page, params = {}) {
   }
 }
 
-function updateHeader() {
-  const header = $('#appHeader');
-  if (!header) return;
-
-  const isLogged = !!state.token;
-
-  header.innerHTML = `
-    <div class="header-inner">
-      <div class="logo" onclick="navigate('home')">
-        <div class="logo-icon">🛒</div>
-        <span>${CONFIG.APP_NAME}</span>
-      </div>
-      <nav class="nav-links">
-        <a onclick="navigate('home')">Início</a>
-        <a onclick="navigate('produtos')">Produtos</a>
-        <a onclick="navigate('vender')">Vender</a>
-        ${isLogged ? `
-          <a onclick="navigate('dashboard')">Painel</a>
-          <a onclick="logout()">Sair</a>
-        ` : `
-          <a onclick="navigate('login')">Entrar</a>
-        `}
-      </nav>
-      <button class="mobile-menu-btn" onclick="toggleMobileMenu()">☰</button>
-    </div>
-  `;
+function updateHeader(){
+  var h = document.getElementById('appHeader');
+  if(!h) return;
+  var logged = !!state.token;
+  h.innerHTML = '<div class="header-inner">' +
+    '<div class="logo" onclick="navigate(\'home\')"><div class="logo-icon">🛒</div><span>' + CONFIG.APP_NAME + '</span></div>' +
+    '<nav class="nav-links">' +
+      '<a onclick="navigate(\'home\')">Início</a>' +
+      '<a onclick="navigate(\'produtos\')">Produtos</a>' +
+      '<a onclick="navigate(\'vender\')">Vender</a>' +
+      (logged ?
+        '<a onclick="navigate(\'dashboard\')">Painel</a>' +
+        '<a onclick="logout()">Sair</a>' :
+        '<a onclick="navigate(\'login\')">Entrar</a>') +
+    '</nav>' +
+    '<button class="mobile-menu-btn" onclick="alert(\'Menu mobile\')">☰</button>' +
+  '</div>';
 }
 
-// ==================== PAGINAS PUBLICAS ====================
-function renderHome() {
-  const page = $('#pageHome');
-  page.classList.remove('hidden');
-
-  page.innerHTML = `
-    <div class="hero">
-      <h1>Compre e Venda em Moçambique</h1>
-      <p>O marketplace mais simples e seguro para o seu negócio.</p>
-      <button class="btn btn-dourado" onclick="navigate('produtos')">Explorar Produtos</button>
-    </div>
-
-    <div class="search-container">
-      <div class="search-box">
-        <input type="text" id="searchInput" placeholder="Pesquisar produtos..." onkeypress="if(event.key==='Enter')searchProducts()">
-        <button class="btn btn-verde" onclick="searchProducts()">🔍 Pesquisar</button>
-      </div>
-    </div>
-
-    <div class="categories">
-      <h2>📂 Categorias</h2>
-      <div class="cat-grid">
-        <div class="cat-card" onclick="filterByCategory('FISICO')">
-          <div class="icon">📦</div><span>Produtos Físicos</span>
-        </div>
-        <div class="cat-card" onclick="filterByCategory('DIGITAL')">
-          <div class="icon">💾</div><span>Produtos Digitais</span>
-        </div>
-        <div class="cat-card" onclick="navigate('produtos')">
-          <div class="icon">🔥</div><span>Mais Vendidos</span>
-        </div>
-        <div class="cat-card" onclick="navigate('produtos')">
-          <div class="icon">⭐</div><span>Novidades</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="products-section">
-      <h2>🛍️ Produtos em Destaque</h2>
-      <div id="homeProducts" class="products-grid"></div>
-    </div>
-  `;
-
+/* ---------- HOME ---------- */
+function renderHome(){
+  var p = document.getElementById('pageHome');
+  p.classList.remove('hidden');
+  p.innerHTML =
+    '<div class="hero"><h1>Compre e Venda em Moçambique</h1><p>O marketplace mais simples e seguro.</p>' +
+    '<button class="btn btn-dourado" onclick="navigate(\'produtos\')">Explorar Produtos</button></div>' +
+    '<div class="search-container"><div class="search-box">' +
+      '<input type="text" id="searchInput" placeholder="Pesquisar produtos..." onkeypress="if(event.key===\'Enter\')searchProducts()">' +
+      '<button class="btn btn-verde" onclick="searchProducts()">🔍 Pesquisar</button></div></div>' +
+    '<div class="categories"><h2>📂 Categorias</h2><div class="cat-grid">' +
+      '<div class="cat-card" onclick="filterByCategory(\'FISICO\')"><div class="icon">📦</div><span>Produtos Físicos</span></div>' +
+      '<div class="cat-card" onclick="filterByCategory(\'DIGITAL\')"><div class="icon">💾</div><span>Produtos Digitais</span></div>' +
+      '<div class="cat-card" onclick="navigate(\'produtos\')"><div class="icon">🔥</div><span>Mais Vendidos</span></div>' +
+      '<div class="cat-card" onclick="navigate(\'produtos\')"><div class="icon">⭐</div><span>Novidades</span></div>' +
+    '</div></div>' +
+    '<div class="products-section"><h2>🛍️ Produtos em Destaque</h2><div id="homeProducts" class="products-grid"></div></div>';
   loadHomeProducts();
 }
 
-async function loadHomeProducts() {
-  const container = $('#homeProducts');
-  if (!container) return;
-  showLoading(container);
-
-  try {
-    const res = await apiGet('produtos');
+function loadHomeProducts(){
+  var c = document.getElementById('homeProducts');
+  if(!c) return;
+  c.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  apiGet('produtos').then(function(res){
     state.produtos = res.produtos || [];
-    renderProductGrid(container, state.produtos.slice(0, 8));
-  } catch(e) {
-    container.innerHTML = `
-      <div class="empty-state" style="grid-column: 1/-1;">
-        <div class="icon">📡</div>
-        <p><strong>Erro de conexão</strong></p>
-        <p style="font-size: 0.9rem;">Não foi possível carregar os produtos.</p>
-        <p style="font-size: 0.85rem; color: #999;">${escapeHtml(e.message)}</p>
-        <button class="btn btn-verde" style="margin-top: 12px;" onclick="loadHomeProducts()">Tentar novamente</button>
-      </div>
-    `;
-  }
+    renderGrid(c, state.produtos.slice(0,8));
+  }).catch(function(e){
+    c.innerHTML = erroHtml(e.message, 'loadHomeProducts');
+  });
 }
 
-function renderProductGrid(container, produtos) {
-  if (!produtos || produtos.length === 0) {
-    container.innerHTML = `
-      <div class="empty-state" style="grid-column: 1/-1;">
-        <div class="icon">📭</div>
-        <p>Nenhum produto encontrado</p>
-      </div>
-    `;
+function renderGrid(container, items){
+  if(!items || items.length===0){
+    container.innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><div class="icon">📭</div><p>Nenhum produto</p></div>';
     return;
   }
-
-  container.innerHTML = produtos.map(p => `
-    <div class="product-card" onclick="navigate('produto', {id:'${escapeHtml(p.produtoId)}'})">
-      <div class="product-img">
-        ${p.imagemUrl ? `<img src="${escapeHtml(p.imagemUrl)}" alt="${escapeHtml(p.nome)}" onerror="this.style.display='none';this.parentElement.innerHTML='🛒'">` : '🛒'}
-      </div>
-      <div class="product-info">
-        <span class="product-type ${p.tipo === 'DIGITAL' ? 'type-digital' : 'type-fisico'}">${escapeHtml(p.tipo)}</span>
-        <h3>${escapeHtml(p.nome)}</h3>
-        <p class="desc">${escapeHtml(p.descricao)}</p>
-        <div class="product-meta">
-          <span class="product-price">${formatMoney(p.preco)}</span>
-          <span class="product-brand">${escapeHtml(p.marca)}</span>
-        </div>
-        <button class="btn btn-verde btn-sm btn-block">Ver Produto</button>
-      </div>
-    </div>
-  `).join('');
+  container.innerHTML = items.map(function(p){
+    return '<div class="product-card" onclick="navigate(\'produto\',{id:\'' + esc(p.produtoId) + '\'})">' +
+      '<div class="product-img">' + (p.imagemUrl ? '<img src="' + esc(p.imagemUrl) + '" alt="' + esc(p.nome) + '" onerror="this.style.display=\'none\';this.parentElement.innerHTML=\'🛒\'">' : '🛒') + '</div>' +
+      '<div class="product-info">' +
+        '<span class="product-type ' + (p.tipo==='DIGITAL'?'type-digital':'type-fisico') + '">' + esc(p.tipo) + '</span>' +
+        '<h3>' + esc(p.nome) + '</h3>' +
+        '<p class="desc">' + esc(p.descricao) + '</p>' +
+        '<div class="product-meta"><span class="product-price">' + fmtMoney(p.preco) + '</span><span class="product-brand">' + esc(p.marca) + '</span></div>' +
+        '<button class="btn btn-verde btn-sm btn-block">Ver Produto</button>' +
+      '</div></div>';
+  }).join('');
 }
 
-function renderProdutos(params = {}) {
-  const page = $('#pageProdutos');
-  page.classList.remove('hidden');
+function erroHtml(msg, retryFn){
+  return '<div class="empty-state" style="grid-column:1/-1;"><div class="icon">📡</div>' +
+    '<p><strong>Erro de conexão</strong></p><p style="font-size:0.85rem;color:#999;">' + esc(msg) + '</p>' +
+    '<button class="btn btn-verde" style="margin-top:12px;" onclick="' + retryFn + '()">Tentar novamente</button></div>';
+}
 
-  page.innerHTML = `
-    <div style="padding: 32px 24px; max-width: 1400px; margin: 0 auto;">
-      <div class="search-container" style="margin: 0 0 32px 0;">
-        <div class="search-box">
-          <input type="text" id="prodSearchInput" placeholder="Pesquisar produtos..." value="${escapeHtml(params.search || '')}" onkeypress="if(event.key==='Enter')searchProductsPage()">
-          <button class="btn btn-verde" onclick="searchProductsPage()">🔍 Pesquisar</button>
-        </div>
-      </div>
-      <h2 style="margin-bottom: 24px; color: var(--verde-escuro);">🛍️ Todos os Produtos</h2>
-      <div id="allProducts" class="products-grid"></div>
-    </div>
-  `;
-
+function renderProdutos(params){
+  params = params || {};
+  var p = document.getElementById('pageProdutos');
+  p.classList.remove('hidden');
+  p.innerHTML = '<div style="padding:32px 24px;max-width:1400px;margin:0 auto;">' +
+    '<div class="search-container" style="margin:0 0 32px 0;"><div class="search-box">' +
+      '<input type="text" id="prodSearchInput" placeholder="Pesquisar..." value="' + esc(params.search||'') + '" onkeypress="if(event.key===\'Enter\')searchProductsPage()">' +
+      '<button class="btn btn-verde" onclick="searchProductsPage()">🔍</button></div></div>' +
+    '<h2 style="margin-bottom:24px;color:var(--verde-escuro);">🛍️ Produtos</h2>' +
+    '<div id="allProducts" class="products-grid"></div></div>';
   loadAllProducts(params.search, params.categoria);
 }
 
-async function loadAllProducts(search, categoria) {
-  const container = $('#allProducts');
-  showLoading(container);
-
-  try {
-    const res = await apiGet('produtos', { search, categoria });
+function loadAllProducts(search, categoria){
+  var c = document.getElementById('allProducts');
+  c.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  apiGet('produtos', {search: search, categoria: categoria}).then(function(res){
     state.produtos = res.produtos || [];
-    renderProductGrid(container, state.produtos);
-  } catch(e) {
-    container.innerHTML = `
-      <div class="empty-state" style="grid-column: 1/-1;">
-        <div class="icon">📡</div>
-        <p><strong>Erro de conexão</strong></p>
-        <p style="font-size: 0.85rem; color: #999;">${escapeHtml(e.message)}</p>
-        <button class="btn btn-verde" style="margin-top: 12px;" onclick="loadAllProducts('${escapeHtml(search || '')}', '${escapeHtml(categoria || '')}')">Tentar novamente</button>
-      </div>
-    `;
-  }
+    renderGrid(c, state.produtos);
+  }).catch(function(e){
+    c.innerHTML = erroHtml(e.message, 'loadAllProducts');
+  });
 }
 
-function searchProducts() {
-  const q = $('#searchInput').value.trim();
-  if (q) navigate('produtos', { search: q });
+function searchProducts(){ var q=$('#searchInput').value.trim(); if(q) navigate('produtos',{search:q}); }
+function searchProductsPage(){ loadAllProducts($('#prodSearchInput').value.trim()); }
+function filterByCategory(cat){ navigate('produtos',{categoria:cat}); }
+
+function renderProduto(id){
+  var p = document.getElementById('pageProduto');
+  p.classList.remove('hidden');
+  p.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  apiGet('produto', {id:id}).then(function(res){
+    if(!res.ok){ p.innerHTML = '<div class="empty-state"><div class="icon">😕</div><p>Produto não encontrado</p></div>'; return; }
+    var prod = res.produto;
+    state.produtoAtual = prod;
+    var isNetshop = prod.metodoPagamento === 'NETSHOP';
+    var payBox = isNetshop ?
+      '<div class="payment-box"><h3>💳 Pagamento Online</h3>' +
+      '<p style="color:var(--cinza);margin-bottom:16px;">Pague via Netshop</p>' +
+      '<div class="form-group"><label>Seu telefone</label><input type="tel" id="buyerPhone" value="+258"></div>' +
+      '<div class="form-group"><label>Método</label><select id="paymentMethod"><option value="mpesa">M-Pesa</option><option value="emola">e-Mola</option><option value="mkesh">mKesh</option><option value="card">Cartão</option></select></div>' +
+      '<button class="netshop-btn" onclick="buyNetshop()">💳 COMPRAR — ' + fmtMoney(prod.preco) + '</button></div>' :
+      '<div class="payment-box"><h3>📱 WhatsApp</h3><p style="color:var(--cinza);margin-bottom:16px;">Negocie com o vendedor</p>' +
+      '<a href="https://wa.me/' + esc(prod.whatsapp) + '?text=' + encodeURIComponent('Olá, quero comprar ' + prod.produtoId + ' — ' + prod.nome + ' por ' + fmtMoney(prod.preco)) + '" target="_blank" class="whatsapp-btn">📱 COMPRAR PELO WHATSAPP</a></div>';
+
+    p.innerHTML = '<div class="product-detail"><div class="detail-grid">' +
+      '<div class="detail-img">' + (prod.imagemUrl?'<img src="'+esc(prod.imagemUrl)+'" onerror="this.style.display=\'none\';this.parentElement.innerHTML=\'🛒\'">':'🛒') + '</div>' +
+      '<div class="detail-info">' +
+        '<span class="product-type '+(prod.tipo==='DIGITAL'?'type-digital':'type-fisico')+'">'+esc(prod.tipo)+'</span>' +
+        '<h1>'+esc(prod.nome)+'</h1><p class="brand">🏪 '+esc(prod.marca)+'</p>' +
+        '<div class="price">'+fmtMoney(prod.preco)+'</div>' +
+        '<p class="desc">'+esc(prod.descricao)+'</p>' +
+        '<p style="color:var(--cinza);margin-bottom:16px;"><strong>Ref:</strong> '+esc(prod.produtoId)+'<br><strong>Método:</strong> '+(isNetshop?'Online':'WhatsApp')+'</p>' +
+        payBox + '</div></div></div>';
+  }).catch(function(e){
+    p.innerHTML = '<div class="empty-state"><div class="icon">📡</div><p><strong>Erro</strong></p><p style="font-size:0.85rem;color:#999;">'+esc(e.message)+'</p><button class="btn btn-verde" onclick="renderProduto(\''+esc(id)+'\')">Tentar</button></div>';
+  });
 }
 
-function searchProductsPage() {
-  const q = $('#prodSearchInput').value.trim();
-  loadAllProducts(q);
+function buyNetshop(){
+  var p = state.produtoAtual;
+  var phone = document.getElementById('buyerPhone').value.trim();
+  var method = document.getElementById('paymentMethod').value;
+  if(!phone || phone.length<9){ toast('Telefone inválido','error'); return; }
+  toast('Iniciando pagamento...');
+  apiPost('criarPagamento', {produtoId:p.produtoId, clienteTelefone:phone, metodo:method}).then(function(res){
+    if(res.ok && res.checkoutUrl){ window.open(res.checkoutUrl,'_blank'); toast('Redirecionado para pagamento'); }
+    else if(res.ok){ toast('Pagamento iniciado'); }
+    else { toast(res.erro || 'Erro','error'); }
+  }).catch(function(e){ toast('Erro: '+e.message,'error'); });
 }
 
-function filterByCategory(cat) {
-  navigate('produtos', { categoria: cat });
+/* ---------- AUTH ---------- */
+function renderLogin(){
+  var p = document.getElementById('pageLogin');
+  p.classList.remove('hidden');
+  p.innerHTML = '<div class="form-container"><h2>🔐 Entrar</h2><p class="subtitle">Acesse o painel de vendedor</p>' +
+    '<form onsubmit="event.preventDefault();doLogin();"><div class="form-group"><label>Nome ou Telefone</label><input type="text" id="loginIdentificador" required></div>' +
+    '<div class="form-group"><label>PIN</label><input type="password" id="loginPin" required maxlength="6"></div>' +
+    '<button type="submit" class="btn btn-verde btn-block" style="margin-bottom:16px;">ENTRAR</button>' +
+    '<p style="text-align:center;color:var(--cinza);">Não tem conta? <a href="#" onclick="navigate(\'registo\')" style="color:var(--verde);font-weight:600;">Registe-se</a></p></form></div>';
 }
 
-async function renderProduto(id) {
-  const page = $('#pageProduto');
-  page.classList.remove('hidden');
-  page.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
-
-  try {
-    const res = await apiGet('produto', { id });
-    if (!res.success) {
-      page.innerHTML = '<div class="empty-state"><div class="icon">😕</div><p>Produto não encontrado</p></div>';
-      return;
-    }
-
-    const p = res.produto;
-    state.produtoAtual = p;
-    const isDigital = p.tipo === 'DIGITAL';
-    const isNetshop = p.metodoPagamento === 'NETSHOP';
-
-    let paymentSection = '';
-    if (isNetshop) {
-      paymentSection = `
-        <div class="payment-box">
-          <h3>💳 Pagamento Online</h3>
-          <p style="color: var(--cinza); margin-bottom: 16px;">Pague de forma segura via Netshop</p>
-          <div class="form-group">
-            <label>Seu telefone</label>
-            <input type="tel" id="buyerPhone" placeholder="+25884..." value="+258">
-          </div>
-          <div class="form-group">
-            <label>Método de pagamento</label>
-            <select id="paymentMethod">
-              <option value="mpesa">M-Pesa</option>
-              <option value="emola">e-Mola</option>
-              <option value="mkesh">mKesh</option>
-              <option value="card">Cartão Visa/Mastercard</option>
-            </select>
-          </div>
-          <button class="netshop-btn" onclick="buyNetshop()">
-            💳 COMPRAR AGORA — ${formatMoney(p.preco)}
-          </button>
-        </div>
-      `;
-    } else {
-      const msg = encodeURIComponent(`Olá, quero comprar o produto ${p.produtoId} — ${p.nome} por ${formatMoney(p.preco)}.`);
-      paymentSection = `
-        <div class="payment-box">
-          <h3>📱 Comprar pelo WhatsApp</h3>
-          <p style="color: var(--cinza); margin-bottom: 16px;">Negocie diretamente com o vendedor</p>
-          <a href="https://wa.me/${escapeHtml(p.whatsapp)}?text=${msg}" target="_blank" class="whatsapp-btn">
-            📱 COMPRAR PELO WHATSAPP
-          </a>
-        </div>
-      `;
-    }
-
-    page.innerHTML = `
-      <div class="product-detail">
-        <div class="detail-grid">
-          <div class="detail-img">
-            ${p.imagemUrl ? `<img src="${escapeHtml(p.imagemUrl)}" alt="${escapeHtml(p.nome)}" onerror="this.style.display='none';this.parentElement.innerHTML='🛒'">` : '🛒'}
-          </div>
-          <div class="detail-info">
-            <span class="product-type ${isDigital ? 'type-digital' : 'type-fisico'}">${escapeHtml(p.tipo)}</span>
-            <h1>${escapeHtml(p.nome)}</h1>
-            <p class="brand">🏪 ${escapeHtml(p.marca)}</p>
-            <div class="price">${formatMoney(p.preco)}</div>
-            <p class="desc">${escapeHtml(p.descricao)}</p>
-            <p style="color: var(--cinza); margin-bottom: 16px;">
-              <strong>Referência:</strong> ${escapeHtml(p.produtoId)}<br>
-              <strong>Método:</strong> ${p.metodoPagamento === 'NETSHOP' ? 'Pagamento Online' : 'WhatsApp'}
-            </p>
-            ${paymentSection}
-          </div>
-        </div>
-      </div>
-    `;
-  } catch(e) {
-    page.innerHTML = `
-      <div class="empty-state">
-        <div class="icon">📡</div>
-        <p><strong>Erro de conexão</strong></p>
-        <p style="font-size: 0.85rem; color: #999;">${escapeHtml(e.message)}</p>
-        <button class="btn btn-verde" style="margin-top: 12px;" onclick="navigate('produto', {id:'${escapeHtml(id)}'})">Tentar novamente</button>
-      </div>
-    `;
-  }
-}
-
-async function buyNetshop() {
-  const p = state.produtoAtual;
-  const phone = $('#buyerPhone').value.trim();
-  const method = $('#paymentMethod').value;
-
-  if (!phone || phone.length < 9) {
-    showToast('Informe um número de telefone válido', 'error');
-    return;
-  }
-
-  showToast('A iniciar pagamento...');
-
-  try {
-    const res = await apiPost('criarPagamento', {
-      produtoId: p.produtoId,
-      clienteTelefone: phone,
-      metodo: method
-    });
-
-    if (res.success) {
-      if (res.checkoutUrl) {
-        window.open(res.checkoutUrl, '_blank');
-        showToast('Redirecionado para o pagamento Netshop');
-      } else {
-        showToast('Pagamento iniciado! Aguarde confirmação.');
-      }
-    } else {
-      showToast(res.error || 'Erro ao iniciar pagamento', 'error');
-    }
-  } catch(e) {
-    showToast('Erro de conexão: ' + e.message, 'error');
-  }
-}
-
-// ==================== AUTENTICACAO ====================
-function renderLogin() {
-  const page = $('#pageLogin');
-  page.classList.remove('hidden');
-
-  page.innerHTML = `
-    <div class="form-container">
-      <h2>🔐 Entrar na minha conta</h2>
-      <p class="subtitle">Acesse o seu painel de vendedor</p>
-      <form onsubmit="event.preventDefault(); doLogin();">
-        <div class="form-group">
-          <label>Nome ou Telefone</label>
-          <input type="text" id="loginIdentificador" placeholder="Nome ou +258..." required>
-        </div>
-        <div class="form-group">
-          <label>PIN</label>
-          <input type="password" id="loginPin" placeholder="****" required maxlength="6">
-        </div>
-        <button type="submit" class="btn btn-verde btn-block" style="margin-bottom: 16px;">ENTRAR</button>
-        <p style="text-align: center; color: var(--cinza);">
-          Ainda não tem conta? <a href="#" onclick="navigate('registo')" style="color: var(--verde); font-weight: 600;">Registe-se</a>
-        </p>
-      </form>
-    </div>
-  `;
-}
-
-async function doLogin() {
-  const identificador = $('#loginIdentificador').value.trim();
-  const pin = $('#loginPin').value;
-
-  try {
-    const res = await apiPost('loginVendedor', { identificador, pin });
-    if (res.success) {
+function doLogin(){
+  var id = document.getElementById('loginIdentificador').value.trim();
+  var pin = document.getElementById('loginPin').value;
+  apiPost('loginVendedor', {identificador:id, pin:pin}).then(function(res){
+    if(res.ok){
       state.token = res.token;
       state.vendedor = res.vendedor;
       localStorage.setItem('mz1_token', res.token);
       localStorage.setItem('mz1_vendedor', JSON.stringify(res.vendedor));
-      showToast('Bem-vindo, ' + res.vendedor.empresa + '!');
+      toast('Bem-vindo, ' + res.vendedor.empresa + '!');
       navigate('dashboard');
     } else {
-      showToast(res.error || 'Erro no login', 'error');
+      toast(res.erro || 'Erro no login', 'error');
     }
-  } catch(e) {
-    showToast('Erro de conexão: ' + e.message, 'error');
-  }
+  }).catch(function(e){ toast('Erro: '+e.message, 'error'); });
 }
 
-function renderRegisto() {
-  const page = $('#pageRegisto');
-  page.classList.remove('hidden');
-
-  page.innerHTML = `
-    <div class="form-container">
-      <h2>📝 Tornar-se Vendedor</h2>
-      <p class="subtitle">Comece a vender na ${CONFIG.APP_NAME}</p>
-      <form onsubmit="event.preventDefault(); doRegisto();">
-        <div class="form-group">
-          <label>Nome Completo</label>
-          <input type="text" id="regNome" required>
-        </div>
-        <div class="form-group">
-          <label>Número de Telefone</label>
-          <input type="tel" id="regTelefone" placeholder="+25884..." required>
-        </div>
-        <div class="form-group">
-          <label>Número do BI</label>
-          <input type="text" id="regBi" required>
-        </div>
-        <div class="form-group">
-          <label>Marca ou Empresa</label>
-          <input type="text" id="regEmpresa" required>
-        </div>
-        <div class="form-group">
-          <label>PIN (4-6 dígitos)</label>
-          <input type="password" id="regPin" required minlength="4" maxlength="6">
-        </div>
-        <div class="form-group">
-          <label>Plano</label>
-          <select id="regPlano">
-            <option value="SIMPLES">Simples — 50 MT/mês (3 produtos)</option>
-            <option value="MEDIO">Médio — 200 MT/mês (10 produtos)</option>
-            <option value="PRO">Pro — 1.000 MT/mês (Ilimitado)</option>
-          </select>
-        </div>
-        <button type="submit" class="btn btn-dourado btn-block" style="margin-bottom: 16px;">REGISTAR-SE</button>
-        <p style="text-align: center; color: var(--cinza);">
-          Já tem conta? <a href="#" onclick="navigate('login')" style="color: var(--verde); font-weight: 600;">Entrar</a>
-        </p>
-      </form>
-    </div>
-  `;
+function renderRegisto(){
+  var p = document.getElementById('pageRegisto');
+  p.classList.remove('hidden');
+  p.innerHTML = '<div class="form-container"><h2>📝 Tornar-se Vendedor</h2><p class="subtitle">Comece a vender</p>' +
+    '<form onsubmit="event.preventDefault();doRegisto();">' +
+    '<div class="form-group"><label>Nome Completo</label><input type="text" id="regNome" required></div>' +
+    '<div class="form-group"><label>Telefone</label><input type="tel" id="regTelefone" placeholder="+25884..." required></div>' +
+    '<div class="form-group"><label>BI</label><input type="text" id="regBi" required></div>' +
+    '<div class="form-group"><label>Marca/Empresa</label><input type="text" id="regEmpresa" required></div>' +
+    '<div class="form-group"><label>PIN (4-6 dígitos)</label><input type="password" id="regPin" required minlength="4" maxlength="6"></div>' +
+    '<div class="form-group"><label>Plano</label><select id="regPlano"><option value="SIMPLES">Simples — 50 MT/mês (3 produtos)</option><option value="MEDIO">Médio — 200 MT/mês (10 produtos)</option><option value="PRO">Pro — 1.000 MT/mês (Ilimitado)</option></select></div>' +
+    '<button type="submit" class="btn btn-dourado btn-block" style="margin-bottom:16px;">REGISTAR-SE</button>' +
+    '<p style="text-align:center;color:var(--cinza);">Já tem conta? <a href="#" onclick="navigate(\'login\')" style="color:var(--verde);font-weight:600;">Entrar</a></p></form></div>';
 }
 
-async function doRegisto() {
-  const data = {
-    nome: $('#regNome').value.trim(),
-    telefone: $('#regTelefone').value.trim(),
-    bi: $('#regBi').value.trim(),
-    empresa: $('#regEmpresa').value.trim(),
-    pin: $('#regPin').value,
-    plano: $('#regPlano').value
+function doRegisto(){
+  var data = {
+    nome: document.getElementById('regNome').value.trim(),
+    telefone: document.getElementById('regTelefone').value.trim(),
+    bi: document.getElementById('regBi').value.trim(),
+    empresa: document.getElementById('regEmpresa').value.trim(),
+    pin: document.getElementById('regPin').value,
+    plano: document.getElementById('regPlano').value
   };
-
-  try {
-    const res = await apiPost('registarVendedor', data);
-    if (res.success) {
-      showToast('Registo efetuado! Faça login.');
+  apiPost('registarVendedor', data).then(function(res){
+    if(res.ok){
+      if(res.status === 'PENDENTE_PAGAMENTO'){
+        toast('Registado! Efetue o pagamento do plano para ativar.');
+      } else {
+        toast('Registado! Faça login.');
+      }
       navigate('login');
     } else {
-      showToast(res.error || 'Erro no registo', 'error');
+      toast(res.erro || 'Erro no registo', 'error');
     }
-  } catch(e) {
-    showToast('Erro de conexão: ' + e.message, 'error');
-  }
+  }).catch(function(e){ toast('Erro: '+e.message, 'error'); });
 }
 
-async function logout() {
-  if (state.token) {
-    try { await apiPost('logout', { token: state.token }); } catch(e) {}
-  }
-  state.token = null;
-  state.vendedor = null;
-  localStorage.removeItem('mz1_token');
-  localStorage.removeItem('mz1_vendedor');
-  showToast('Sessão terminada');
-  navigate('home');
+function logout(){
+  if(state.token){ apiPost('logout',{token:state.token}).catch(function(){}); }
+  state.token = null; state.vendedor = null;
+  localStorage.removeItem('mz1_token'); localStorage.removeItem('mz1_vendedor');
+  toast('Sessão terminada'); navigate('home');
 }
 
-// ==================== DASHBOARD ====================
-async function renderDashboard() {
-  if (!checkAuth()) return;
+/* ---------- DASHBOARD ---------- */
+function renderDashboard(){
+  if(!checkAuth()) return;
+  var p = document.getElementById('pageDashboard');
+  p.classList.remove('hidden');
+  p.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  apiGet('dashboard', {token:state.token}).then(function(res){
+    if(!res.ok){ toast('Sessão expirada','error'); logout(); return; }
+    var d = res.dashboard;
+    var statusClass = d.status==='ATIVO'?'status-ativo':'status-desativado';
+    var statusText = d.status==='ATIVO'?'🟢 ATIVO':'🔴 DESATIVADO';
+    p.innerHTML = '<div class="dashboard">' +
+      '<div class="dashboard-header"><div><h1>👋 Bem-vindo, '+esc(d.empresa)+'</h1><p style="opacity:0.9;margin-top:4px;">'+esc(d.vendedorId)+'</p></div>' +
+      '<div class="status"><span class="status-dot '+statusClass+'"></span><span>'+statusText+'</span></div></div>' +
+      '<div class="stats-grid">' +
+        '<div class="stat-card"><div class="label">Produtos</div><div class="value">'+d.produtosPublicados+' / '+esc(String(d.limiteProdutos))+'</div></div>' +
+        '<div class="stat-card dourado"><div class="label">Vendas</div><div class="value">'+d.totalVendas+'</div></div>' +
+        '<div class="stat-card"><div class="label">Vendido</div><div class="value">'+fmtMoney(d.totalVendido)+'</div></div>' +
+        '<div class="stat-card vermelho"><div class="label">Taxas</div><div class="value">'+fmtMoney(d.totalTaxas)+'</div></div>' +
+        '<div class="stat-card dourado"><div class="label">Líquido</div><div class="value">'+fmtMoney(d.totalLiquido)+'</div></div>' +
+        '<div class="stat-card"><div class="label">Saldo</div><div class="value">'+fmtMoney(d.saldoDisponivel)+'</div></div>' +
+        '<div class="stat-card"><div class="label">Plano</div><div class="value">'+esc(d.plano)+'</div></div>' +
+        '<div class="stat-card"><div class="label">Expira</div><div class="value">'+fmtDate(d.expira)+'</div></div>' +
+      '</div>' +
+      (d.status!=='ATIVO'?'<div style="background:#fef3c7;border-radius:16px;padding:24px;text-align:center;margin-bottom:32px;"><p style="color:#92400e;font-weight:600;margin-bottom:12px;">⚠️ Conta desativada. Renove o plano.</p><button class="btn btn-dourado" onclick="navigate(\'plano\')">Renovar</button></div>':'') +
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px;">' +
+        '<div class="table-container" style="cursor:pointer;" onclick="navigate(\'meusProdutos\')"><h2>📦 Meus Produtos</h2><p style="color:var(--cinza);">Gerencie produtos</p><button class="btn btn-verde" style="margin-top:16px;">Ver</button></div>' +
+        '<div class="table-container" style="cursor:pointer;" onclick="navigate(\'minhasVendas\')"><h2>📊 Vendas</h2><p style="color:var(--cinza);">Histórico</p><button class="btn btn-verde" style="margin-top:16px;">Ver</button></div>' +
+        '<div class="table-container" style="cursor:pointer;" onclick="navigate(\'carteira\')"><h2>💰 Carteira</h2><p style="color:var(--cinza);">Saldo</p><button class="btn btn-verde" style="margin-top:16px;">Ver</button></div>' +
+      '</div></div>';
+  }).catch(function(e){ p.innerHTML = '<div class="empty-state"><div class="icon">📡</div><p><strong>Erro</strong></p><p style="font-size:0.85rem;color:#999;">'+esc(e.message)+'</p><button class="btn btn-verde" onclick="renderDashboard()">Tentar</button></div>'; });
+}
 
-  const page = $('#pageDashboard');
+/* ---------- MEUS PRODUTOS ---------- */
+function renderMeusProdutos(){
+  if(!checkAuth()) return;
+  var p = document.getElementById('pageMeusProdutos');
+  p.classList.remove('hidden');
+  p.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  apiGet('meusProdutos', {token:state.token}).then(function(res){
+    var produtos = res.produtos || [];
+    p.innerHTML = '<div class="dashboard"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:12px;">' +
+      '<h2 style="color:var(--verde-escuro);">📦 Meus Produtos</h2><button class="btn btn-dourado" onclick="navigate(\'adicionarProduto\')">+ Adicionar</button></div>' +
+      '<div class="table-container"><table><thead><tr><th>Produto</th><th>Preço</th><th>Tipo</th><th>Método</th><th>Status</th><th>Ações</th></tr></thead><tbody>' +
+      (produtos.length===0?'<tr><td colspan="6" style="text-align:center;">Nenhum produto</td></tr>':
+        produtos.map(function(p){
+          return '<tr><td><strong>'+esc(p.nome)+'</strong><br><small style="color:var(--cinza);">'+esc(p.produtoId)+'</small></td>' +
+            '<td>'+fmtMoney(p.preco)+'</td>' +
+            '<td><span class="badge '+(p.tipo==='DIGITAL'?'badge-pendente':'badge-sucesso')+'">'+esc(p.tipo)+'</span></td>' +
+            '<td>'+esc(p.metodoPagamento)+'</td>' +
+            '<td><span class="badge '+(p.status==='ATIVO'?'badge-sucesso':'badge-falha')+'">'+esc(p.status)+'</span></td>' +
+            '<td><button class="btn btn-sm btn-verde" onclick="navigate(\'editarProduto\',{id:\''+esc(p.produtoId)+'\'})" style="margin-right:4px;">✏️</button>' +
+            '<button class="btn btn-sm" onclick="toggleProdStatus(\''+esc(p.produtoId)+'\',\''+(p.status==='ATIVO'?'DESATIVADO':'ATIVO')+'\')" style="border:1px solid var(--cinza);color:var(--cinza);background:transparent;">'+(p.status==='ATIVO'?'Desativar':'Ativar')+'</button></td></tr>';
+        }).join('')) +
+      '</tbody></table></div></div>';
+  }).catch(function(e){ p.innerHTML = '<div class="empty-state"><div class="icon">📡</div><p><strong>Erro</strong></p><p style="font-size:0.85rem;color:#999;">'+esc(e.message)+'</p><button class="btn btn-verde" onclick="renderMeusProdutos()">Tentar</button></div>'; });
+}
+
+function toggleProdStatus(pid, st){
+  apiPost('alterarStatusProduto', {token:state.token, produtoId:pid, status:st}).then(function(res){
+    if(res.ok){ toast(res.msg); renderMeusProdutos(); }
+    else { toast(res.erro||'Erro','error'); }
+  }).catch(function(e){ toast('Erro: '+e.message,'error'); });
+}
+
+/* ---------- PRODUTO FORM ---------- */
+function renderAdicionarProduto(){ if(!checkAuth()) return; renderProdForm(); }
+
+function renderEditarProduto(id){
+  if(!checkAuth()) return;
+  apiGet('meusProdutos', {token:state.token}).then(function(res){
+    var prod = (res.produtos||[]).find(function(p){ return p.produtoId===id; });
+    if(!prod){ toast('Produto não encontrado','error'); navigate('meusProdutos'); return; }
+    renderProdForm(prod);
+  }).catch(function(e){ toast('Erro: '+e.message,'error'); });
+}
+
+function renderProdForm(prod){
+  prod = prod || null;
+  var isEdit = !!prod;
+  var page = isEdit ? document.getElementById('pageEditarProduto') : document.getElementById('pageAdicionarProduto');
   page.classList.remove('hidden');
-  page.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  var isDigital = prod && prod.tipo==='DIGITAL';
 
-  try {
-    const res = await apiGet('dashboard', { token: state.token });
-    if (!res.success) {
-      showToast('Sessão expirada', 'error');
-      logout();
-      return;
-    }
-
-    const d = res.dashboard;
-    const statusClass = d.status === 'ATIVO' ? 'status-ativo' : 'status-desativado';
-    const statusText = d.status === 'ATIVO' ? '🟢 ATIVO' : '🔴 DESATIVADO';
-
-    page.innerHTML = `
-      <div class="dashboard">
-        <div class="dashboard-header">
-          <div>
-            <h1>👋 Bem-vindo, ${escapeHtml(d.empresa)}</h1>
-            <p style="opacity: 0.9; margin-top: 4px;">Vendedor: ${escapeHtml(d.vendedorId)}</p>
-          </div>
-          <div class="status">
-            <span class="status-dot ${statusClass}"></span>
-            <span>${statusText}</span>
-          </div>
-        </div>
-
-        <div class="stats-grid">
-          <div class="stat-card"><div class="label">Produtos Publicados</div><div class="value">${d.produtosPublicados} / ${d.limiteProdutos}</div></div>
-          <div class="stat-card dourado"><div class="label">Total de Vendas</div><div class="value">${d.totalVendas}</div></div>
-          <div class="stat-card"><div class="label">Total Vendido</div><div class="value">${formatMoney(d.totalVendido)}</div></div>
-          <div class="stat-card vermelho"><div class="label">Taxas</div><div class="value">${formatMoney(d.totalTaxas)}</div></div>
-          <div class="stat-card dourado"><div class="label">Valor Líquido</div><div class="value">${formatMoney(d.totalLiquido)}</div></div>
-          <div class="stat-card"><div class="label">Saldo Disponível</div><div class="value">${formatMoney(d.saldoDisponivel)}</div></div>
-          <div class="stat-card"><div class="label">Plano</div><div class="value">${escapeHtml(d.plano)}</div></div>
-          <div class="stat-card"><div class="label">Expira em</div><div class="value">${formatDate(d.expira)}</div></div>
-        </div>
-
-        ${d.status !== 'ATIVO' ? `
-          <div style="background: #fef3c7; border-radius: var(--radius); padding: 24px; text-align: center; margin-bottom: 32px;">
-            <p style="color: #92400e; font-weight: 600; margin-bottom: 12px;">⚠️ A sua conta está desativada. Renove o plano para continuar a vender.</p>
-            <button class="btn btn-dourado" onclick="navigate('plano')">Renovar Plano</button>
-          </div>
-        ` : ''}
-
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px;">
-          <div class="table-container" style="cursor: pointer;" onclick="navigate('meusProdutos')">
-            <h2>📦 Meus Produtos</h2>
-            <p style="color: var(--cinza);">Gerencie os seus produtos publicados</p>
-            <button class="btn btn-verde" style="margin-top: 16px;">Ver Produtos</button>
-          </div>
-          <div class="table-container" style="cursor: pointer;" onclick="navigate('minhasVendas')">
-            <h2>📊 Minhas Vendas</h2>
-            <p style="color: var(--cinza);">Consulte o histórico de vendas</p>
-            <button class="btn btn-verde" style="margin-top: 16px;">Ver Vendas</button>
-          </div>
-          <div class="table-container" style="cursor: pointer;" onclick="navigate('carteira')">
-            <h2>💰 Minha Carteira</h2>
-            <p style="color: var(--cinza);">Consulte o seu saldo e movimentos</p>
-            <button class="btn btn-verde" style="margin-top: 16px;">Ver Carteira</button>
-          </div>
-        </div>
-      </div>
-    `;
-  } catch(e) {
-    page.innerHTML = `
-      <div class="empty-state">
-        <div class="icon">📡</div>
-        <p><strong>Erro de conexão</strong></p>
-        <p style="font-size: 0.85rem; color: #999;">${escapeHtml(e.message)}</p>
-        <button class="btn btn-verde" style="margin-top: 12px;" onclick="renderDashboard()">Tentar novamente</button>
-      </div>
-    `;
-  }
+  page.innerHTML = '<div class="form-container" style="max-width:600px;"><h2>'+(isEdit?'✏️ Editar':'📦 Novo')+' Produto</h2>' +
+    '<form onsubmit="event.preventDefault();'+(isEdit?'doEditProd()':'doAddProd()')+';">' +
+    '<div class="form-group"><label>Nome</label><input type="text" id="pNome" value="'+esc(prod?prod.nome:'')+'" required></div>' +
+    '<div class="form-group"><label>Descrição</label><textarea id="pDesc" required>'+esc(prod?prod.descricao:'')+'</textarea></div>' +
+    '<div class="form-group"><label>Imagem URL</label><input type="url" id="pImg" value="'+esc(prod?prod.imagemUrl:'')+'"></div>' +
+    '<div class="form-group"><label>Preço (MT)</label><input type="number" id="pPreco" value="'+(prod?prod.preco:'')+'" required min="1"></div>' +
+    '<div class="form-group"><label>Tipo</label><select id="pTipo" onchange="onTipoChg()" '+(isEdit?'disabled':'')+'><option value="FISICO" '+(prod&&prod.tipo==='FISICO'?'selected':'')+'>Físico</option><option value="DIGITAL" '+(prod&&prod.tipo==='DIGITAL'?'selected':'')+'>Digital</option></select>'+(isEdit?'<small>Tipo não pode ser alterado</small>':'')+'</div>' +
+    '<div class="form-group"><label>Método Pagamento</label><select id="pMetodo" onchange="onMetodoChg()"><option value="WHATSAPP" '+(prod&&prod.metodoPagamento==='WHATSAPP'?'selected':'')+'>WhatsApp</option><option value="NETSHOP" '+(prod&&prod.metodoPagamento==='NETSHOP'?'selected':'')+'>Netshop</option></select></div>' +
+    '<div class="form-group" id="wg" style="'+(isDigital||prod&&prod.metodoPagamento==='NETSHOP'?'display:none;':'')+'"><label>WhatsApp</label><input type="tel" id="pWpp" value="'+esc(prod?prod.whatsapp:'')+'"></div>' +
+    '<div class="form-group" id="dg" style="'+(!isDigital?'display:none;':'')+'"><label>Link Download</label><input type="url" id="pDown" value="'+esc(prod?prod.downloadUrl:'')+'"><small>Obrigatório para digital</small></div>' +
+    '<button type="submit" class="btn btn-verde btn-block" style="margin-bottom:12px;">'+(isEdit?'💾 GUARDAR':'✅ PUBLICAR')+'</button>' +
+    '<button type="button" class="btn btn-outline btn-block" onclick="navigate(\'meusProdutos\')" style="border-color:var(--cinza);color:var(--cinza);">Cancelar</button>' +
+    (isEdit?'<input type="hidden" id="editPid" value="'+esc(prod.produtoId)+'">':'') +
+    '</form></div>';
 }
 
-// ==================== MEUS PRODUTOS ====================
-async function renderMeusProdutos() {
-  if (!checkAuth()) return;
-
-  const page = $('#pageMeusProdutos');
-  page.classList.remove('hidden');
-  page.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
-
-  try {
-    const res = await apiGet('meusProdutos', { token: state.token });
-    const produtos = res.produtos || [];
-
-    page.innerHTML = `
-      <div class="dashboard">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px;">
-          <h2 style="color: var(--verde-escuro);">📦 Meus Produtos</h2>
-          <button class="btn btn-dourado" onclick="navigate('adicionarProduto')">+ Adicionar Produto</button>
-        </div>
-        <div class="table-container">
-          <table>
-            <thead><tr><th>Produto</th><th>Preço</th><th>Tipo</th><th>Método</th><th>Status</th><th>Ações</th></tr></thead>
-            <tbody>
-              ${produtos.length === 0 ? '<tr><td colspan="6" style="text-align:center;">Nenhum produto registado</td></tr>' :
-                produtos.map(p => `
-                <tr>
-                  <td><strong>${escapeHtml(p.nome)}</strong><br><small style="color: var(--cinza);">${escapeHtml(p.produtoId)}</small></td>
-                  <td>${formatMoney(p.preco)}</td>
-                  <td><span class="badge ${p.tipo === 'DIGITAL' ? 'badge-pendente' : 'badge-sucesso'}">${escapeHtml(p.tipo)}</span></td>
-                  <td>${escapeHtml(p.metodoPagamento)}</td>
-                  <td><span class="badge ${p.status === 'ATIVO' ? 'badge-sucesso' : 'badge-falha'}">${escapeHtml(p.status)}</span></td>
-                  <td>
-                    <button class="btn btn-sm btn-verde" onclick="navigate('editarProduto', {id:'${escapeHtml(p.produtoId)}'})" style="margin-right: 4px;">✏️</button>
-                    <button class="btn btn-sm" onclick="toggleProdutoStatus('${escapeHtml(p.produtoId)}', '${p.status === 'ATIVO' ? 'DESATIVADO' : 'ATIVO'}')" style="border: 1px solid var(--cinza); color: var(--cinza); background: transparent;">
-                      ${p.status === 'ATIVO' ? 'Desativar' : 'Ativar'}
-                    </button>
-                  </td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    `;
-  } catch(e) {
-    page.innerHTML = `
-      <div class="empty-state">
-        <div class="icon">📡</div>
-        <p><strong>Erro de conexão</strong></p>
-        <p style="font-size: 0.85rem; color: #999;">${escapeHtml(e.message)}</p>
-        <button class="btn btn-verde" style="margin-top: 12px;" onclick="renderMeusProdutos()">Tentar novamente</button>
-      </div>
-    `;
-  }
+function onTipoChg(){
+  var tipo = document.getElementById('pTipo').value;
+  var met = document.getElementById('pMetodo');
+  if(tipo==='DIGITAL'){ met.value='NETSHOP'; met.disabled=true; document.getElementById('dg').style.display='block'; document.getElementById('wg').style.display='none'; }
+  else { met.disabled=false; document.getElementById('dg').style.display='none'; onMetodoChg(); }
+}
+function onMetodoChg(){
+  var m = document.getElementById('pMetodo').value;
+  document.getElementById('wg').style.display = m==='WHATSAPP'?'block':'none';
 }
 
-async function toggleProdutoStatus(produtoId, novoStatus) {
-  try {
-    const res = await apiPost('alterarStatusProduto', { token: state.token, produtoId, status: novoStatus });
-    if (res.success) {
-      showToast(res.message);
-      renderMeusProdutos();
-    } else {
-      showToast(res.error || 'Erro', 'error');
-    }
-  } catch(e) {
-    showToast('Erro de conexão: ' + e.message, 'error');
-  }
-}
-
-// ==================== ADICIONAR/EDITAR PRODUTO ====================
-function renderAdicionarProduto() {
-  if (!checkAuth()) return;
-  renderProdutoForm();
-}
-
-async function renderEditarProduto(id) {
-  if (!checkAuth()) return;
-
-  try {
-    const res = await apiGet('meusProdutos', { token: state.token });
-    const produto = (res.produtos || []).find(p => p.produtoId === id);
-    if (!produto) {
-      showToast('Produto não encontrado', 'error');
-      navigate('meusProdutos');
-      return;
-    }
-    renderProdutoForm(produto);
-  } catch(e) {
-    showToast('Erro de conexão: ' + e.message, 'error');
-  }
-}
-
-function renderProdutoForm(produto = null) {
-  const isEdit = !!produto;
-  const page = isEdit ? $('#pageEditarProduto') : $('#pageAdicionarProduto');
-  page.classList.remove('hidden');
-
-  const isDigital = produto?.tipo === 'DIGITAL';
-
-  page.innerHTML = `
-    <div class="form-container" style="max-width: 600px;">
-      <h2>${isEdit ? '✏️ Editar Produto' : '📦 Adicionar Produto'}</h2>
-      <p class="subtitle">${isEdit ? 'Atualize os dados do seu produto' : 'Preencha os dados do novo produto'}</p>
-      <form onsubmit="event.preventDefault(); ${isEdit ? 'doEditarProduto()' : 'doCriarProduto()'};">
-        <div class="form-group">
-          <label>Nome do Produto</label>
-          <input type="text" id="prodNome" value="${escapeHtml(produto?.nome || '')}" required>
-        </div>
-        <div class="form-group">
-          <label>Descrição</label>
-          <textarea id="prodDescricao" required>${escapeHtml(produto?.descricao || '')}</textarea>
-        </div>
-        <div class="form-group">
-          <label>Link da Imagem (URL)</label>
-          <input type="url" id="prodImagem" value="${escapeHtml(produto?.imagemUrl || '')}" placeholder="https://...">
-        </div>
-        <div class="form-group">
-          <label>Preço (MT)</label>
-          <input type="number" id="prodPreco" value="${produto?.preco || ''}" required min="1">
-        </div>
-        <div class="form-group">
-          <label>Tipo</label>
-          <select id="prodTipo" onchange="onTipoChange()" ${isEdit ? 'disabled' : ''}>
-            <option value="FISICO" ${produto?.tipo === 'FISICO' ? 'selected' : ''}>Produto Físico</option>
-            <option value="DIGITAL" ${produto?.tipo === 'DIGITAL' ? 'selected' : ''}>Produto Digital</option>
-          </select>
-          ${isEdit ? '<small>Não é possível alterar o tipo do produto</small>' : ''}
-        </div>
-        <div class="form-group">
-          <label>Método de Pagamento</label>
-          <select id="prodMetodo" onchange="onMetodoChange()">
-            <option value="WHATSAPP" ${produto?.metodoPagamento === 'WHATSAPP' ? 'selected' : ''}>WhatsApp</option>
-            <option value="NETSHOP" ${produto?.metodoPagamento === 'NETSHOP' ? 'selected' : ''}>Netshop (Online)</option>
-          </select>
-        </div>
-        <div class="form-group" id="whatsappGroup" style="${isDigital || produto?.metodoPagamento === 'NETSHOP' ? 'display:none;' : ''}">
-          <label>Contacto WhatsApp</label>
-          <input type="tel" id="prodWhatsapp" value="${escapeHtml(produto?.whatsapp || '')}" placeholder="+25884...">
-        </div>
-        <div class="form-group" id="downloadGroup" style="${!isDigital ? 'display:none;' : ''}">
-          <label>Link de Download</label>
-          <input type="url" id="prodDownload" value="${escapeHtml(produto?.downloadUrl || '')}" placeholder="https://...">
-          <small>Obrigatório para produtos digitais</small>
-        </div>
-        <button type="submit" class="btn btn-verde btn-block" style="margin-bottom: 12px;">
-          ${isEdit ? '💾 GUARDAR ALTERAÇÕES' : '✅ PUBLICAR PRODUTO'}
-        </button>
-        <button type="button" class="btn btn-outline btn-block" onclick="navigate('meusProdutos')" style="border-color: var(--cinza); color: var(--cinza);">
-          Cancelar
-        </button>
-        ${isEdit ? `<input type="hidden" id="editProdutoId" value="${escapeHtml(produto.produtoId)}">` : ''}
-      </form>
-    </div>
-  `;
-}
-
-function onTipoChange() {
-  const tipo = $('#prodTipo').value;
-  const metodo = $('#prodMetodo');
-  const downloadGroup = $('#downloadGroup');
-  const whatsappGroup = $('#whatsappGroup');
-
-  if (tipo === 'DIGITAL') {
-    metodo.value = 'NETSHOP';
-    metodo.disabled = true;
-    downloadGroup.style.display = 'block';
-    whatsappGroup.style.display = 'none';
-  } else {
-    metodo.disabled = false;
-    downloadGroup.style.display = 'none';
-    onMetodoChange();
-  }
-}
-
-function onMetodoChange() {
-  const metodo = $('#prodMetodo').value;
-  const whatsappGroup = $('#whatsappGroup');
-  whatsappGroup.style.display = metodo === 'WHATSAPP' ? 'block' : 'none';
-}
-
-async function doCriarProduto() {
-  const data = {
+function doAddProd(){
+  apiPost('criarProduto', {
     token: state.token,
-    nome: $('#prodNome').value.trim(),
-    descricao: $('#prodDescricao').value.trim(),
-    imagemUrl: $('#prodImagem').value.trim(),
-    preco: $('#prodPreco').value,
-    tipo: $('#prodTipo').value,
-    metodoPagamento: $('#prodMetodo').value,
-    whatsapp: $('#prodWhatsapp')?.value.trim() || '',
-    downloadUrl: $('#prodDownload')?.value.trim() || ''
-  };
-
-  try {
-    const res = await apiPost('criarProduto', data);
-    if (res.success) {
-      showToast('Produto criado com sucesso!');
-      navigate('meusProdutos');
-    } else {
-      showToast(res.error || 'Erro ao criar produto', 'error');
-    }
-  } catch(e) {
-    showToast('Erro de conexão: ' + e.message, 'error');
-  }
+    nome: document.getElementById('pNome').value.trim(),
+    descricao: document.getElementById('pDesc').value.trim(),
+    imagemUrl: document.getElementById('pImg').value.trim(),
+    preco: document.getElementById('pPreco').value,
+    tipo: document.getElementById('pTipo').value,
+    metodoPagamento: document.getElementById('pMetodo').value,
+    whatsapp: document.getElementById('pWpp')?document.getElementById('pWpp').value.trim():'',
+    downloadUrl: document.getElementById('pDown')?document.getElementById('pDown').value.trim():''
+  }).then(function(res){
+    if(res.ok){ toast('Produto criado!'); navigate('meusProdutos'); }
+    else { toast(res.erro||'Erro','error'); }
+  }).catch(function(e){ toast('Erro: '+e.message,'error'); });
 }
 
-async function doEditarProduto() {
-  const data = {
+function doEditProd(){
+  apiPost('editarProduto', {
     token: state.token,
-    produtoId: $('#editProdutoId').value,
-    nome: $('#prodNome').value.trim(),
-    descricao: $('#prodDescricao').value.trim(),
-    imagemUrl: $('#prodImagem').value.trim(),
-    preco: $('#prodPreco').value,
-    metodoPagamento: $('#prodMetodo').value,
-    whatsapp: $('#prodWhatsapp')?.value.trim() || '',
-    downloadUrl: $('#prodDownload')?.value.trim() || ''
-  };
-
-  try {
-    const res = await apiPost('editarProduto', data);
-    if (res.success) {
-      showToast('Produto atualizado!');
-      navigate('meusProdutos');
-    } else {
-      showToast(res.error || 'Erro ao atualizar', 'error');
-    }
-  } catch(e) {
-    showToast('Erro de conexão: ' + e.message, 'error');
-  }
+    produtoId: document.getElementById('editPid').value,
+    nome: document.getElementById('pNome').value.trim(),
+    descricao: document.getElementById('pDesc').value.trim(),
+    imagemUrl: document.getElementById('pImg').value.trim(),
+    preco: document.getElementById('pPreco').value,
+    metodoPagamento: document.getElementById('pMetodo').value,
+    whatsapp: document.getElementById('pWpp')?document.getElementById('pWpp').value.trim():'',
+    downloadUrl: document.getElementById('pDown')?document.getElementById('pDown').value.trim():''
+  }).then(function(res){
+    if(res.ok){ toast('Atualizado!'); navigate('meusProdutos'); }
+    else { toast(res.erro||'Erro','error'); }
+  }).catch(function(e){ toast('Erro: '+e.message,'error'); });
 }
 
-// ==================== MINHAS VENDAS ====================
-async function renderMinhasVendas() {
-  if (!checkAuth()) return;
-
-  const page = $('#pageMinhasVendas');
-  page.classList.remove('hidden');
-  page.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
-
-  try {
-    const res = await apiGet('minhasVendas', { token: state.token });
-    const vendas = res.vendas || [];
-
-    page.innerHTML = `
-      <div class="dashboard">
-        <h2 style="color: var(--verde-escuro); margin-bottom: 24px;">📊 Minhas Vendas</h2>
-        <div class="table-container">
-          <table>
-            <thead>
-              <tr><th>Data</th><th>Produto</th><th>Cliente</th><th>Valor</th><th>Taxa</th><th>Líquido</th><th>Método</th><th>Status</th></tr>
-            </thead>
-            <tbody>
-              ${vendas.length === 0 ? '<tr><td colspan="8" style="text-align:center;">Nenhuma venda registada</td></tr>' :
-                vendas.map(v => `
-                <tr>
-                  <td>${formatDate(v.data)} ${v.hora || ''}</td>
-                  <td>${escapeHtml(v.produtoId)}</td>
-                  <td>${escapeHtml(v.clienteTelefone || '-')}</td>
-                  <td>${formatMoney(v.valorBruto)}</td>
-                  <td>${formatMoney(v.valorTaxa)}</td>
-                  <td><strong>${formatMoney(v.valorLiquido)}</strong></td>
-                  <td>${escapeHtml(v.metodo)}</td>
-                  <td><span class="badge ${v.status === 'APROVADO' ? 'badge-sucesso' : v.status === 'PENDENTE' ? 'badge-pendente' : 'badge-falha'}">${escapeHtml(v.status)}</span></td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    `;
-  } catch(e) {
-    page.innerHTML = `
-      <div class="empty-state">
-        <div class="icon">📡</div>
-        <p><strong>Erro de conexão</strong></p>
-        <p style="font-size: 0.85rem; color: #999;">${escapeHtml(e.message)}</p>
-        <button class="btn btn-verde" style="margin-top: 12px;" onclick="renderMinhasVendas()">Tentar novamente</button>
-      </div>
-    `;
-  }
+/* ---------- VENDAS ---------- */
+function renderMinhasVendas(){
+  if(!checkAuth()) return;
+  var p = document.getElementById('pageMinhasVendas');
+  p.classList.remove('hidden');
+  p.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  apiGet('minhasVendas', {token:state.token}).then(function(res){
+    var vendas = res.vendas || [];
+    p.innerHTML = '<div class="dashboard"><h2 style="color:var(--verde-escuro);margin-bottom:24px;">📊 Minhas Vendas</h2>' +
+      '<div class="table-container"><table><thead><tr><th>Data</th><th>Produto</th><th>Cliente</th><th>Valor</th><th>Taxa</th><th>Líquido</th><th>Status</th></tr></thead><tbody>' +
+      (vendas.length===0?'<tr><td colspan="7" style="text-align:center;">Nenhuma venda</td></tr>':
+        vendas.map(function(v){
+          return '<tr><td>'+fmtDate(v.data)+'</td><td>'+esc(v.produtoId)+'</td><td>'+esc(v.clienteTelefone||'-')+'</td>' +
+            '<td>'+fmtMoney(v.valorBruto)+'</td><td>'+fmtMoney(v.valorTaxa)+'</td><td><strong>'+fmtMoney(v.valorLiquido)+'</strong></td>' +
+            '<td><span class="badge '+(v.status==='APROVADO'?'badge-sucesso':v.status==='PENDENTE'?'badge-pendente':'badge-falha')+'">'+esc(v.status)+'</span></td></tr>';
+        }).join('')) +
+      '</tbody></table></div></div>';
+  }).catch(function(e){ p.innerHTML = '<div class="empty-state"><div class="icon">📡</div><p><strong>Erro</strong></p><p style="font-size:0.85rem;color:#999;">'+esc(e.message)+'</p><button class="btn btn-verde" onclick="renderMinhasVendas()">Tentar</button></div>'; });
 }
 
-// ==================== CARTEIRA ====================
-async function renderCarteira() {
-  if (!checkAuth()) return;
-
-  const page = $('#pageCarteira');
-  page.classList.remove('hidden');
-  page.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
-
-  try {
-    const res = await apiGet('minhaCarteira', { token: state.token });
-    const c = res.carteira;
-
-    page.innerHTML = `
-      <div class="dashboard">
-        <h2 style="color: var(--verde-escuro); margin-bottom: 24px;">💰 Minha Carteira</h2>
-        <div class="stats-grid">
-          <div class="stat-card dourado"><div class="label">Wallet ID</div><div class="value" style="font-size: 1.2rem;">${escapeHtml(c.walletId)}</div></div>
-          <div class="stat-card"><div class="label">Valor Bruto</div><div class="value">${formatMoney(c.valorBruto)}</div></div>
-          <div class="stat-card vermelho"><div class="label">Taxas</div><div class="value">${formatMoney(c.taxa)}</div></div>
-          <div class="stat-card dourado"><div class="label">Valor Líquido</div><div class="value">${formatMoney(c.valorLiquido)}</div></div>
-        </div>
-        <div class="table-container" style="margin-top: 24px;">
-          <p style="color: var(--cinza);">Os valores são atualizados automaticamente após a confirmação de cada venda via Netshop.</p>
-        </div>
-      </div>
-    `;
-  } catch(e) {
-    page.innerHTML = `
-      <div class="empty-state">
-        <div class="icon">📡</div>
-        <p><strong>Erro de conexão</strong></p>
-        <p style="font-size: 0.85rem; color: #999;">${escapeHtml(e.message)}</p>
-        <button class="btn btn-verde" style="margin-top: 12px;" onclick="renderCarteira()">Tentar novamente</button>
-      </div>
-    `;
-  }
+/* ---------- CARTEIRA ---------- */
+function renderCarteira(){
+  if(!checkAuth()) return;
+  var p = document.getElementById('pageCarteira');
+  p.classList.remove('hidden');
+  p.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  apiGet('minhaCarteira', {token:state.token}).then(function(res){
+    if(!res.ok){ p.innerHTML = '<div class="empty-state"><div class="icon">😕</div><p>'+esc(res.erro)+'</p></div>'; return; }
+    var c = res.carteira;
+    p.innerHTML = '<div class="dashboard"><h2 style="color:var(--verde-escuro);margin-bottom:24px;">💰 Carteira</h2>' +
+      '<div class="stats-grid">' +
+        '<div class="stat-card dourado"><div class="label">Wallet</div><div class="value" style="font-size:1.1rem;">'+esc(c.walletId)+'</div></div>' +
+        '<div class="stat-card"><div class="label">Bruto</div><div class="value">'+fmtMoney(c.valorBruto)+'</div></div>' +
+        '<div class="stat-card vermelho"><div class="label">Taxas</div><div class="value">'+fmtMoney(c.taxa)+'</div></div>' +
+        '<div class="stat-card dourado"><div class="label">Líquido</div><div class="value">'+fmtMoney(c.valorLiquido)+'</div></div>' +
+      '</div></div>';
+  }).catch(function(e){ p.innerHTML = '<div class="empty-state"><div class="icon">📡</div><p><strong>Erro</strong></p><p style="font-size:0.85rem;color:#999;">'+esc(e.message)+'</p><button class="btn btn-verde" onclick="renderCarteira()">Tentar</button></div>'; });
 }
 
-// ==================== PLANO ====================
-async function renderPlano() {
-  if (!checkAuth()) return;
-
-  const page = $('#pagePlano');
-  page.classList.remove('hidden');
-  page.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
-
-  try {
-    const res = await apiGet('meuPlano', { token: state.token });
-    const p = res.plano;
-
-    page.innerHTML = `
-      <div class="dashboard">
-        <h2 style="color: var(--verde-escuro); margin-bottom: 8px;">📋 Meu Plano</h2>
-        <p style="color: var(--cinza); margin-bottom: 24px;">Plano atual: <strong>${escapeHtml(p.nome)}</strong> | Status: <strong>${escapeHtml(p.status)}</strong> | Expira: ${formatDate(p.expira)}</p>
-
-        <div class="plans-grid">
-          <div class="plan-card ${p.nome === 'SIMPLES' ? 'destaque' : ''}">
-            <h3>Simples</h3>
-            <div class="preco">50 <span>MT/mês</span></div>
-            <ul class="plan-features">
-              <li>Até 3 produtos</li>
-              <li>Pagamento Netshop</li>
-              <li>Taxa de 17% por venda</li>
-              <li>Suporte básico</li>
-            </ul>
-            <button class="btn btn-verde btn-block" onclick="renovarPlano('SIMPLES')" ${p.nome === 'SIMPLES' ? 'disabled style="opacity:0.5"' : ''}>
-              ${p.nome === 'SIMPLES' ? 'Plano Atual' : 'Escolher Simples'}
-            </button>
-          </div>
-          <div class="plan-card ${p.nome === 'MEDIO' ? 'destaque' : ''}">
-            <h3>Médio</h3>
-            <div class="preco">200 <span>MT/mês</span></div>
-            <ul class="plan-features">
-              <li>Até 10 produtos</li>
-              <li>Pagamento Netshop</li>
-              <li>Taxa de 15% por venda</li>
-              <li>Suporte prioritário</li>
-            </ul>
-            <button class="btn btn-verde btn-block" onclick="renovarPlano('MEDIO')" ${p.nome === 'MEDIO' ? 'disabled style="opacity:0.5"' : ''}>
-              ${p.nome === 'MEDIO' ? 'Plano Atual' : 'Escolher Médio'}
-            </button>
-          </div>
-          <div class="plan-card ${p.nome === 'PRO' ? 'destaque' : ''}">
-            <h3>Pro</h3>
-            <div class="preco">1.000 <span>MT/mês</span></div>
-            <ul class="plan-features">
-              <li>Produtos ilimitados</li>
-              <li>Pagamento Netshop</li>
-              <li>Taxa de 14% por venda</li>
-              <li>Suporte VIP</li>
-            </ul>
-            <button class="btn btn-dourado btn-block" onclick="renovarPlano('PRO')" ${p.nome === 'PRO' ? 'disabled style="opacity:0.5"' : ''}>
-              ${p.nome === 'PRO' ? 'Plano Atual' : 'Escolher Pro'}
-            </button>
-          </div>
-        </div>
-      </div>
-    `;
-  } catch(e) {
-    page.innerHTML = `
-      <div class="empty-state">
-        <div class="icon">📡</div>
-        <p><strong>Erro de conexão</strong></p>
-        <p style="font-size: 0.85rem; color: #999;">${escapeHtml(e.message)}</p>
-        <button class="btn btn-verde" style="margin-top: 12px;" onclick="renderPlano()">Tentar novamente</button>
-      </div>
-    `;
-  }
+/* ---------- PLANO ---------- */
+function renderPlano(){
+  if(!checkAuth()) return;
+  var p = document.getElementById('pagePlano');
+  p.classList.remove('hidden');
+  p.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  apiGet('meuPlano', {token:state.token}).then(function(res){
+    if(!res.ok){ p.innerHTML = '<div class="empty-state"><div class="icon">😕</div><p>'+esc(res.erro)+'</p></div>'; return; }
+    var pl = res.plano;
+    p.innerHTML = '<div class="dashboard"><h2 style="color:var(--verde-escuro);margin-bottom:8px;">📋 Meu Plano</h2>' +
+      '<p style="color:var(--cinza);margin-bottom:24px;">Atual: <strong>'+esc(pl.nome)+'</strong> | Status: <strong>'+esc(pl.status)+'</strong> | Expira: '+fmtDate(pl.expira)+'</p>' +
+      '<div class="plans-grid">' +
+        '<div class="plan-card '+(pl.nome==='SIMPLES'?'destaque':'')+'"><h3>Simples</h3><div class="preco">50 <span>MT/mês</span></div><ul class="plan-features"><li>3 produtos</li><li>Taxa 17%</li></ul><button class="btn btn-verde btn-block" onclick="renovarPlan(\'SIMPLES\')" '+(pl.nome==='SIMPLES'?'disabled style="opacity:0.5"':'')+'>'+(pl.nome==='SIMPLES'?'Atual':'Escolher')+'</button></div>' +
+        '<div class="plan-card '+(pl.nome==='MEDIO'?'destaque':'')+'"><h3>Médio</h3><div class="preco">200 <span>MT/mês</span></div><ul class="plan-features"><li>10 produtos</li><li>Taxa 15%</li></ul><button class="btn btn-verde btn-block" onclick="renovarPlan(\'MEDIO\')" '+(pl.nome==='MEDIO'?'disabled style="opacity:0.5"':'')+'>'+(pl.nome==='MEDIO'?'Atual':'Escolher')+'</button></div>' +
+        '<div class="plan-card '+(pl.nome==='PRO'?'destaque':'')+'"><h3>Pro</h3><div class="preco">1.000 <span>MT/mês</span></div><ul class="plan-features"><li>Ilimitado</li><li>Taxa 14%</li></ul><button class="btn btn-dourado btn-block" onclick="renovarPlan(\'PRO\')" '+(pl.nome==='PRO'?'disabled style="opacity:0.5"':'')+'>'+(pl.nome==='PRO'?'Atual':'Escolher')+'</button></div>' +
+      '</div></div>';
+  }).catch(function(e){ p.innerHTML = '<div class="empty-state"><div class="icon">📡</div><p><strong>Erro</strong></p><p style="font-size:0.85rem;color:#999;">'+esc(e.message)+'</p><button class="btn btn-verde" onclick="renderPlano()">Tentar</button></div>'; });
 }
 
-async function renovarPlano(plano) {
-  const metodo = prompt('Método de pagamento: mpesa, emola, mkesh ou card', 'mpesa');
-  if (!metodo) return;
-
-  const telefone = prompt('Número de telefone para pagamento:', state.vendedor?.telefone || '+258');
-  if (!telefone) return;
-
-  try {
-    showToast('A processar pagamento do plano...');
-    const res = await apiPost('renovarPlano', {
-      token: state.token,
-      plano,
-      metodoPagamento: metodo,
-      telefone
-    });
-
-    if (res.success && res.checkoutUrl) {
-      window.open(res.checkoutUrl, '_blank');
-      showToast('Redirecionado para pagamento do plano');
-    } else if (res.success) {
-      showToast('Pagamento do plano iniciado!');
-    } else {
-      showToast(res.error || 'Erro', 'error');
-    }
-  } catch(e) {
-    showToast('Erro de conexão: ' + e.message, 'error');
-  }
+function renovarPlan(plano){
+  var metodo = prompt('Método: mpesa, emola, mkesh, card', 'mpesa'); if(!metodo) return;
+  var tel = prompt('Telefone:', state.vendedor?state.vendedor.telefone:'+258'); if(!tel) return;
+  toast('Processando...');
+  apiPost('renovarPlano', {token:state.token, plano:plano, metodoPagamento:metodo, telefone:tel}).then(function(res){
+    if(res.ok && res.checkoutUrl){ window.open(res.checkoutUrl,'_blank'); toast('Redirecionado'); }
+    else if(res.ok){ toast('Pagamento iniciado'); }
+    else { toast(res.erro||'Erro','error'); }
+  }).catch(function(e){ toast('Erro: '+e.message,'error'); });
 }
 
-// ==================== VENDER ====================
-function renderVender() {
-  const page = $('#pageVender');
-  page.classList.remove('hidden');
-
-  page.innerHTML = `
-    <div class="hero" style="padding: 100px 24px;">
-      <h1>🚀 Venda na ${CONFIG.APP_NAME}</h1>
-      <p>Alcance milhares de clientes em Moçambique. Simples, rápido e seguro.</p>
-      <div style="display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; margin-top: 24px;">
-        <button class="btn btn-dourado" onclick="navigate('registo')">Começar a Vender</button>
-        <button class="btn btn-outline" onclick="navigate('login')">Já sou Vendedor</button>
-      </div>
-    </div>
-
-    <div style="max-width: 1000px; margin: 0 auto; padding: 60px 24px;">
-      <h2 style="text-align: center; color: var(--verde-escuro); margin-bottom: 48px;">Por que vender connosco?</h2>
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 32px;">
-        <div style="text-align: center;">
-          <div style="font-size: 3rem; margin-bottom: 16px;">📱</div>
-          <h3>Fácil de usar</h3>
-          <p style="color: var(--cinza);">Cadastre-se em minutos e comece a vender.</p>
-        </div>
-        <div style="text-align: center;">
-          <div style="font-size: 3rem; margin-bottom: 16px;">💳</div>
-          <h3>Pagamentos seguros</h3>
-          <p style="color: var(--cinza);">Integração com Netshop para M-Pesa, e-Mola e cartões.</p>
-        </div>
-        <div style="text-align: center;">
-          <div style="font-size: 3rem; margin-bottom: 16px;">📊</div>
-          <h3>Controle total</h3>
-          <p style="color: var(--cinza);">Dashboard completo com vendas e carteira.</p>
-        </div>
-      </div>
-
-      <div style="margin-top: 60px;">
-        <h2 style="text-align: center; color: var(--verde-escuro); margin-bottom: 32px;">Planos de Venda</h2>
-        <div class="plans-grid">
-          <div class="plan-card">
-            <h3>Simples</h3>
-            <div class="preco">50 <span>MT/mês</span></div>
-            <ul class="plan-features"><li>3 produtos</li><li>Taxa 17%</li></ul>
-          </div>
-          <div class="plan-card">
-            <h3>Médio</h3>
-            <div class="preco">200 <span>MT/mês</span></div>
-            <ul class="plan-features"><li>10 produtos</li><li>Taxa 15%</li></ul>
-          </div>
-          <div class="plan-card destaque">
-            <h3>Pro</h3>
-            <div class="preco">1.000 <span>MT/mês</span></div>
-            <ul class="plan-features"><li>Ilimitado</li><li>Taxa 14%</li></ul>
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
+/* ---------- VENDER ---------- */
+function renderVender(){
+  var p = document.getElementById('pageVender');
+  p.classList.remove('hidden');
+  p.innerHTML = '<div class="hero" style="padding:100px 24px;"><h1>🚀 Venda na '+CONFIG.APP_NAME+'</h1><p>Alcance clientes em Moçambique.</p>' +
+    '<div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-top:24px;">' +
+    '<button class="btn btn-dourado" onclick="navigate(\'registo\')">Começar</button>' +
+    '<button class="btn btn-outline" onclick="navigate(\'login\')">Já sou Vendedor</button></div></div>' +
+    '<div style="max-width:1000px;margin:0 auto;padding:60px 24px;">' +
+    '<h2 style="text-align:center;color:var(--verde-escuro);margin-bottom:48px;">Por que vender connosco?</h2>' +
+    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:32px;">' +
+    '<div style="text-align:center;"><div style="font-size:3rem;margin-bottom:16px;">📱</div><h3>Fácil</h3><p style="color:var(--cinza);">Cadastre em minutos.</p></div>' +
+    '<div style="text-align:center;"><div style="font-size:3rem;margin-bottom:16px;">💳</div><h3>Seguro</h3><p style="color:var(--cinza);">M-Pesa, e-Mola, cartões.</p></div>' +
+    '<div style="text-align:center;"><div style="font-size:3rem;margin-bottom:16px;">📊</div><h3>Controle</h3><p style="color:var(--cinza);">Dashboard completo.</p></div></div>' +
+    '<div style="margin-top:60px;"><h2 style="text-align:center;color:var(--verde-escuro);margin-bottom:32px;">Planos</h2>' +
+    '<div class="plans-grid">' +
+    '<div class="plan-card"><h3>Simples</h3><div class="preco">50 <span>MT/mês</span></div><ul class="plan-features"><li>3 produtos</li><li>Taxa 17%</li></ul></div>' +
+    '<div class="plan-card"><h3>Médio</h3><div class="preco">200 <span>MT/mês</span></div><ul class="plan-features"><li>10 produtos</li><li>Taxa 15%</li></ul></div>' +
+    '<div class="plan-card destaque"><h3>Pro</h3><div class="preco">1.000 <span>MT/mês</span></div><ul class="plan-features"><li>Ilimitado</li><li>Taxa 14%</li></ul></div>' +
+    '</div></div></div>';
 }
 
-// ==================== HELPERS ====================
-function checkAuth() {
-  if (!state.token) {
-    showToast('Faça login para aceder', 'error');
-    navigate('login');
-    return false;
-  }
-  return true;
-}
+/* ---------- UTILS ---------- */
+function checkAuth(){ if(!state.token){ toast('Faça login','error'); navigate('login'); return false; } return true; }
 
-function toggleMobileMenu() {
-  alert('Menu mobile — use desktop para melhor experiência');
-}
-
-// ==================== INICIALIZACAO ====================
-document.addEventListener('DOMContentLoaded', () => {
-  // Testar conexao ao carregar
-  testConnection().then(ok => {
-    if (!ok) {
-      console.warn('API MOZ1VENDAS offline ou URL incorreta');
-    }
-  });
-
+/* ---------- INIT ---------- */
+document.addEventListener('DOMContentLoaded', function(){
   navigate('home');
 });
