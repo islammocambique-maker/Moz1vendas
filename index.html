@@ -5,194 +5,325 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MOZ1VENDAS - Catálogo & Marketplace</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .glass-card {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+    }
+  </style>
 </head>
-<body class="bg-gray-100 font-sans min-h-screen flex flex-col">
+<body class="bg-slate-50 font-sans min-h-screen flex flex-col text-slate-800">
 
-  <!-- HEADER -->
-  <header class="bg-blue-600 text-white p-4 shadow-md sticky top-0 z-50">
-    <div class="container mx-auto flex justify-between items-center">
-      <h1 class="text-xl font-bold tracking-wide cursor-pointer" onclick="carregarProdutos()">MOZ1VENDAS</h1>
-      <div id="authArea" class="flex gap-2">
-        <button onclick="abrirModalAuth()" class="bg-white text-blue-600 px-4 py-2 rounded-lg font-semibold hover:bg-gray-100 transition">Entrar / Registar</button>
+  <!-- HEADER ELEGANTE -->
+  <header class="bg-gradient-to-r from-blue-700 via-indigo-700 to-blue-900 text-white shadow-lg sticky top-0 z-40">
+    <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+      <div class="flex items-center space-x-3 cursor-pointer" onclick="carregarProdutos()">
+        <div class="bg-white/10 p-2 rounded-xl backdrop-blur-md">
+          <i class="fa-solid fa-store text-2xl text-amber-400"></i>
+        </div>
+        <div>
+          <h1 class="text-xl font-extrabold tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-white to-blue-100">MOZ1VENDAS</h1>
+          <p class="text-[10px] text-blue-200 uppercase tracking-widest font-semibold">Marketplace Moçambique</p>
+        </div>
+      </div>
+      
+      <div class="flex items-center gap-3">
+        <a href="https://wa.me/258860407269?text=Olá! Preciso de suporte no MOZ1VENDAS." target="_blank" class="hidden sm:flex items-center gap-2 bg-emerald-600/90 hover:bg-emerald-600 text-white px-3 py-2 rounded-lg text-xs font-semibold transition backdrop-blur-sm border border-emerald-500/30">
+          <i class="fa-brands fa-whatsapp text-base"></i> Suporte
+        </a>
+        <div id="authArea" class="flex gap-2">
+          <button onclick="abrirModalAuth()" class="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg text-sm font-semibold transition border border-white/20">Entrar / Registar</button>
+        </div>
       </div>
     </div>
   </header>
 
+  <!-- BANNER DE BOAS-VINDAS & REGRAS -->
+  <section class="bg-blue-600 text-white py-6 shadow-inner">
+    <div class="container mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4 text-center md:text-left">
+      <div>
+        <h2 class="text-lg md:text-xl font-bold">Compre e Venda com Segurança em Moçambique</h2>
+        <p class="text-blue-100 text-xs md:text-sm mt-1">Produtos Físicos e Digitais com pagamento via M-Pesa e e-Mola.</p>
+      </div>
+      <button onclick="abrirModalTermos()" class="text-xs bg-blue-800/60 hover:bg-blue-800 text-blue-100 px-3 py-1.5 rounded-lg border border-blue-400/30 transition flex items-center gap-1">
+        <i class="fa-solid fa-shield-halved text-amber-400"></i> Termos de Segurança & Banimento
+      </button>
+    </div>
+  </section>
+
   <!-- FILTROS E BUSCA -->
-  <main class="container mx-auto p-4 flex-grow">
-    <div class="bg-white p-4 rounded-xl shadow mb-6 flex flex-col md:flex-row gap-4">
-      <input type="text" id="inputBusca" placeholder="Buscar produtos..." class="flex-grow border p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-      <select id="selectCategoria" class="border p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-        <option value="">Todas Categorias</option>
-        <option value="FISICO">Produtos Físicos</option>
-        <option value="DIGITAL">Produtos Digitais</option>
-      </select>
-      <button onclick="carregarProdutos()" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition">Filtrar</button>
+  <main class="container mx-auto px-4 py-8 flex-grow">
+    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 mb-8 flex flex-col md:flex-row gap-4 items-center">
+      <div class="relative flex-grow w-full">
+        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3.5 text-slate-400"></i>
+        <input type="text" id="inputBusca" placeholder="Buscar por produtos ou marcas..." class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white transition text-sm">
+      </div>
+      
+      <div class="flex gap-3 w-full md:w-auto">
+        <select id="selectCategoria" class="w-full md:w-48 px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm font-medium">
+          <option value="">Todas Categorias</option>
+          <option value="FISICO">📦 Produtos Físicos</option>
+          <option value="DIGITAL">⚡ Produtos Digitais</option>
+        </select>
+        
+        <button onclick="carregarProdutos()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-semibold text-sm transition shadow-sm shadow-blue-600/30 flex items-center justify-center gap-2">
+          <i class="fa-solid fa-filter"></i> Filtrar
+        </button>
+      </div>
     </div>
 
     <!-- LISTA DE PRODUTOS DA LOJA -->
     <div id="gridProdutos" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-      <p class="text-gray-500 col-span-full text-center py-8">Carregando produtos...</p>
+      <div class="col-span-full py-12 text-center">
+        <i class="fa-solid fa-spinner fa-spin text-3xl text-blue-600 mb-3"></i>
+        <p class="text-slate-500 font-medium">Carregando catálogo...</p>
+      </div>
     </div>
   </main>
 
+  <!-- FOOTER ELEGANTE -->
+  <footer class="bg-slate-900 text-slate-400 py-10 border-t border-slate-800">
+    <div class="container mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div>
+        <div class="flex items-center space-x-2 text-white font-bold text-lg mb-3">
+          <i class="fa-solid fa-store text-amber-400"></i>
+          <span>MOZ1VENDAS</span>
+        </div>
+        <p class="text-xs text-slate-400 leading-relaxed">
+          Sua plataforma confiável de vendas online em Moçambique.
+        </p>
+      </div>
+      
+      <div>
+        <h4 class="text-white font-semibold text-sm mb-3">Políticas & Segurança</h4>
+        <ul class="space-y-2 text-xs">
+          <li><button onclick="abrirModalTermos()" class="hover:text-blue-400 transition">Termos de Uso e Condições</button></li>
+          <li><button onclick="abrirModalTermos()" class="hover:text-blue-400 transition">Política de Zero Tolerância contra Fraudes</button></li>
+        </ul>
+      </div>
+
+      <div>
+        <h4 class="text-white font-semibold text-sm mb-3">Atendimento ao Cliente</h4>
+        <a href="https://wa.me/258860407269" target="_blank" class="inline-flex items-center gap-2 text-emerald-400 text-xs hover:underline">
+          <i class="fa-brands fa-whatsapp text-base"></i> +258 860 407 269 (WhatsApp)
+        </a>
+      </div>
+    </div>
+    <div class="container mx-auto px-4 mt-8 pt-6 border-t border-slate-800/60 text-center text-[11px] text-slate-500">
+      &copy; MOZ1VENDAS - Todos os direitos reservados.
+    </div>
+  </footer>
+
   <!-- MODAL SELEÇÃO AUTH -->
-  <div id="modalAuth" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center p-4 z-50">
-    <div class="bg-white p-6 rounded-xl max-w-sm w-full relative text-center">
-      <button onclick="fecharModal('modalAuth')" class="absolute top-2 right-4 text-2xl font-bold text-gray-500">&times;</button>
-      <h2 class="text-xl font-bold mb-4">Área do Vendedor</h2>
-      <p class="text-gray-600 text-sm mb-6">Escolha uma opção para continuar:</p>
+  <div id="modalAuth" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex justify-center items-center p-4 z-50">
+    <div class="bg-white p-6 rounded-2xl max-w-sm w-full relative shadow-xl border border-slate-100 text-center">
+      <button onclick="fecharModal('modalAuth')" class="absolute top-3 right-4 text-slate-400 hover:text-slate-600 text-2xl font-bold">&times;</button>
+      <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-3 text-xl">
+        <i class="fa-solid fa-user-gear"></i>
+      </div>
+      <h2 class="text-xl font-bold text-slate-800 mb-1">Área do Vendedor</h2>
+      <p class="text-slate-500 text-xs mb-6">Acesse sua conta para gerenciar produtos.</p>
       <div class="flex flex-col gap-3">
-        <button onclick="trocarModalAuth('modalAuth', 'modalLogin')" class="w-full bg-blue-600 text-white py-2 rounded-lg font-bold hover:bg-blue-700 transition">Entrar na Conta</button>
-        <button onclick="trocarModalAuth('modalAuth', 'modalRegisto')" class="w-full bg-gray-200 text-gray-800 py-2 rounded-lg font-bold hover:bg-gray-300 transition">Criar Nova Conta</button>
+        <button onclick="trocarModalAuth('modalAuth', 'modalLogin')" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl font-bold text-sm transition">Entrar na Conta</button>
+        <button onclick="trocarModalAuth('modalAuth', 'modalRegisto')" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-xl font-bold text-sm transition">Criar Nova Conta</button>
       </div>
     </div>
   </div>
 
   <!-- MODAL LOGIN -->
-  <div id="modalLogin" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center p-4 z-50">
-    <div class="bg-white p-6 rounded-xl max-w-md w-full relative">
-      <button onclick="fecharModal('modalLogin')" class="absolute top-2 right-4 text-2xl font-bold text-gray-500">&times;</button>
-      <h2 class="text-xl font-bold mb-4">Entrar como Vendedor</h2>
+  <div id="modalLogin" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex justify-center items-center p-4 z-50">
+    <div class="bg-white p-6 rounded-2xl max-w-md w-full relative shadow-xl border border-slate-100">
+      <button onclick="fecharModal('modalLogin')" class="absolute top-3 right-4 text-slate-400 hover:text-slate-600 text-2xl font-bold">&times;</button>
+      <h2 class="text-xl font-bold text-slate-800 mb-4">Entrar como Vendedor</h2>
       <form onsubmit="fazerLogin(event)">
         <div class="mb-4">
-          <label class="block text-sm font-medium mb-1">Empresa ou Telefone</label>
-          <input type="text" id="loginIdentificador" required class="w-full border p-2 rounded-lg">
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Empresa ou Telefone</label>
+          <input type="text" id="loginIdentificador" required class="w-full border border-slate-200 p-2.5 rounded-xl focus:ring-2 focus:ring-blue-600 text-sm">
         </div>
-        <div class="mb-4">
-          <label class="block text-sm font-medium mb-1">PIN Numérico</label>
-          <input type="password" id="loginPin" required class="w-full border p-2 rounded-lg">
+        <div class="mb-6">
+          <label class="block text-xs font-semibold text-slate-600 mb-1">PIN Numérico</label>
+          <input type="password" id="loginPin" required class="w-full border border-slate-200 p-2.5 rounded-xl focus:ring-2 focus:ring-blue-600 text-sm">
         </div>
-        <button type="submit" id="btnLogin" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition">Entrar</button>
+        <button type="submit" id="btnLogin" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold text-sm transition">Entrar</button>
       </form>
     </div>
   </div>
 
   <!-- MODAL REGISTO -->
-  <div id="modalRegisto" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center p-4 z-50">
-    <div class="bg-white p-6 rounded-xl max-w-md w-full relative max-h-[90vh] overflow-y-auto">
-      <button onclick="fecharModal('modalRegisto')" class="absolute top-2 right-4 text-2xl font-bold text-gray-500">&times;</button>
-      <h2 class="text-xl font-bold mb-4">Registar Vendedor</h2>
+  <div id="modalRegisto" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex justify-center items-center p-4 z-50">
+    <div class="bg-white p-6 rounded-2xl max-w-md w-full relative shadow-xl border border-slate-100 max-h-[90vh] overflow-y-auto">
+      <button onclick="fecharModal('modalRegisto')" class="absolute top-3 right-4 text-slate-400 hover:text-slate-600 text-2xl font-bold">&times;</button>
+      <h2 class="text-xl font-bold text-slate-800 mb-1">Registar Vendedor</h2>
+      <p class="text-xs text-slate-500 mb-4">Crie sua conta para começar a vender hoje.</p>
+
       <form onsubmit="fazerRegisto(event)">
         <div class="mb-3">
-          <label class="block text-sm font-medium mb-1">Nome Completo</label>
-          <input type="text" id="regNome" required class="w-full border p-2 rounded-lg">
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Nome Completo</label>
+          <input type="text" id="regNome" required class="w-full border border-slate-200 p-2 rounded-xl text-sm">
         </div>
         <div class="mb-3">
-          <label class="block text-sm font-medium mb-1">Telefone</label>
-          <input type="tel" id="regTelefone" placeholder="841234567" required class="w-full border p-2 rounded-lg">
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Telefone</label>
+          <input type="tel" id="regTelefone" placeholder="841234567" required class="w-full border border-slate-200 p-2 rounded-xl text-sm">
         </div>
         <div class="mb-3">
-          <label class="block text-sm font-medium mb-1">Número do BI</label>
-          <input type="text" id="regBi" required class="w-full border p-2 rounded-lg">
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Número do BI</label>
+          <input type="text" id="regBi" required class="w-full border border-slate-200 p-2 rounded-xl text-sm">
         </div>
         <div class="mb-3">
-          <label class="block text-sm font-medium mb-1">Nome da Empresa / Marca</label>
-          <input type="text" id="regEmpresa" required class="w-full border p-2 rounded-lg">
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Nome da Empresa / Marca</label>
+          <input type="text" id="regEmpresa" required class="w-full border border-slate-200 p-2 rounded-xl text-sm">
         </div>
         <div class="mb-3">
-          <label class="block text-sm font-medium mb-1">PIN Secreto</label>
-          <input type="password" id="regPin" required class="w-full border p-2 rounded-lg">
+          <label class="block text-xs font-semibold text-slate-600 mb-1">PIN Secreto</label>
+          <input type="password" id="regPin" required class="w-full border border-slate-200 p-2 rounded-xl text-sm">
         </div>
         <div class="mb-4">
-          <label class="block text-sm font-medium mb-1">Plano Inicial</label>
-          <select id="regPlano" class="w-full border p-2 rounded-lg">
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Plano Inicial</label>
+          <select id="regPlano" class="w-full border border-slate-200 p-2 rounded-xl text-sm">
             <option value="SIMPLES">Plano Simples</option>
           </select>
         </div>
-        <button type="submit" id="btnRegisto" class="w-full bg-green-600 text-white py-3 rounded-lg font-bold hover:bg-green-700 transition">Registar Conta</button>
+
+        <div class="mb-5 bg-amber-50 p-3 rounded-xl border border-amber-200/60">
+          <label class="flex items-start gap-2 text-xs text-slate-700 cursor-pointer">
+            <input type="checkbox" id="regAceitaTermos" required class="mt-0.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+            <span>Declaro que li e concordo com os <button type="button" onclick="abrirModalTermos()" class="text-blue-600 underline font-semibold">Termos de Uso</button>. Estou ciente de que vendas fraudulentas ou ilegalidades resultam em banimento imediato.</span>
+          </label>
+        </div>
+
+        <button type="submit" id="btnRegisto" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-bold text-sm transition">Registar Conta</button>
       </form>
     </div>
   </div>
 
-  <!-- MODAL PAINEL DO VENDEDOR (MEUS PRODUTOS / ADICIONAR PRODUTO) -->
-  <div id="modalPainelVendedor" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center p-4 z-50">
-    <div class="bg-white p-6 rounded-xl max-w-2xl w-full relative max-h-[90vh] overflow-y-auto">
-      <button onclick="fecharModal('modalPainelVendedor')" class="absolute top-2 right-4 text-2xl font-bold text-gray-500">&times;</button>
+  <!-- MODAL TERMOS DE USO & BANIMENTO -->
+  <div id="modalTermos" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex justify-center items-center p-4 z-50">
+    <div class="bg-white p-6 rounded-2xl max-w-lg w-full relative shadow-xl border border-slate-100 max-h-[85vh] overflow-y-auto">
+      <button onclick="fecharModal('modalTermos')" class="absolute top-3 right-4 text-slate-400 hover:text-slate-600 text-2xl font-bold">&times;</button>
+      <div class="flex items-center gap-2 text-red-600 font-bold text-lg mb-3">
+        <i class="fa-solid fa-gavel"></i>
+        <h3>Termos de Uso & Segurança</h3>
+      </div>
       
-      <div class="flex justify-between items-center mb-6">
-        <h2 class="text-xl font-bold">Painel do Vendedor</h2>
-        <button onclick="abrirModalCriarProduto()" class="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-700 transition">+ Adicionar Produto</button>
+      <div class="space-y-4 text-xs text-slate-600 leading-relaxed">
+        <p class="font-semibold text-slate-800">Ao utilizar a plataforma MOZ1VENDAS, você concorda expressamente com os seguintes termos:</p>
+        
+        <div class="bg-red-50 p-3 rounded-xl border border-red-200 text-red-800 space-y-2">
+          <p class="font-bold">🚫 Proibições Estritas:</p>
+          <ul class="list-disc pl-4 space-y-1">
+            <li>É estritamente proibida a publicação de produtos roubados, furtados ou sem procedência legal.</li>
+            <li>É proibida a venda de cópias não autorizadas, pirataria, cursos/arquivos falsos ou golpes digitais.</li>
+            <li>É proibida a criação de múltiplos perfis falsos para induzir clientes ao erro.</li>
+          </ul>
+        </div>
+
+        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+          <p class="font-bold text-slate-800 mb-1">⚖️ Penalizações & Banimento:</p>
+          <p>Qualquer atividade suspeita ou denúncia confirmada de fraude resultará no <strong>banimento definitivo e imediato</strong> da conta do vendedor, bloqueio de saques e envio de dados às autoridades competentes.</p>
+        </div>
+
+        <p class="text-[11px] text-slate-400">Dúvidas? Entre em contato com o nosso suporte oficial pelo WhatsApp: <strong>+258 860 407 269</strong>.</p>
       </div>
 
-      <h3 class="font-bold text-lg mb-3">Meus Produtos Cadastrados</h3>
+      <button onclick="fecharModal('modalTermos')" class="w-full mt-5 bg-slate-800 hover:bg-slate-900 text-white py-2.5 rounded-xl font-semibold text-xs transition">Entendido</button>
+    </div>
+  </div>
+
+  <!-- MODAL PAINEL DO VENDEDOR -->
+  <div id="modalPainelVendedor" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex justify-center items-center p-4 z-50">
+    <div class="bg-white p-6 rounded-2xl max-w-2xl w-full relative shadow-xl border border-slate-100 max-h-[90vh] overflow-y-auto">
+      <button onclick="fecharModal('modalPainelVendedor')" class="absolute top-3 right-4 text-slate-400 hover:text-slate-600 text-2xl font-bold">&times;</button>
+      
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6 pb-4 border-b border-slate-100">
+        <div>
+          <h2 class="text-xl font-bold text-slate-800">Painel do Vendedor</h2>
+          <p class="text-xs text-slate-500">Gerencie seu catálogo de produtos cadastrados.</p>
+        </div>
+        <button onclick="abrirModalCriarProduto()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl font-bold text-xs transition flex items-center gap-1.5 shadow-sm shadow-emerald-600/30">
+          <i class="fa-solid fa-plus"></i> Adicionar Produto
+        </button>
+      </div>
+
+      <h3 class="font-bold text-sm text-slate-700 mb-3">Meus Produtos Cadastrados</h3>
       <div id="listaMeusProdutos" class="space-y-3">
-        <p class="text-gray-500 text-center py-4">Carregando seus produtos...</p>
+        <p class="text-slate-500 text-center py-4 text-xs">Carregando seus produtos...</p>
       </div>
     </div>
   </div>
 
   <!-- MODAL FORMULÁRIO DE CRIAR PRODUTO -->
-  <div id="modalCriarProduto" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center p-4 z-50">
-    <div class="bg-white p-6 rounded-xl max-w-md w-full relative max-h-[90vh] overflow-y-auto">
-      <button onclick="fecharModal('modalCriarProduto')" class="absolute top-2 right-4 text-2xl font-bold text-gray-500">&times;</button>
-      <h2 class="text-xl font-bold mb-4">Novo Produto</h2>
+  <div id="modalCriarProduto" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex justify-center items-center p-4 z-50">
+    <div class="bg-white p-6 rounded-2xl max-w-md w-full relative shadow-xl border border-slate-100 max-h-[90vh] overflow-y-auto">
+      <button onclick="fecharModal('modalCriarProduto')" class="absolute top-3 right-4 text-slate-400 hover:text-slate-600 text-2xl font-bold">&times;</button>
+      <h2 class="text-xl font-bold text-slate-800 mb-4">Novo Produto</h2>
       
       <form onsubmit="salvarProduto(event)">
         <div class="mb-3">
-          <label class="block text-sm font-medium mb-1">Nome do Produto</label>
-          <input type="text" id="prodNome" required class="w-full border p-2 rounded-lg">
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Nome do Produto</label>
+          <input type="text" id="prodNome" required class="w-full border border-slate-200 p-2 rounded-xl text-sm">
         </div>
         <div class="mb-3">
-          <label class="block text-sm font-medium mb-1">Descrição</label>
-          <textarea id="prodDescricao" required class="w-full border p-2 rounded-lg" rows="2"></textarea>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Descrição</label>
+          <textarea id="prodDescricao" required class="w-full border border-slate-200 p-2 rounded-xl text-sm" rows="2"></textarea>
         </div>
         <div class="mb-3">
-          <label class="block text-sm font-medium mb-1">URL da Imagem</label>
-          <input type="url" id="prodImagem" placeholder="https://exemplo.com/imagem.jpg" class="w-full border p-2 rounded-lg">
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Link / URL da Imagem (Google Drive, ImgBB, etc.)</label>
+          <input type="url" id="prodImagem" placeholder="Cole o link aqui..." class="w-full border border-slate-200 p-2 rounded-xl text-sm">
         </div>
         <div class="mb-3">
-          <label class="block text-sm font-medium mb-1">Preço (MT)</label>
-          <input type="number" step="0.01" id="prodPreco" required class="w-full border p-2 rounded-lg">
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Preço (MT)</label>
+          <input type="number" step="0.01" id="prodPreco" required class="w-full border border-slate-200 p-2 rounded-xl text-sm">
         </div>
         <div class="mb-3">
-          <label class="block text-sm font-medium mb-1">Tipo de Produto</label>
-          <select id="prodTipo" onchange="alternarCamposTipo()" class="w-full border p-2 rounded-lg">
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Tipo de Produto</label>
+          <select id="prodTipo" onchange="alternarCamposTipo()" class="w-full border border-slate-200 p-2 rounded-xl text-sm">
             <option value="FISICO">Físico</option>
-            <option value="DIGITAL">Digital</option>
+            <option value="DIGITAL">Digital (PDF, E-book, Cursos, etc.)</option>
           </select>
         </div>
         <div class="mb-3">
-          <label class="block text-sm font-medium mb-1">Método de Recebimento</label>
-          <select id="prodMetodo" onchange="alternarCamposTipo()" class="w-full border p-2 rounded-lg">
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Método de Recebimento</label>
+          <select id="prodMetodo" onchange="alternarCamposTipo()" class="w-full border border-slate-200 p-2 rounded-xl text-sm">
             <option value="NETSHOP">Netshop (M-Pesa / e-Mola)</option>
             <option value="WHATSAPP">WhatsApp Direto</option>
           </select>
         </div>
         <div class="mb-3" id="campoWhatsapp">
-          <label class="block text-sm font-medium mb-1">WhatsApp para Contato</label>
-          <input type="tel" id="prodWhatsapp" placeholder="258841234567" class="w-full border p-2 rounded-lg">
+          <label class="block text-xs font-semibold text-slate-600 mb-1">WhatsApp para Contato</label>
+          <input type="tel" id="prodWhatsapp" placeholder="258841234567" class="w-full border border-slate-200 p-2 rounded-xl text-sm">
         </div>
         <div class="mb-4 hidden" id="campoDownload">
-          <label class="block text-sm font-medium mb-1">Link de Download (Para Produtos Digitais)</label>
-          <input type="url" id="prodDownload" placeholder="https://drive.google.com/..." class="w-full border p-2 rounded-lg">
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Link do Arquivo / PDF (Google Drive ou Dropbox)</label>
+          <input type="url" id="prodDownload" placeholder="https://drive.google.com/..." class="w-full border border-slate-200 p-2 rounded-xl text-sm">
+          <p class="text-[11px] text-slate-400 mt-1">Pode colar o link normal de partilha, o sistema converte para download automático.</p>
         </div>
-        <button type="submit" id="btnSalvarProd" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition">Publicar Produto</button>
+        <button type="submit" id="btnSalvarProd" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold text-sm transition">Publicar Produto</button>
       </form>
     </div>
   </div>
 
   <!-- MODAL DE CHECKOUT / COMPRA -->
-  <div id="modalCompra" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center p-4 z-50">
-    <div class="bg-white p-6 rounded-xl max-w-md w-full relative">
-      <button onclick="fecharModal('modalCompra')" class="absolute top-2 right-4 text-2xl font-bold text-gray-500">&times;</button>
-      <h2 id="modalTitulo" class="text-xl font-bold mb-2">Comprar Produto</h2>
+  <div id="modalCompra" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex justify-center items-center p-4 z-50">
+    <div class="bg-white p-6 rounded-2xl max-w-md w-full relative shadow-xl border border-slate-100">
+      <button onclick="fecharModal('modalCompra')" class="absolute top-3 right-4 text-slate-400 hover:text-slate-600 text-2xl font-bold">&times;</button>
+      <h2 id="modalTitulo" class="text-xl font-bold text-slate-800 mb-1">Comprar Produto</h2>
       <p id="modalPreco" class="text-lg text-blue-600 font-bold mb-4"></p>
       
       <form id="formCheckout" onsubmit="processarCompra(event)">
         <input type="hidden" id="compraProdutoId">
         <div class="mb-4">
-          <label class="block text-sm font-medium mb-1">Telefone M-Pesa / e-Mola</label>
-          <input type="tel" id="clienteTelefone" placeholder="841234567" required class="w-full border p-2 rounded-lg">
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Telefone M-Pesa / e-Mola</label>
+          <input type="tel" id="clienteTelefone" placeholder="841234567" required class="w-full border border-slate-200 p-2.5 rounded-xl text-sm">
         </div>
-        <div class="mb-4">
-          <label class="block text-sm font-medium mb-1">Método de Pagamento</label>
-          <select id="metodoPagamento" class="w-full border p-2 rounded-lg">
+        <div class="mb-6">
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Carteira Móvel</label>
+          <select id="metodoPagamento" class="w-full border border-slate-200 p-2.5 rounded-xl text-sm">
             <option value="mpesa">M-Pesa</option>
             <option value="emola">e-Mola</option>
           </select>
         </div>
-        <button type="submit" id="btnPagar" class="w-full bg-green-600 text-white py-3 rounded-lg font-bold hover:bg-green-700 transition">Pagar com Netshop</button>
+        <button type="submit" id="btnPagar" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-bold text-sm transition">Pagar com Netshop</button>
       </form>
     </div>
   </div>
@@ -201,22 +332,59 @@
   <script>
     const GAS_URL = "https://script.google.com/macros/s/AKfycbz62rB-RTzLg-h6fXMogftj01-z-sCOtTz0PFo7BoTdalzoVQvnIoOfi5a7vcBhOGMh/exec";
 
-    function formatarUrlDownload(url) {
-      if (!url) return '';
-      
-      // Converte link do Google Drive para Download Direto
-      if (url.includes('drive.google.com') && url.includes('/file/d/')) {
-        const fileId = url.split('/file/d/')[1].split('/')[0];
-        return `https://drive.google.com/uc?export=download&id=${fileId}`;
+    // --- FUNÇÕES UTILITÁRIAS DE CONVERSÃO DE LINK ---
+
+    // Trata e converte links de imagem (Google Drive, Dropbox, ImgBB, BBCode)
+    function formatarUrlImagem(rawUrl) {
+      if (!rawUrl) return 'https://via.placeholder.com/300x200?text=Sem+Imagem';
+      let url = rawUrl.trim();
+
+      // Extrai URL se foi colado BBCode do ImgBB (ex: [img]https://...[/img])
+      if (url.includes('[img]')) {
+        const match = url.match(/\[img\](.*?)\[\/img\]/i);
+        if (match && match[1]) url = match[1];
       }
-      
-      // Garante o download direto no Dropbox
-      if (url.includes('dropbox.com') && url.endsWith('dl=0')) {
-        return url.replace('dl=0', 'dl=1');
+
+      // Trata páginas normais do ImgBB (ibb.co/xxxx -> i.ibb.co/...)
+      if (url.includes('ibb.co/') && !url.includes('i.ibb.co/')) {
+        url = url.replace('ibb.co/', 'i.ibb.co/');
       }
-      
+
+      // Converte Google Drive
+      if (url.includes('drive.google.com')) {
+        const idMatch = url.match(/[-\w]{25,}/);
+        if (idMatch) return `https://lh3.googleusercontent.com/d/${idMatch[0]}`;
+      }
+
+      // Converte Dropbox
+      if (url.includes('dropbox.com')) {
+        return url.replace('www.dropbox.com', 'dl.dropboxusercontent.com').replace('?dl=0', '');
+      }
+
       return url;
     }
+
+    // Trata links de arquivos/PDFs digitais para Download Direto
+    function formatarUrlDownload(rawUrl) {
+      if (!rawUrl) return '';
+      let url = rawUrl.trim();
+
+      // Converte Google Drive para Download Direto
+      if (url.includes('drive.google.com')) {
+        const idMatch = url.match(/[-\w]{25,}/);
+        if (idMatch) return `https://drive.google.com/uc?export=download&id=${idMatch[0]}`;
+      }
+
+      // Converte Dropbox para Download Direto
+      if (url.includes('dropbox.com')) {
+        if (url.endsWith('dl=0')) return url.replace('dl=0', 'dl=1');
+        if (!url.includes('dl=')) return url + (url.includes('?') ? '&dl=1' : '?dl=1');
+      }
+
+      return url;
+    }
+
+    // --- INICIALIZAÇÃO ---
     document.addEventListener("DOMContentLoaded", () => {
       carregarProdutos();
       verificarSessao();
@@ -224,6 +392,10 @@
 
     function abrirModalAuth() {
       document.getElementById("modalAuth").classList.remove("hidden");
+    }
+
+    function abrirModalTermos() {
+      document.getElementById("modalTermos").classList.remove("hidden");
     }
 
     function trocarModalAuth(fecharId, abrirId) {
@@ -303,7 +475,28 @@
       }
     }
 
-    // --- GESTÃO DE PRODUTOS DO VENDEDOR ---
+    function verificarSessao() {
+      const token = localStorage.getItem("moz1_token");
+      const authArea = document.getElementById("authArea");
+
+      if (token) {
+        authArea.innerHTML = `
+          <button onclick="abrirPainelVendedor()" class="bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition border border-white/20">Meus Produtos</button>
+          <button onclick="sair()" class="bg-red-500/80 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition">Sair</button>
+        `;
+      } else {
+        authArea.innerHTML = `
+          <button onclick="abrirModalAuth()" class="bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition border border-white/20">Entrar / Registar</button>
+        `;
+      }
+    }
+
+    function sair() {
+      localStorage.removeItem("moz1_token");
+      verificarSessao();
+    }
+
+    // --- GESTÃO DE PRODUTOS ---
     function abrirPainelVendedor() {
       document.getElementById("modalPainelVendedor").classList.remove("hidden");
       carregarMeusProdutos();
@@ -314,7 +507,7 @@
       const token = localStorage.getItem("moz1_token");
       if (!token) return;
 
-      container.innerHTML = `<p class="text-gray-500 text-center py-4">Carregando seus produtos...</p>`;
+      container.innerHTML = `<p class="text-slate-400 text-center py-4 text-xs">Carregando seus produtos...</p>`;
 
       try {
         const res = await fetch(`${GAS_URL}?action=meusProdutos&token=${encodeURIComponent(token)}`);
@@ -322,19 +515,19 @@
 
         if (Array.isArray(produtos) && produtos.length > 0) {
           container.innerHTML = produtos.map(p => `
-            <div class="border p-3 rounded-lg flex justify-between items-center bg-gray-50">
+            <div class="border border-slate-200 p-3 rounded-xl flex justify-between items-center bg-slate-50">
               <div>
-                <p class="font-bold">${p.nome}</p>
-                <p class="text-sm text-gray-600">${p.preco} MT | Status: <span class="font-bold text-${p.status === 'ATIVO' ? 'green' : 'red'}-600">${p.status}</span></p>
+                <p class="font-bold text-slate-800 text-sm">${p.nome}</p>
+                <p class="text-xs text-slate-500">${p.preco} MT | Status: <span class="font-bold text-${p.status === 'ATIVO' ? 'emerald' : 'red'}-600">${p.status}</span></p>
               </div>
-              <span class="text-xs bg-gray-200 px-2 py-1 rounded">${p.tipo}</span>
+              <span class="text-[10px] font-bold bg-slate-200 text-slate-700 px-2 py-1 rounded-md uppercase">${p.tipo}</span>
             </div>
           `).join('');
         } else {
-          container.innerHTML = `<p class="text-gray-500 text-center py-4">Você ainda não tem produtos cadastrados.</p>`;
+          container.innerHTML = `<p class="text-slate-400 text-center py-4 text-xs">Você ainda não tem produtos cadastrados.</p>`;
         }
       } catch (err) {
-        container.innerHTML = `<p class="text-red-500 text-center py-4">Erro ao carregar produtos.</p>`;
+        container.innerHTML = `<p class="text-red-500 text-center py-4 text-xs">Erro ao carregar produtos.</p>`;
       }
     }
 
@@ -372,17 +565,20 @@
       btn.disabled = true;
       btn.innerText = "Salvando...";
 
+      const rawImagem = document.getElementById("prodImagem").value;
+      const rawDownload = document.getElementById("prodDownload").value;
+
       const payload = {
         action: "criarProduto",
         token: token,
         nome: document.getElementById("prodNome").value,
         descricao: document.getElementById("prodDescricao").value,
-        imagemUrl: document.getElementById("prodImagem").value,
+        imagemUrl: formatarUrlImagem(rawImagem),
         preco: parseFloat(document.getElementById("prodPreco").value),
         tipo: document.getElementById("prodTipo").value,
         metodoPagamento: document.getElementById("prodMetodo").value,
         whatsapp: document.getElementById("prodWhatsapp").value,
-        downloadUrl: document.getElementById("prodDownload").value
+        downloadUrl: formatarUrlDownload(rawDownload)
       };
 
       try {
@@ -408,7 +604,12 @@
     // --- CARREGAR PRODUTOS PÚBLICOS NA VITRINE ---
     async function carregarProdutos() {
       const grid = document.getElementById("gridProdutos");
-      grid.innerHTML = `<p class="text-gray-500 col-span-full text-center py-8">Carregando produtos...</p>`;
+      grid.innerHTML = `
+        <div class="col-span-full py-12 text-center">
+          <i class="fa-solid fa-spinner fa-spin text-3xl text-blue-600 mb-3"></i>
+          <p class="text-slate-500 font-medium">Carregando produtos...</p>
+        </div>
+      `;
 
       const busca = document.getElementById("inputBusca").value;
       const cat = document.getElementById("selectCategoria").value;
@@ -418,34 +619,96 @@
         const json = await res.json();
 
         if (json.ok && json.produtos.length > 0) {
-          grid.innerHTML = json.produtos.map(p => `
-            <div class="bg-white rounded-xl shadow overflow-hidden flex flex-col justify-between">
-              <img 
-                src="${p.imagemUrl || 'https://via.placeholder.com/300x200?text=Sem+Imagem'}" 
-                onerror="this.onerror=null; this.src='https://via.placeholder.com/300x200?text=Sem+Imagem';" 
-                alt="${p.nome}" 
-                class="w-full h-48 object-cover"
-              >
-              <div class="p-4 flex-grow">
-                <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded font-bold">${p.tipo}</span>
-                <h3 class="font-bold text-lg mt-2">${p.nome}</h3>
-                <p class="text-gray-600 text-sm mt-1 line-clamp-2">${p.descricao}</p>
-                <p class="text-blue-600 font-bold text-xl mt-3">${p.preco} MT</p>
-                <p class="text-xs text-gray-400 mt-1">Vendedor: ${p.marca}</p>
+          grid.innerHTML = json.produtos.map(p => {
+            const imgFinal = formatarUrlImagem(p.imagemUrl);
+            
+            return `
+              <div class="bg-white rounded-2xl shadow-sm border border-slate-200/70 overflow-hidden flex flex-col justify-between hover:shadow-md transition">
+                <div class="relative bg-slate-100">
+                  <img 
+                    src="${imgFinal}" 
+                    onerror="this.onerror=null; this.src='https://via.placeholder.com/300x200?text=Sem+Imagem';" 
+                    alt="${p.nome}" 
+                    class="w-full h-48 object-cover"
+                  >
+                  <span class="absolute top-2 right-2 text-[10px] font-extrabold uppercase tracking-wide px-2 py-0.5 rounded-md shadow-sm ${p.tipo === 'DIGITAL' ? 'bg-amber-400 text-amber-950' : 'bg-blue-600 text-white'}">
+                    ${p.tipo}
+                  </span>
+                </div>
+
+                <div class="p-4 flex-grow flex flex-col justify-between">
+                  <div>
+                    <h3 class="font-bold text-slate-800 text-base leading-snug line-clamp-1">${p.nome}</h3>
+                    <p class="text-slate-500 text-xs mt-1 line-clamp-2">${p.descricao}</p>
+                  </div>
+                  
+                  <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+                    <div>
+                      <p class="text-xs text-slate-400">Preço</p>
+                      <p class="text-blue-700 font-extrabold text-lg leading-none">${p.preco} <span class="text-xs font-semibold">MT</span></p>
+                    </div>
+                    <p class="text-[11px] text-slate-400 text-right"><i class="fa-solid fa-store text-slate-300"></i> ${p.marca}</p>
+                  </div>
+                </div>
+
+                <div class="p-4 bg-slate-50 border-t border-slate-100">
+                  ${p.metodoPagamento === 'NETSHOP' 
+                    ? `<button onclick="abrirCompra('${p.produtoId}', '${p.nome}', ${p.preco})" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl text-xs font-bold transition shadow-sm shadow-blue-600/20 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-cart-shopping"></i> Comprar Agora
+                       </button>`
+                    : `<a href="https://wa.me/${p.whatsapp}?text=Olá! Tenho interesse no produto: ${encodeURIComponent(p.nome)}" target="_blank" class="w-full block text-center bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-xl text-xs font-bold transition shadow-sm shadow-emerald-600/20 flex items-center justify-center gap-2">
+                        <i class="fa-brands fa-whatsapp text-sm"></i> Contactar WhatsApp
+                       </a>`
+                  }
+                </div>
               </div>
-              <div class="p-4 border-t">
-                ${p.metodoPagamento === 'NETSHOP' 
-                  ? `<button onclick="abrirCompra('${p.produtoId}', '${p.nome}', ${p.preco})" class="w-full bg-blue-600 text-white py-2 rounded-lg font-bold hover:bg-blue-700 transition">Comprar Agora</button>`
-                  : `<a href="https://wa.me/${p.whatsapp}?text=Olá! Tenho interesse no produto: ${encodeURIComponent(p.nome)}" target="_blank" class="w-full block text-center bg-green-500 text-white py-2 rounded-lg font-bold hover:bg-green-600 transition">Contactar WhatsApp</a>`
-                }
-              </div>
-            </div>
-          `).join('');
+            `;
+          }).join('');
         } else {
-          grid.innerHTML = `<p class="text-gray-500 col-span-full text-center py-8">Nenhum produto encontrado.</p>`;
+          grid.innerHTML = `<p class="text-slate-400 col-span-full text-center py-12">Nenhum produto encontrado na loja.</p>`;
         }
       } catch (e) {
-        grid.innerHTML = `<p class="text-red-500 col-span-full text-center py-8">Erro ao carregar produtos.</p>`;
+        grid.innerHTML = `<p class="text-red-500 col-span-full text-center py-12">Erro ao carregar os produtos.</p>`;
+      }
+    }
+
+    function abrirCompra(id, nome, preco) {
+      document.getElementById("compraProdutoId").value = id;
+      document.getElementById("modalTitulo").innerText = nome;
+      document.getElementById("modalPreco").innerText = `${preco} MT`;
+      document.getElementById("modalCompra").classList.remove("hidden");
+    }
+
+    async function processarCompra(e) {
+      e.preventDefault();
+      const btn = document.getElementById("btnPagar");
+      btn.disabled = true;
+      btn.innerText = "Processando...";
+
+      const payload = {
+        action: "criarPagamento",
+        produtoId: document.getElementById("compraProdutoId").value,
+        clienteTelefone: document.getElementById("clienteTelefone").value,
+        metodo: document.getElementById("metodoPagamento").value
+      };
+
+      try {
+        const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify(payload) });
+        const json = await res.json();
+
+        if (json.ok && json.checkoutUrl) {
+          window.location.href = json.checkoutUrl;
+        } else if (json.ok) {
+          alert("Solicitação de pagamento enviada ao seu telefone!");
+          fecharModal("modalCompra");
+        } else {
+          alert("Erro: " + (json.erro || "Falha ao processar"));
+        }
+      } catch (err) {
+        alert("Erro na comunicação com o servidor.");
+      } finally {
+        btn.disabled = false;
+        btn.innerText = "Pagar com Netshop";
       }
     }
   </script>
