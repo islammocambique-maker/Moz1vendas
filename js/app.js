@@ -1,11 +1,12 @@
 /**
- * MOZ1VENDAS - Frontend JavaScript
+ * MOZ1VENDAS - Frontend JavaScript (CORRIGIDO)
  * SPA completa para marketplace
  */
 
-// ==================== CONFIGURAÇÃO ====================
+// ==================== CONFIGURACAO ====================
 const CONFIG = {
-  // Substitua pela URL do seu Web App do Google Apps Script após o deploy
+  // SUBSTITUA PELA URL DO SEU WEB APP DO GOOGLE APPS SCRIPT
+  // Exemplo: 'https://script.google.com/macros/s/AKfycbxXXXXXXXX/exec'
   API_URL: 'https://script.google.com/macros/s/AKfycbxIhiGNTxlvo-EOUsx_sNAy2y2jzYQmnxQ7OebswTg0Czc5_gzCN0JDFwvseH8yjT0u/exec',
   APP_NAME: 'MOZ1VENDAS'
 };
@@ -17,10 +18,11 @@ const state = {
   produtos: [],
   produtoAtual: null,
   planos: {},
-  currentPage: 'home'
+  currentPage: 'home',
+  apiConnected: false
 };
 
-// ==================== UTILITÁRIOS ====================
+// ==================== UTILITARIOS ====================
 function $(selector) { return document.querySelector(selector); }
 function $$(selector) { return document.querySelectorAll(selector); }
 
@@ -52,25 +54,96 @@ function createToastContainer() {
 }
 
 function showLoading(container) {
-  container.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  if (container) container.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
 }
 
-// ==================== API CLIENT ====================
+function escapeHtml(text) {
+  if (!text) return '';
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// ==================== API CLIENT (CORRIGIDO) ====================
 async function apiGet(action, params = {}) {
   const url = new URL(CONFIG.API_URL);
   url.searchParams.append('action', action);
-  Object.keys(params).forEach(k => url.searchParams.append(k, params[k]));
-  const res = await fetch(url.toString());
-  return res.json();
+  Object.keys(params).forEach(k => {
+    if (params[k] !== undefined && params[k] !== null) {
+      url.searchParams.append(k, params[k]);
+    }
+  });
+
+  try {
+    const res = await fetch(url.toString(), {
+      method: 'GET',
+      mode: 'cors',
+      cache: 'no-cache'
+    });
+
+    if (!res.ok) {
+      throw new Error('HTTP ' + res.status);
+    }
+
+    const text = await res.text();
+    if (!text || text.trim() === '') {
+      throw new Error('Resposta vazia do servidor');
+    }
+
+    // O GAS as vezes retorna HTML em vez de JSON quando ha erro
+    if (text.trim().startsWith('<')) {
+      throw new Error('O servidor retornou HTML em vez de JSON. Verifique a URL do Web App.');
+    }
+
+    return JSON.parse(text);
+  } catch (err) {
+    console.error('API GET Error:', action, err);
+    throw err;
+  }
 }
 
 async function apiPost(action, data = {}) {
-  const res = await fetch(CONFIG.API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action, ...data })
-  });
-  return res.json();
+  try {
+    const res = await fetch(CONFIG.API_URL, {
+      method: 'POST',
+      mode: 'cors',
+      cache: 'no-cache',
+      headers: {
+        'Content-Type': 'text/plain;charset=utf-8'
+      },
+      body: JSON.stringify({ action, ...data })
+    });
+
+    if (!res.ok) {
+      throw new Error('HTTP ' + res.status);
+    }
+
+    const text = await res.text();
+    if (!text || text.trim() === '') {
+      throw new Error('Resposta vazia do servidor');
+    }
+
+    if (text.trim().startsWith('<')) {
+      throw new Error('O servidor retornou HTML em vez de JSON. Verifique a URL do Web App.');
+    }
+
+    return JSON.parse(text);
+  } catch (err) {
+    console.error('API POST Error:', action, err);
+    throw err;
+  }
+}
+
+// ==================== TESTE DE CONEXAO ====================
+async function testConnection() {
+  try {
+    const res = await apiGet('ping');
+    state.apiConnected = res.success === true;
+    return state.apiConnected;
+  } catch (err) {
+    state.apiConnected = false;
+    return false;
+  }
 }
 
 // ==================== ROUTER ====================
@@ -78,10 +151,7 @@ function navigate(page, params = {}) {
   state.currentPage = page;
   window.scrollTo(0, 0);
 
-  // Esconder todas as páginas
   $$('.page').forEach(p => p.classList.add('hidden'));
-
-  // Atualizar header
   updateHeader();
 
   switch(page) {
@@ -107,7 +177,6 @@ function updateHeader() {
   if (!header) return;
 
   const isLogged = !!state.token;
-  const vendedor = state.vendedor;
 
   header.innerHTML = `
     <div class="header-inner">
@@ -118,7 +187,7 @@ function updateHeader() {
       <nav class="nav-links">
         <a onclick="navigate('home')">Início</a>
         <a onclick="navigate('produtos')">Produtos</a>
-        <a onclick="navigate('vender')">Vender na ${CONFIG.APP_NAME}</a>
+        <a onclick="navigate('vender')">Vender</a>
         ${isLogged ? `
           <a onclick="navigate('dashboard')">Painel</a>
           <a onclick="logout()">Sair</a>
@@ -131,7 +200,7 @@ function updateHeader() {
   `;
 }
 
-// ==================== PÁGINAS PÚBLICAS ====================
+// ==================== PAGINAS PUBLICAS ====================
 function renderHome() {
   const page = $('#pageHome');
   page.classList.remove('hidden');
@@ -139,7 +208,7 @@ function renderHome() {
   page.innerHTML = `
     <div class="hero">
       <h1>Compre e Venda em Moçambique</h1>
-      <p>O marketplace mais simples e seguro para o seu negócio. Produtos físicos e digitais em um só lugar.</p>
+      <p>O marketplace mais simples e seguro para o seu negócio.</p>
       <button class="btn btn-dourado" onclick="navigate('produtos')">Explorar Produtos</button>
     </div>
 
@@ -154,20 +223,16 @@ function renderHome() {
       <h2>📂 Categorias</h2>
       <div class="cat-grid">
         <div class="cat-card" onclick="filterByCategory('FISICO')">
-          <div class="icon">📦</div>
-          <span>Produtos Físicos</span>
+          <div class="icon">📦</div><span>Produtos Físicos</span>
         </div>
         <div class="cat-card" onclick="filterByCategory('DIGITAL')">
-          <div class="icon">💾</div>
-          <span>Produtos Digitais</span>
+          <div class="icon">💾</div><span>Produtos Digitais</span>
         </div>
         <div class="cat-card" onclick="navigate('produtos')">
-          <div class="icon">🔥</div>
-          <span>Mais Vendidos</span>
+          <div class="icon">🔥</div><span>Mais Vendidos</span>
         </div>
         <div class="cat-card" onclick="navigate('produtos')">
-          <div class="icon">⭐</div>
-          <span>Novidades</span>
+          <div class="icon">⭐</div><span>Novidades</span>
         </div>
       </div>
     </div>
@@ -191,7 +256,15 @@ async function loadHomeProducts() {
     state.produtos = res.produtos || [];
     renderProductGrid(container, state.produtos.slice(0, 8));
   } catch(e) {
-    container.innerHTML = '<p class="empty-state">Erro ao carregar produtos</p>';
+    container.innerHTML = `
+      <div class="empty-state" style="grid-column: 1/-1;">
+        <div class="icon">📡</div>
+        <p><strong>Erro de conexão</strong></p>
+        <p style="font-size: 0.9rem;">Não foi possível carregar os produtos.</p>
+        <p style="font-size: 0.85rem; color: #999;">${escapeHtml(e.message)}</p>
+        <button class="btn btn-verde" style="margin-top: 12px;" onclick="loadHomeProducts()">Tentar novamente</button>
+      </div>
+    `;
   }
 }
 
@@ -207,12 +280,12 @@ function renderProductGrid(container, produtos) {
   }
 
   container.innerHTML = produtos.map(p => `
-    <div class="product-card" onclick="navigate('produto', {id:'${p.produtoId}'})">
+    <div class="product-card" onclick="navigate('produto', {id:'${escapeHtml(p.produtoId)}'})">
       <div class="product-img">
-        ${p.imagemUrl ? `<img src="${p.imagemUrl}" alt="${p.nome}" onerror="this.style.display='none';this.parentElement.innerHTML='🛒'">` : '🛒'}
+        ${p.imagemUrl ? `<img src="${escapeHtml(p.imagemUrl)}" alt="${escapeHtml(p.nome)}" onerror="this.style.display='none';this.parentElement.innerHTML='🛒'">` : '🛒'}
       </div>
       <div class="product-info">
-        <span class="product-type ${p.tipo === 'DIGITAL' ? 'type-digital' : 'type-fisico'}">${p.tipo}</span>
+        <span class="product-type ${p.tipo === 'DIGITAL' ? 'type-digital' : 'type-fisico'}">${escapeHtml(p.tipo)}</span>
         <h3>${escapeHtml(p.nome)}</h3>
         <p class="desc">${escapeHtml(p.descricao)}</p>
         <div class="product-meta">
@@ -233,7 +306,7 @@ function renderProdutos(params = {}) {
     <div style="padding: 32px 24px; max-width: 1400px; margin: 0 auto;">
       <div class="search-container" style="margin: 0 0 32px 0;">
         <div class="search-box">
-          <input type="text" id="prodSearchInput" placeholder="Pesquisar produtos..." value="${params.search || ''}" onkeypress="if(event.key==='Enter')searchProductsPage()">
+          <input type="text" id="prodSearchInput" placeholder="Pesquisar produtos..." value="${escapeHtml(params.search || '')}" onkeypress="if(event.key==='Enter')searchProductsPage()">
           <button class="btn btn-verde" onclick="searchProductsPage()">🔍 Pesquisar</button>
         </div>
       </div>
@@ -254,7 +327,14 @@ async function loadAllProducts(search, categoria) {
     state.produtos = res.produtos || [];
     renderProductGrid(container, state.produtos);
   } catch(e) {
-    container.innerHTML = '<p class="empty-state">Erro ao carregar produtos</p>';
+    container.innerHTML = `
+      <div class="empty-state" style="grid-column: 1/-1;">
+        <div class="icon">📡</div>
+        <p><strong>Erro de conexão</strong></p>
+        <p style="font-size: 0.85rem; color: #999;">${escapeHtml(e.message)}</p>
+        <button class="btn btn-verde" style="margin-top: 12px;" onclick="loadAllProducts('${escapeHtml(search || '')}', '${escapeHtml(categoria || '')}')">Tentar novamente</button>
+      </div>
+    `;
   }
 }
 
@@ -286,7 +366,6 @@ async function renderProduto(id) {
 
     const p = res.produto;
     state.produtoAtual = p;
-
     const isDigital = p.tipo === 'DIGITAL';
     const isNetshop = p.metodoPagamento === 'NETSHOP';
 
@@ -295,7 +374,7 @@ async function renderProduto(id) {
       paymentSection = `
         <div class="payment-box">
           <h3>💳 Pagamento Online</h3>
-          <p style="color: var(--cinza); margin-bottom: 16px;">Pague de forma segura via Netshop (M-Pesa, e-Mola, mKesh ou Cartão)</p>
+          <p style="color: var(--cinza); margin-bottom: 16px;">Pague de forma segura via Netshop</p>
           <div class="form-group">
             <label>Seu telefone</label>
             <input type="tel" id="buyerPhone" placeholder="+25884..." value="+258">
@@ -320,7 +399,7 @@ async function renderProduto(id) {
         <div class="payment-box">
           <h3>📱 Comprar pelo WhatsApp</h3>
           <p style="color: var(--cinza); margin-bottom: 16px;">Negocie diretamente com o vendedor</p>
-          <a href="https://wa.me/${p.whatsapp}?text=${msg}" target="_blank" class="whatsapp-btn">
+          <a href="https://wa.me/${escapeHtml(p.whatsapp)}?text=${msg}" target="_blank" class="whatsapp-btn">
             📱 COMPRAR PELO WHATSAPP
           </a>
         </div>
@@ -331,16 +410,16 @@ async function renderProduto(id) {
       <div class="product-detail">
         <div class="detail-grid">
           <div class="detail-img">
-            ${p.imagemUrl ? `<img src="${p.imagemUrl}" alt="${p.nome}" onerror="this.style.display='none';this.parentElement.innerHTML='🛒'">` : '🛒'}
+            ${p.imagemUrl ? `<img src="${escapeHtml(p.imagemUrl)}" alt="${escapeHtml(p.nome)}" onerror="this.style.display='none';this.parentElement.innerHTML='🛒'">` : '🛒'}
           </div>
           <div class="detail-info">
-            <span class="product-type ${isDigital ? 'type-digital' : 'type-fisico'}">${p.tipo}</span>
+            <span class="product-type ${isDigital ? 'type-digital' : 'type-fisico'}">${escapeHtml(p.tipo)}</span>
             <h1>${escapeHtml(p.nome)}</h1>
             <p class="brand">🏪 ${escapeHtml(p.marca)}</p>
             <div class="price">${formatMoney(p.preco)}</div>
             <p class="desc">${escapeHtml(p.descricao)}</p>
             <p style="color: var(--cinza); margin-bottom: 16px;">
-              <strong>Referência:</strong> ${p.produtoId}<br>
+              <strong>Referência:</strong> ${escapeHtml(p.produtoId)}<br>
               <strong>Método:</strong> ${p.metodoPagamento === 'NETSHOP' ? 'Pagamento Online' : 'WhatsApp'}
             </p>
             ${paymentSection}
@@ -349,7 +428,14 @@ async function renderProduto(id) {
       </div>
     `;
   } catch(e) {
-    page.innerHTML = '<div class="empty-state"><div class="icon">😕</div><p>Erro ao carregar produto</p></div>';
+    page.innerHTML = `
+      <div class="empty-state">
+        <div class="icon">📡</div>
+        <p><strong>Erro de conexão</strong></p>
+        <p style="font-size: 0.85rem; color: #999;">${escapeHtml(e.message)}</p>
+        <button class="btn btn-verde" style="margin-top: 12px;" onclick="navigate('produto', {id:'${escapeHtml(id)}'})">Tentar novamente</button>
+      </div>
+    `;
   }
 }
 
@@ -383,11 +469,11 @@ async function buyNetshop() {
       showToast(res.error || 'Erro ao iniciar pagamento', 'error');
     }
   } catch(e) {
-    showToast('Erro de conexão', 'error');
+    showToast('Erro de conexão: ' + e.message, 'error');
   }
 }
 
-// ==================== AUTENTICAÇÃO ====================
+// ==================== AUTENTICACAO ====================
 function renderLogin() {
   const page = $('#pageLogin');
   page.classList.remove('hidden');
@@ -431,7 +517,7 @@ async function doLogin() {
       showToast(res.error || 'Erro no login', 'error');
     }
   } catch(e) {
-    showToast('Erro de conexão', 'error');
+    showToast('Erro de conexão: ' + e.message, 'error');
   }
 }
 
@@ -500,13 +586,13 @@ async function doRegisto() {
       showToast(res.error || 'Erro no registo', 'error');
     }
   } catch(e) {
-    showToast('Erro de conexão', 'error');
+    showToast('Erro de conexão: ' + e.message, 'error');
   }
 }
 
 async function logout() {
   if (state.token) {
-    await apiPost('logout', { token: state.token });
+    try { await apiPost('logout', { token: state.token }); } catch(e) {}
   }
   state.token = null;
   state.vendedor = null;
@@ -516,7 +602,7 @@ async function logout() {
   navigate('home');
 }
 
-// ==================== DASHBOARD VENDEDOR ====================
+// ==================== DASHBOARD ====================
 async function renderDashboard() {
   if (!checkAuth()) return;
 
@@ -541,7 +627,7 @@ async function renderDashboard() {
         <div class="dashboard-header">
           <div>
             <h1>👋 Bem-vindo, ${escapeHtml(d.empresa)}</h1>
-            <p style="opacity: 0.9; margin-top: 4px;">Vendedor: ${d.vendedorId}</p>
+            <p style="opacity: 0.9; margin-top: 4px;">Vendedor: ${escapeHtml(d.vendedorId)}</p>
           </div>
           <div class="status">
             <span class="status-dot ${statusClass}"></span>
@@ -550,38 +636,14 @@ async function renderDashboard() {
         </div>
 
         <div class="stats-grid">
-          <div class="stat-card">
-            <div class="label">Produtos Publicados</div>
-            <div class="value">${d.produtosPublicados} / ${d.limiteProdutos}</div>
-          </div>
-          <div class="stat-card dourado">
-            <div class="label">Total de Vendas</div>
-            <div class="value">${d.totalVendas}</div>
-          </div>
-          <div class="stat-card">
-            <div class="label">Total Vendido</div>
-            <div class="value">${formatMoney(d.totalVendido)}</div>
-          </div>
-          <div class="stat-card vermelho">
-            <div class="label">Taxas</div>
-            <div class="value">${formatMoney(d.totalTaxas)}</div>
-          </div>
-          <div class="stat-card dourado">
-            <div class="label">Valor Líquido</div>
-            <div class="value">${formatMoney(d.totalLiquido)}</div>
-          </div>
-          <div class="stat-card">
-            <div class="label">Saldo Disponível</div>
-            <div class="value">${formatMoney(d.saldoDisponivel)}</div>
-          </div>
-          <div class="stat-card">
-            <div class="label">Plano</div>
-            <div class="value">${d.plano}</div>
-          </div>
-          <div class="stat-card">
-            <div class="label">Expira em</div>
-            <div class="value">${formatDate(d.expira)}</div>
-          </div>
+          <div class="stat-card"><div class="label">Produtos Publicados</div><div class="value">${d.produtosPublicados} / ${d.limiteProdutos}</div></div>
+          <div class="stat-card dourado"><div class="label">Total de Vendas</div><div class="value">${d.totalVendas}</div></div>
+          <div class="stat-card"><div class="label">Total Vendido</div><div class="value">${formatMoney(d.totalVendido)}</div></div>
+          <div class="stat-card vermelho"><div class="label">Taxas</div><div class="value">${formatMoney(d.totalTaxas)}</div></div>
+          <div class="stat-card dourado"><div class="label">Valor Líquido</div><div class="value">${formatMoney(d.totalLiquido)}</div></div>
+          <div class="stat-card"><div class="label">Saldo Disponível</div><div class="value">${formatMoney(d.saldoDisponivel)}</div></div>
+          <div class="stat-card"><div class="label">Plano</div><div class="value">${escapeHtml(d.plano)}</div></div>
+          <div class="stat-card"><div class="label">Expira em</div><div class="value">${formatDate(d.expira)}</div></div>
         </div>
 
         ${d.status !== 'ATIVO' ? `
@@ -611,7 +673,14 @@ async function renderDashboard() {
       </div>
     `;
   } catch(e) {
-    page.innerHTML = '<div class="empty-state"><div class="icon">😕</div><p>Erro ao carregar dashboard</p></div>';
+    page.innerHTML = `
+      <div class="empty-state">
+        <div class="icon">📡</div>
+        <p><strong>Erro de conexão</strong></p>
+        <p style="font-size: 0.85rem; color: #999;">${escapeHtml(e.message)}</p>
+        <button class="btn btn-verde" style="margin-top: 12px;" onclick="renderDashboard()">Tentar novamente</button>
+      </div>
+    `;
   }
 }
 
@@ -633,34 +702,21 @@ async function renderMeusProdutos() {
           <h2 style="color: var(--verde-escuro);">📦 Meus Produtos</h2>
           <button class="btn btn-dourado" onclick="navigate('adicionarProduto')">+ Adicionar Produto</button>
         </div>
-
         <div class="table-container">
           <table>
-            <thead>
-              <tr>
-                <th>Produto</th>
-                <th>Preço</th>
-                <th>Tipo</th>
-                <th>Método</th>
-                <th>Status</th>
-                <th>Ações</th>
-              </tr>
-            </thead>
+            <thead><tr><th>Produto</th><th>Preço</th><th>Tipo</th><th>Método</th><th>Status</th><th>Ações</th></tr></thead>
             <tbody>
-              ${produtos.length === 0 ? '<tr><td colspan="6" style="text-align:center;">Nenhum produto registado</td></tr>' : 
+              ${produtos.length === 0 ? '<tr><td colspan="6" style="text-align:center;">Nenhum produto registado</td></tr>' :
                 produtos.map(p => `
                 <tr>
-                  <td>
-                    <strong>${escapeHtml(p.nome)}</strong><br>
-                    <small style="color: var(--cinza);">${p.produtoId}</small>
-                  </td>
+                  <td><strong>${escapeHtml(p.nome)}</strong><br><small style="color: var(--cinza);">${escapeHtml(p.produtoId)}</small></td>
                   <td>${formatMoney(p.preco)}</td>
-                  <td><span class="badge ${p.tipo === 'DIGITAL' ? 'badge-pendente' : 'badge-sucesso'}">${p.tipo}</span></td>
-                  <td>${p.metodoPagamento}</td>
-                  <td><span class="badge ${p.status === 'ATIVO' ? 'badge-sucesso' : 'badge-falha'}">${p.status}</span></td>
+                  <td><span class="badge ${p.tipo === 'DIGITAL' ? 'badge-pendente' : 'badge-sucesso'}">${escapeHtml(p.tipo)}</span></td>
+                  <td>${escapeHtml(p.metodoPagamento)}</td>
+                  <td><span class="badge ${p.status === 'ATIVO' ? 'badge-sucesso' : 'badge-falha'}">${escapeHtml(p.status)}</span></td>
                   <td>
-                    <button class="btn btn-sm btn-verde" onclick="navigate('editarProduto', {id:'${p.produtoId}'})" style="margin-right: 4px;">✏️</button>
-                    <button class="btn btn-sm ${p.status === 'ATIVO' ? 'btn-outline' : 'btn-verde'}" onclick="toggleProdutoStatus('${p.produtoId}', '${p.status === 'ATIVO' ? 'DESATIVADO' : 'ATIVO'}')" style="border-color: var(--cinza); color: var(--cinza);">
+                    <button class="btn btn-sm btn-verde" onclick="navigate('editarProduto', {id:'${escapeHtml(p.produtoId)}'})" style="margin-right: 4px;">✏️</button>
+                    <button class="btn btn-sm" onclick="toggleProdutoStatus('${escapeHtml(p.produtoId)}', '${p.status === 'ATIVO' ? 'DESATIVADO' : 'ATIVO'}')" style="border: 1px solid var(--cinza); color: var(--cinza); background: transparent;">
                       ${p.status === 'ATIVO' ? 'Desativar' : 'Ativar'}
                     </button>
                   </td>
@@ -672,7 +728,14 @@ async function renderMeusProdutos() {
       </div>
     `;
   } catch(e) {
-    page.innerHTML = '<div class="empty-state"><div class="icon">😕</div><p>Erro ao carregar produtos</p></div>';
+    page.innerHTML = `
+      <div class="empty-state">
+        <div class="icon">📡</div>
+        <p><strong>Erro de conexão</strong></p>
+        <p style="font-size: 0.85rem; color: #999;">${escapeHtml(e.message)}</p>
+        <button class="btn btn-verde" style="margin-top: 12px;" onclick="renderMeusProdutos()">Tentar novamente</button>
+      </div>
+    `;
   }
 }
 
@@ -686,7 +749,7 @@ async function toggleProdutoStatus(produtoId, novoStatus) {
       showToast(res.error || 'Erro', 'error');
     }
   } catch(e) {
-    showToast('Erro de conexão', 'error');
+    showToast('Erro de conexão: ' + e.message, 'error');
   }
 }
 
@@ -709,7 +772,7 @@ async function renderEditarProduto(id) {
     }
     renderProdutoForm(produto);
   } catch(e) {
-    showToast('Erro', 'error');
+    showToast('Erro de conexão: ' + e.message, 'error');
   }
 }
 
@@ -771,7 +834,7 @@ function renderProdutoForm(produto = null) {
         <button type="button" class="btn btn-outline btn-block" onclick="navigate('meusProdutos')" style="border-color: var(--cinza); color: var(--cinza);">
           Cancelar
         </button>
-        ${isEdit ? `<input type="hidden" id="editProdutoId" value="${produto.produtoId}">` : ''}
+        ${isEdit ? `<input type="hidden" id="editProdutoId" value="${escapeHtml(produto.produtoId)}">` : ''}
       </form>
     </div>
   `;
@@ -798,11 +861,7 @@ function onTipoChange() {
 function onMetodoChange() {
   const metodo = $('#prodMetodo').value;
   const whatsappGroup = $('#whatsappGroup');
-  if (metodo === 'WHATSAPP') {
-    whatsappGroup.style.display = 'block';
-  } else {
-    whatsappGroup.style.display = 'none';
-  }
+  whatsappGroup.style.display = metodo === 'WHATSAPP' ? 'block' : 'none';
 }
 
 async function doCriarProduto() {
@@ -827,7 +886,7 @@ async function doCriarProduto() {
       showToast(res.error || 'Erro ao criar produto', 'error');
     }
   } catch(e) {
-    showToast('Erro de conexão', 'error');
+    showToast('Erro de conexão: ' + e.message, 'error');
   }
 }
 
@@ -853,7 +912,7 @@ async function doEditarProduto() {
       showToast(res.error || 'Erro ao atualizar', 'error');
     }
   } catch(e) {
-    showToast('Erro de conexão', 'error');
+    showToast('Erro de conexão: ' + e.message, 'error');
   }
 }
 
@@ -875,29 +934,20 @@ async function renderMinhasVendas() {
         <div class="table-container">
           <table>
             <thead>
-              <tr>
-                <th>Data</th>
-                <th>Produto</th>
-                <th>Cliente</th>
-                <th>Valor</th>
-                <th>Taxa</th>
-                <th>Líquido</th>
-                <th>Método</th>
-                <th>Status</th>
-              </tr>
+              <tr><th>Data</th><th>Produto</th><th>Cliente</th><th>Valor</th><th>Taxa</th><th>Líquido</th><th>Método</th><th>Status</th></tr>
             </thead>
             <tbody>
               ${vendas.length === 0 ? '<tr><td colspan="8" style="text-align:center;">Nenhuma venda registada</td></tr>' :
                 vendas.map(v => `
                 <tr>
                   <td>${formatDate(v.data)} ${v.hora || ''}</td>
-                  <td>${v.produtoId}</td>
-                  <td>${v.clienteTelefone || '-'}</td>
+                  <td>${escapeHtml(v.produtoId)}</td>
+                  <td>${escapeHtml(v.clienteTelefone || '-')}</td>
                   <td>${formatMoney(v.valorBruto)}</td>
                   <td>${formatMoney(v.valorTaxa)}</td>
                   <td><strong>${formatMoney(v.valorLiquido)}</strong></td>
-                  <td>${v.metodo}</td>
-                  <td><span class="badge ${v.status === 'APROVADO' ? 'badge-sucesso' : v.status === 'PENDENTE' ? 'badge-pendente' : 'badge-falha'}">${v.status}</span></td>
+                  <td>${escapeHtml(v.metodo)}</td>
+                  <td><span class="badge ${v.status === 'APROVADO' ? 'badge-sucesso' : v.status === 'PENDENTE' ? 'badge-pendente' : 'badge-falha'}">${escapeHtml(v.status)}</span></td>
                 </tr>
               `).join('')}
             </tbody>
@@ -906,7 +956,14 @@ async function renderMinhasVendas() {
       </div>
     `;
   } catch(e) {
-    page.innerHTML = '<div class="empty-state"><div class="icon">😕</div><p>Erro ao carregar vendas</p></div>';
+    page.innerHTML = `
+      <div class="empty-state">
+        <div class="icon">📡</div>
+        <p><strong>Erro de conexão</strong></p>
+        <p style="font-size: 0.85rem; color: #999;">${escapeHtml(e.message)}</p>
+        <button class="btn btn-verde" style="margin-top: 12px;" onclick="renderMinhasVendas()">Tentar novamente</button>
+      </div>
+    `;
   }
 }
 
@@ -926,22 +983,10 @@ async function renderCarteira() {
       <div class="dashboard">
         <h2 style="color: var(--verde-escuro); margin-bottom: 24px;">💰 Minha Carteira</h2>
         <div class="stats-grid">
-          <div class="stat-card dourado">
-            <div class="label">Wallet ID</div>
-            <div class="value" style="font-size: 1.2rem;">${c.walletId}</div>
-          </div>
-          <div class="stat-card">
-            <div class="label">Valor Bruto</div>
-            <div class="value">${formatMoney(c.valorBruto)}</div>
-          </div>
-          <div class="stat-card vermelho">
-            <div class="label">Taxas</div>
-            <div class="value">${formatMoney(c.taxa)}</div>
-          </div>
-          <div class="stat-card dourado">
-            <div class="label">Valor Líquido</div>
-            <div class="value">${formatMoney(c.valorLiquido)}</div>
-          </div>
+          <div class="stat-card dourado"><div class="label">Wallet ID</div><div class="value" style="font-size: 1.2rem;">${escapeHtml(c.walletId)}</div></div>
+          <div class="stat-card"><div class="label">Valor Bruto</div><div class="value">${formatMoney(c.valorBruto)}</div></div>
+          <div class="stat-card vermelho"><div class="label">Taxas</div><div class="value">${formatMoney(c.taxa)}</div></div>
+          <div class="stat-card dourado"><div class="label">Valor Líquido</div><div class="value">${formatMoney(c.valorLiquido)}</div></div>
         </div>
         <div class="table-container" style="margin-top: 24px;">
           <p style="color: var(--cinza);">Os valores são atualizados automaticamente após a confirmação de cada venda via Netshop.</p>
@@ -949,7 +994,14 @@ async function renderCarteira() {
       </div>
     `;
   } catch(e) {
-    page.innerHTML = '<div class="empty-state"><div class="icon">😕</div><p>Erro ao carregar carteira</p></div>';
+    page.innerHTML = `
+      <div class="empty-state">
+        <div class="icon">📡</div>
+        <p><strong>Erro de conexão</strong></p>
+        <p style="font-size: 0.85rem; color: #999;">${escapeHtml(e.message)}</p>
+        <button class="btn btn-verde" style="margin-top: 12px;" onclick="renderCarteira()">Tentar novamente</button>
+      </div>
+    `;
   }
 }
 
@@ -968,7 +1020,7 @@ async function renderPlano() {
     page.innerHTML = `
       <div class="dashboard">
         <h2 style="color: var(--verde-escuro); margin-bottom: 8px;">📋 Meu Plano</h2>
-        <p style="color: var(--cinza); margin-bottom: 24px;">Plano atual: <strong>${p.nome}</strong> | Status: <strong>${p.status}</strong> | Expira: ${formatDate(p.expira)}</p>
+        <p style="color: var(--cinza); margin-bottom: 24px;">Plano atual: <strong>${escapeHtml(p.nome)}</strong> | Status: <strong>${escapeHtml(p.status)}</strong> | Expira: ${formatDate(p.expira)}</p>
 
         <div class="plans-grid">
           <div class="plan-card ${p.nome === 'SIMPLES' ? 'destaque' : ''}">
@@ -1014,7 +1066,14 @@ async function renderPlano() {
       </div>
     `;
   } catch(e) {
-    page.innerHTML = '<div class="empty-state"><div class="icon">😕</div><p>Erro ao carregar plano</p></div>';
+    page.innerHTML = `
+      <div class="empty-state">
+        <div class="icon">📡</div>
+        <p><strong>Erro de conexão</strong></p>
+        <p style="font-size: 0.85rem; color: #999;">${escapeHtml(e.message)}</p>
+        <button class="btn btn-verde" style="margin-top: 12px;" onclick="renderPlano()">Tentar novamente</button>
+      </div>
+    `;
   }
 }
 
@@ -1043,7 +1102,7 @@ async function renovarPlano(plano) {
       showToast(res.error || 'Erro', 'error');
     }
   } catch(e) {
-    showToast('Erro de conexão', 'error');
+    showToast('Erro de conexão: ' + e.message, 'error');
   }
 }
 
@@ -1068,17 +1127,17 @@ function renderVender() {
         <div style="text-align: center;">
           <div style="font-size: 3rem; margin-bottom: 16px;">📱</div>
           <h3>Fácil de usar</h3>
-          <p style="color: var(--cinza);">Cadastre-se em minutos e comece a vender imediatamente.</p>
+          <p style="color: var(--cinza);">Cadastre-se em minutos e comece a vender.</p>
         </div>
         <div style="text-align: center;">
           <div style="font-size: 3rem; margin-bottom: 16px;">💳</div>
           <h3>Pagamentos seguros</h3>
-          <p style="color: var(--cinza);">Integração com Netshop para pagamentos online via M-Pesa, e-Mola e cartões.</p>
+          <p style="color: var(--cinza);">Integração com Netshop para M-Pesa, e-Mola e cartões.</p>
         </div>
         <div style="text-align: center;">
           <div style="font-size: 3rem; margin-bottom: 16px;">📊</div>
           <h3>Controle total</h3>
-          <p style="color: var(--cinza);">Dashboard completo com vendas, carteira e histórico.</p>
+          <p style="color: var(--cinza);">Dashboard completo com vendas e carteira.</p>
         </div>
       </div>
 
@@ -1088,26 +1147,17 @@ function renderVender() {
           <div class="plan-card">
             <h3>Simples</h3>
             <div class="preco">50 <span>MT/mês</span></div>
-            <ul class="plan-features">
-              <li>3 produtos</li>
-              <li>Taxa 17%</li>
-            </ul>
+            <ul class="plan-features"><li>3 produtos</li><li>Taxa 17%</li></ul>
           </div>
           <div class="plan-card">
             <h3>Médio</h3>
             <div class="preco">200 <span>MT/mês</span></div>
-            <ul class="plan-features">
-              <li>10 produtos</li>
-              <li>Taxa 15%</li>
-            </ul>
+            <ul class="plan-features"><li>10 produtos</li><li>Taxa 15%</li></ul>
           </div>
           <div class="plan-card destaque">
             <h3>Pro</h3>
             <div class="preco">1.000 <span>MT/mês</span></div>
-            <ul class="plan-features">
-              <li>Ilimitado</li>
-              <li>Taxa 14%</li>
-            </ul>
+            <ul class="plan-features"><li>Ilimitado</li><li>Taxa 14%</li></ul>
           </div>
         </div>
       </div>
@@ -1125,25 +1175,18 @@ function checkAuth() {
   return true;
 }
 
-function escapeHtml(text) {
-  if (!text) return '';
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
-}
-
 function toggleMobileMenu() {
-  // Implementação simples - em produção usar menu slide
   alert('Menu mobile — use desktop para melhor experiência');
 }
 
-// ==================== INICIALIZAÇÃO ====================
+// ==================== INICIALIZACAO ====================
 document.addEventListener('DOMContentLoaded', () => {
-  // Verificar sessão guardada
-  if (state.token && state.vendedor) {
-    // Opcional: validar token no backend
-  }
+  // Testar conexao ao carregar
+  testConnection().then(ok => {
+    if (!ok) {
+      console.warn('API MOZ1VENDAS offline ou URL incorreta');
+    }
+  });
 
-  // Renderizar página inicial
   navigate('home');
 });
