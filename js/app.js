@@ -5,7 +5,7 @@
 
 var CONFIG = {
   // SUBSTITUA PELA URL DO SEU WEB APP
-  API_URL: 'https://script.google.com/macros/s/AKfycbxIhiGNTxlvo-EOUsx_sNAy2y2jzYQmnxQ7OebswTg0Czc5_gzCN0JDFwvseH8yjT0u/exec',
+  API_URL: 'https://script.google.com/macros/s/AKfycbzjEcGPI6LoR1JbaMG8MyK9yLmgGPoyOlGOkcJ2feQLQlXWEFLF3IBZcosrI7gmyR8Q/exec',
   APP_NAME: 'MOZ1VENDAS'
 };
 
