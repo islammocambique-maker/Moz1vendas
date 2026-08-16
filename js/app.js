@@ -6,7 +6,7 @@
 // ==================== CONFIGURAÇÃO ====================
 const CONFIG = {
   // Substitua pela URL do seu Web App do Google Apps Script após o deploy
-  API_URL: 'https://script.google.com/macros/s/SEU_ID_AQUI/exec',
+  API_URL: 'https://script.google.com/macros/s/AKfycbxIhiGNTxlvo-EOUsx_sNAy2y2jzYQmnxQ7OebswTg0Czc5_gzCN0JDFwvseH8yjT0u/exec',
   APP_NAME: 'MOZ1VENDAS'
 };
 
