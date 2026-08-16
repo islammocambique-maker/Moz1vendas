@@ -1,4 +1,3 @@
-```javascript
 /**
  * ============================================================
  * MOZ1VENDAS - FRONTEND
@@ -3737,4 +3736,3 @@ document.addEventListener(
     }
   }
 );
-```
