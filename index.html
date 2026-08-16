@@ -36,6 +36,75 @@
     </div>
   </main>
 
+  <!-- MODAL DE SELEÇÃO AUTH (ENTRAR OU REGISTAR) -->
+  <div id="modalAuth" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center p-4 z-50">
+    <div class="bg-white p-6 rounded-xl max-w-sm w-full relative text-center">
+      <button onclick="fecharModal('modalAuth')" class="absolute top-2 right-4 text-2xl font-bold text-gray-500">&times;</button>
+      <h2 class="text-xl font-bold mb-4">Área do Vendedor</h2>
+      <p class="text-gray-600 text-sm mb-6">Escolha uma opção para continuar:</p>
+      <div class="flex flex-col gap-3">
+        <button onclick="trocarModalAuth('modalAuth', 'modalLogin')" class="w-full bg-blue-600 text-white py-2 rounded-lg font-bold hover:bg-blue-700 transition">Entrar na Conta</button>
+        <button onclick="trocarModalAuth('modalAuth', 'modalRegisto')" class="w-full bg-gray-200 text-gray-800 py-2 rounded-lg font-bold hover:bg-gray-300 transition">Criar Nova Conta</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL LOGIN -->
+  <div id="modalLogin" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center p-4 z-50">
+    <div class="bg-white p-6 rounded-xl max-w-md w-full relative">
+      <button onclick="fecharModal('modalLogin')" class="absolute top-2 right-4 text-2xl font-bold text-gray-500">&times;</button>
+      <h2 class="text-xl font-bold mb-4">Entrar como Vendedor</h2>
+      <form onsubmit="fazerLogin(event)">
+        <div class="mb-4">
+          <label class="block text-sm font-medium mb-1">Nome de Usuário ou Telefone</label>
+          <input type="text" id="loginIdentificador" required class="w-full border p-2 rounded-lg">
+        </div>
+        <div class="mb-4">
+          <label class="block text-sm font-medium mb-1">PIN Numérico</label>
+          <input type="password" id="loginPin" required class="w-full border p-2 rounded-lg">
+        </div>
+        <button type="submit" id="btnLogin" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition">Entrar</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL REGISTO -->
+  <div id="modalRegisto" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center p-4 z-50">
+    <div class="bg-white p-6 rounded-xl max-w-md w-full relative max-h-[90vh] overflow-y-auto">
+      <button onclick="fecharModal('modalRegisto')" class="absolute top-2 right-4 text-2xl font-bold text-gray-500">&times;</button>
+      <h2 class="text-xl font-bold mb-4">Registar Vendedor</h2>
+      <form onsubmit="fazerRegisto(event)">
+        <div class="mb-3">
+          <label class="block text-sm font-medium mb-1">Nome Completo</label>
+          <input type="text" id="regNome" required class="w-full border p-2 rounded-lg">
+        </div>
+        <div class="mb-3">
+          <label class="block text-sm font-medium mb-1">Telefone</label>
+          <input type="tel" id="regTelefone" placeholder="841234567" required class="w-full border p-2 rounded-lg">
+        </div>
+        <div class="mb-3">
+          <label class="block text-sm font-medium mb-1">Número do BI</label>
+          <input type="text" id="regBi" required class="w-full border p-2 rounded-lg">
+        </div>
+        <div class="mb-3">
+          <label class="block text-sm font-medium mb-1">Nome da Empresa / Marca</label>
+          <input type="text" id="regEmpresa" required class="w-full border p-2 rounded-lg">
+        </div>
+        <div class="mb-3">
+          <label class="block text-sm font-medium mb-1">PIN Secreto (Numérico)</label>
+          <input type="password" id="regPin" required class="w-full border p-2 rounded-lg">
+        </div>
+        <div class="mb-4">
+          <label class="block text-sm font-medium mb-1">Plano Inicial</label>
+          <select id="regPlano" class="w-full border p-2 rounded-lg">
+            <option value="SIMPLES">Plano Simples</option>
+          </select>
+        </div>
+        <button type="submit" id="btnRegisto" class="w-full bg-green-600 text-white py-3 rounded-lg font-bold hover:bg-green-700 transition">Registar Conta</button>
+      </form>
+    </div>
+  </div>
+
   <!-- MODAL DE CHECKOUT / COMPRA -->
   <div id="modalCompra" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center p-4 z-50">
     <div class="bg-white p-6 rounded-xl max-w-md w-full relative">
@@ -63,7 +132,6 @@
 
   <!-- SCRIPT INTEGRADO COM O GAS -->
   <script>
-    // URL DE DEPLOY DO SEU GOOGLE APPS SCRIPT (Web App URL)
     const GAS_URL = "https://script.google.com/macros/s/AKfycbz62rB-RTzLg-h6fXMogftj01-z-sCOtTz0PFo7BoTdalzoVQvnIoOfi5a7vcBhOGMh/exec";
 
     document.addEventListener("DOMContentLoaded", () => {
@@ -71,6 +139,95 @@
       verificarSessao();
     });
 
+    // --- CONTROLE DOS MODAIS DE AUTENTICAÇÃO ---
+    function abrirModalAuth() {
+      document.getElementById("modalAuth").classList.remove("hidden");
+    }
+
+    function trocarModalAuth(fecharId, abrirId) {
+      fecharModal(fecharId);
+      document.getElementById(abrirId).classList.remove("hidden");
+    }
+
+    function fecharModal(id) {
+      document.getElementById(id).classList.add("hidden");
+    }
+
+    // --- AUTENTICAÇÃO (LOGIN E REGISTO VIA POST NO GAS) ---
+    async function fazerLogin(e) {
+      e.preventDefault();
+      const btn = document.getElementById("btnLogin");
+      btn.disabled = true;
+      btn.innerText = "Entrando...";
+
+      const payload = {
+        action: "loginVendedor",
+        identificador: document.getElementById("loginIdentificador").value,
+        pin: document.getElementById("loginPin").value
+      };
+
+      try {
+        const res = await fetch(GAS_URL, {
+          method: "POST",
+          body: JSON.stringify(payload)
+        });
+        const json = await res.json();
+
+        if (json.ok && json.token) {
+          localStorage.setItem("moz1_token", json.token);
+          alert("Login efetuado com sucesso!");
+          fecharModal("modalLogin");
+          verificarSessao();
+        } else {
+          alert("Erro: " + (json.erro || "PIN ou utilizador incorreto"));
+        }
+      } catch (err) {
+        alert("Erro na comunicação com o servidor.");
+      } finally {
+        btn.disabled = false;
+        btn.innerText = "Entrar";
+      }
+    }
+
+    async function fazerRegisto(e) {
+      e.preventDefault();
+      const btn = document.getElementById("btnRegisto");
+      btn.disabled = true;
+      btn.innerText = "Registando...";
+
+      const payload = {
+        action: "registarVendedor",
+        nome: document.getElementById("regNome").value,
+        telefone: document.getElementById("regTelefone").value,
+        bi: document.getElementById("regBi").value,
+        empresa: document.getElementById("regEmpresa").value,
+        pin: document.getElementById("regPin").value,
+        plano: document.getElementById("regPlano").value
+      };
+
+      try {
+        const res = await fetch(GAS_URL, {
+          method: "POST",
+          body: JSON.stringify(payload)
+        });
+        const json = await res.json();
+
+        if (json.ok) {
+          alert(json.msg || "Conta criada com sucesso! Faça login para continuar.");
+          fecharModal("modalRegisto");
+          trocarModalAuth('modalRegisto', 'modalLogin');
+        } else {
+          alert("Erro: " + (json.erro || "Falha ao criar conta"));
+        }
+      } catch (err) {
+        alert("Erro na comunicação com o servidor.");
+      } finally {
+        btn.disabled = false;
+        btn.innerText = "Registar Conta";
+      }
+    }
+
+    // --- CARREGAR E FILTRAR PRODUTOS ---
     async function carregarProdutos() {
       const grid = document.getElementById("gridProdutos");
       grid.innerHTML = `<p class="text-gray-500 col-span-full text-center py-8">Carregando produtos...</p>`;
@@ -116,10 +273,6 @@
       document.getElementById("modalCompra").classList.remove("hidden");
     }
 
-    function fecharModal(id) {
-      document.getElementById(id).classList.add("hidden");
-    }
-
     async function processarCompra(e) {
       e.preventDefault();
       const btn = document.getElementById("btnPagar");
@@ -162,12 +315,16 @@
         document.getElementById("authArea").innerHTML = `
           <button onclick="sair()" class="bg-red-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-red-600 transition">Sair</button>
         `;
+      } else {
+        document.getElementById("authArea").innerHTML = `
+          <button onclick="abrirModalAuth()" class="bg-white text-blue-600 px-4 py-2 rounded-lg font-semibold hover:bg-gray-100 transition">Entrar / Registar</button>
+        `;
       }
     }
 
     function sair() {
       localStorage.removeItem("moz1_token");
-      location.reload();
+      verificarSessao();
     }
   </script>
 </body>
