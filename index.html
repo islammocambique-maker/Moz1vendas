@@ -404,7 +404,12 @@
         if (json.ok && json.produtos.length > 0) {
           grid.innerHTML = json.produtos.map(p => `
             <div class="bg-white rounded-xl shadow overflow-hidden flex flex-col justify-between">
-              <img src="${p.imagemUrl || 'https://via.placeholder.com/300'}" alt="${p.nome}" class="w-full h-48 object-cover">
+              <img 
+                src="${p.imagemUrl || 'https://via.placeholder.com/300x200?text=Sem+Imagem'}" 
+                onerror="this.onerror=null; this.src='https://via.placeholder.com/300x200?text=Sem+Imagem';" 
+                alt="${p.nome}" 
+                class="w-full h-48 object-cover"
+              >
               <div class="p-4 flex-grow">
                 <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded font-bold">${p.tipo}</span>
                 <h3 class="font-bold text-lg mt-2">${p.nome}</h3>
@@ -426,67 +431,6 @@
       } catch (e) {
         grid.innerHTML = `<p class="text-red-500 col-span-full text-center py-8">Erro ao carregar produtos.</p>`;
       }
-    }
-
-    function abrirCompra(id, nome, preco) {
-      document.getElementById("compraProdutoId").value = id;
-      document.getElementById("modalTitulo").innerText = nome;
-      document.getElementById("modalPreco").innerText = `${preco} MT`;
-      document.getElementById("modalCompra").classList.remove("hidden");
-    }
-
-    async function processarCompra(e) {
-      e.preventDefault();
-      const btn = document.getElementById("btnPagar");
-      btn.disabled = true;
-      btn.innerText = "Processando...";
-
-      const payload = {
-        action: "criarPagamento",
-        produtoId: document.getElementById("compraProdutoId").value,
-        clienteTelefone: document.getElementById("clienteTelefone").value,
-        metodo: document.getElementById("metodoPagamento").value
-      };
-
-      try {
-        const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify(payload) });
-        const json = await res.json();
-
-        if (json.ok && json.checkoutUrl) {
-          window.location.href = json.checkoutUrl;
-        } else if (json.ok) {
-          alert("Solicitação de pagamento enviada ao seu telefone!");
-          fecharModal("modalCompra");
-        } else {
-          alert("Erro: " + (json.erro || "Falha ao processar"));
-        }
-      } catch (err) {
-        alert("Erro na comunicação com o servidor.");
-      } finally {
-        btn.disabled = false;
-        btn.innerText = "Pagar com Netshop";
-      }
-    }
-
-    function verificarSessao() {
-      const token = localStorage.getItem("moz1_token");
-      const authArea = document.getElementById("authArea");
-
-      if (token) {
-        authArea.innerHTML = `
-          <button onclick="abrirPainelVendedor()" class="bg-white text-blue-600 px-4 py-2 rounded-lg font-semibold hover:bg-gray-100 transition">Meus Produtos</button>
-          <button onclick="sair()" class="bg-red-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-red-600 transition">Sair</button>
-        `;
-      } else {
-        authArea.innerHTML = `
-          <button onclick="abrirModalAuth()" class="bg-white text-blue-600 px-4 py-2 rounded-lg font-semibold hover:bg-gray-100 transition">Entrar / Registar</button>
-        `;
-      }
-    }
-
-    function sair() {
-      localStorage.removeItem("moz1_token");
-      verificarSessao();
     }
   </script>
 </body>
