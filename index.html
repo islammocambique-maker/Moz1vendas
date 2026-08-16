@@ -1,227 +1,103 @@
 <!DOCTYPE html>
 <html lang="pt">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>SORTEMZ — Loteria 5/55</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MOZ1VENDAS — Marketplace de Moçambique</title>
+  <meta name="description" content="Compre e venda produtos físicos e digitais em Moçambique. Pagamentos via M-Pesa, e-Mola, mKesh e cartão.">
+  <link rel="stylesheet" href="css/style.css">
 <base target="_blank">
 </head>
 <body>
-  <div id="app">
-
-    <!-- ==================== TELA LOGIN ==================== -->
-    <section id="tela-login">
-      <header class="app-header">
-        <div class="logo-badge">5/55</div>
-        <h1>SORTE<span>MZ</span></h1>
-        <p>A Maior Loteria Digital de Mocambique</p>
-      </header>
-
-      <div class="card">
-        <div class="card-title">Entrar ou Registar</div>
-        <input class="input" id="login-nome" placeholder="Nome completo" autocomplete="name" />
-        <input class="input" id="login-telefone" placeholder="Telefone M-Pesa (ex: 84/85xxxxxxx)" type="tel" autocomplete="tel" />
-        <button class="btn btn-primary" id="btn-entrar" onclick="app.entrar()">Entrar na Conta</button>
-        <p class="hint">Primeira vez? A conta e criada automaticamente.</p>
+  <!-- Header -->
+  <header class="header" id="appHeader">
+    <div class="header-inner">
+      <div class="logo" onclick="navigate('home')">
+        <div class="logo-icon">🛒</div>
+        <span>MOZ1VENDAS</span>
       </div>
-
-      <div class="card">
-        <div class="card-title">Tabela de Premios</div>
-        <table class="premio-table">
-          <thead>
-            <tr><th>Acertos</th><th>Premio Maximo</th></tr>
-          </thead>
-          <tbody>
-            <tr><td><span class="badge badge-gold">5 Bolas</span></td><td class="gold font-bold">500.000 MZN</td></tr>
-            <tr><td><span class="badge badge-purple">4 Bolas</span></td><td>5.000 MZN</td></tr>
-            <tr><td><span class="badge badge-blue">3 Bolas</span></td><td>500 MZN</td></tr>
-            <tr><td><span class="badge badge-gray">2 Bolas</span></td><td>50 MZN</td></tr>
-            <tr><td><span class="badge badge-gray">1 Bola</span></td><td>10 MZN</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <!-- ==================== TELA APP ==================== -->
-    <section id="tela-app" class="hidden">
-      <header class="app-header header-app-compact">
-        <div>
-          <h1>SORTE<span>MZ</span></h1>
-          <p id="user-ref">Ref: —</p>
-        </div>
-        <button class="btn-icon" onclick="app.sair()" title="Sair">
-          <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
-        </button>
-      </header>
-
-      <!-- CARD SALDO -->
-      <div class="saldo-box">
-        <div class="saldo-info">
-          <div class="saldo-label">Saldo Disponivel</div>
-          <div class="saldo-valor" id="saldo-display">0 <span class="saldo-mzn">MZN</span></div>
-        </div>
-        <div class="saldo-actions">
-          <button class="btn btn-gold btn-sm" onclick="app.abrirDeposito()">+ Depositar</button>
-          <button class="btn btn-outline btn-sm" onclick="app.abrirLevantamento()">− Levantar</button>
-        </div>
-      </div>
-
-      <!-- TABS -->
-      <nav class="tabs">
-        <button class="tab active" data-tab="jogar" onclick="app.setTab('jogar')">Jogar</button>
-        <button class="tab" data-tab="resultados" onclick="app.setTab('resultados')">Resultados</button>
-        <button class="tab" data-tab="historico" onclick="app.setTab('historico')">Apostas</button>
-        <button class="tab" data-tab="conta" onclick="app.setTab('conta')">Conta</button>
+      <nav class="nav-links">
+        <a onclick="navigate('home')">Início</a>
+        <a onclick="navigate('produtos')">Produtos</a>
+        <a onclick="navigate('vender')">Vender na MOZ1VENDAS</a>
+        <a onclick="navigate('login')">Entrar</a>
       </nav>
+      <button class="mobile-menu-btn" onclick="toggleMobileMenu()">☰</button>
+    </div>
+  </header>
 
-      <!-- === ABA JOGAR === -->
-      <div id="tab-jogar" class="tab-panel">
-        <div class="card">
-          <div class="card-title">Selecione o Sorteio</div>
-          <div id="sorteio-selector" class="tag-group"></div>
-        </div>
+  <!-- Páginas -->
+  <main>
+    <!-- Home -->
+    <div class="page" id="pageHome"></div>
 
-        <div class="card">
-          <div class="card-header">
-            <div class="card-title">Escolha 5 numeros (1–55)</div>
-            <span class="badge badge-gold" id="contador-nums">0/5</span>
-          </div>
-          <div class="grid-nums" id="grid-numeros"></div>
-          <div class="actions-row">
-            <button class="btn btn-outline btn-sm" onclick="app.limparNums()">Limpar</button>
-            <button class="btn btn-outline btn-sm" onclick="app.aleatorio()">Surpresa (Surpresinha)</button>
-          </div>
-        </div>
+    <!-- Produtos -->
+    <div class="page hidden" id="pageProdutos"></div>
 
-        <div class="card card-checkout">
-          <div class="card-title">Resumo do Bilhete</div>
-          <div class="info-row"><span class="info-label">Numeros Escolhidos</span><span class="info-val gold" id="resumo-nums">—</span></div>
-          <div class="info-row"><span class="info-label">Custo do Bilhete</span><span class="info-val">10 MZN</span></div>
-          <div class="info-row"><span class="info-label">Sorteio Alvo</span><span class="info-val" id="resumo-sorteio">—</span></div>
-          <button class="btn btn-primary btn-block btn-lg" id="btn-apostar" onclick="app.apostar()" disabled>CONFIRMAR APOSTA (10 MZN)</button>
-        </div>
+    <!-- Detalhe Produto -->
+    <div class="page hidden" id="pageProduto"></div>
+
+    <!-- Login -->
+    <div class="page hidden" id="pageLogin"></div>
+
+    <!-- Registo -->
+    <div class="page hidden" id="pageRegisto"></div>
+
+    <!-- Dashboard -->
+    <div class="page hidden" id="pageDashboard"></div>
+
+    <!-- Meus Produtos -->
+    <div class="page hidden" id="pageMeusProdutos"></div>
+
+    <!-- Adicionar Produto -->
+    <div class="page hidden" id="pageAdicionarProduto"></div>
+
+    <!-- Editar Produto -->
+    <div class="page hidden" id="pageEditarProduto"></div>
+
+    <!-- Minhas Vendas -->
+    <div class="page hidden" id="pageMinhasVendas"></div>
+
+    <!-- Carteira -->
+    <div class="page hidden" id="pageCarteira"></div>
+
+    <!-- Plano -->
+    <div class="page hidden" id="pagePlano"></div>
+
+    <!-- Vender -->
+    <div class="page hidden" id="pageVender"></div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div>
+        <h3>MOZ1VENDAS</h3>
+        <p style="color: rgba(255,255,255,0.7); margin-bottom: 16px;">O marketplace mais simples e seguro para comprar e vender em Moçambique.</p>
       </div>
-
-      <!-- === ABA RESULTADOS === -->
-      <div id="tab-resultados" class="tab-panel hidden">
-        <div class="card card-highlight">
-          <div class="card-title">Ultimo Sorteio Realizado</div>
-          <div class="resultado-header" id="ultimo-resultado-info">A carregar...</div>
-          <div class="result-balls" id="ultimo-bolas"></div>
-        </div>
-        <div class="card">
-          <div class="card-title">Premio dos Sorteios de Hoje</div>
-          <div id="lista-cofres" class="info-list"></div>
-        </div>
+      <div>
+        <h3>Links Rápidos</h3>
+        <a onclick="navigate('home')">Início</a>
+        <a onclick="navigate('produtos')">Produtos</a>
+        <a onclick="navigate('vender')">Vender</a>
       </div>
-
-      <!-- === ABA HISTORICO === -->
-      <div id="tab-historico" class="tab-panel hidden">
-        <div class="card">
-          <div class="card-title">Minhas Apostas Recentes</div>
-          <div id="lista-historico" class="info-list"></div>
-        </div>
-        <div class="card">
-          <div class="card-title">Meus Premios</div>
-          <div id="lista-premios" class="info-list"></div>
-        </div>
+      <div>
+        <h3>Vendedor</h3>
+        <a onclick="navigate('login')">Entrar</a>
+        <a onclick="navigate('registo')">Registar-se</a>
       </div>
-
-      <!-- === ABA CONTA === -->
-      <div id="tab-conta" class="tab-panel hidden">
-        <div class="card">
-          <div class="card-title">Perfil do Jogador</div>
-          <div class="info-row"><span class="info-label">Nome</span><span class="info-val" id="conta-nome">—</span></div>
-          <div class="info-row"><span class="info-label">Telefone</span><span class="info-val" id="conta-telefone">—</span></div>
-          <div class="info-row"><span class="info-label">Referencia</span><span class="info-val gold" id="conta-ref">—</span></div>
-          <div class="info-row"><span class="info-label">ID Sistema</span><span class="info-val" id="conta-id">—</span></div>
-          <div class="info-row"><span class="info-label">Estado</span><span class="badge badge-green">Conta Verificada</span></div>
-        </div>
-        <div class="card">
-          <div class="card-title">Movimentos Recentes</div>
-          <div id="lista-movimentos" class="info-list"></div>
-        </div>
-        <div class="card">
-          <div class="card-title">Historico de Levantamentos</div>
-          <div id="lista-levantamentos" class="info-list"></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ==================== MODAL CONFIRMAR APOSTA ==================== -->
-    <div id="modal-confirmar-aposta" class="modal-overlay hidden">
-      <div class="modal-content">
-        <div class="card-title">Confirmar Aposta</div>
-        <div class="info-row" style="margin:12px 0;">
-          <span class="info-label">Numeros</span>
-          <span class="info-val gold" id="confirm-nums">—</span>
-        </div>
-        <div class="info-row" style="margin:12px 0;">
-          <span class="info-label">Sorteio</span>
-          <span class="info-val" id="confirm-sorteio">—</span>
-        </div>
-        <div class="info-row" style="margin:12px 0;">
-          <span class="info-label">Valor</span>
-          <span class="info-val gold" id="confirm-valor">10 MZN</span>
-        </div>
-        <button class="btn btn-primary btn-block" style="margin-bottom:8px;" onclick="app.confirmarAposta()">Confirmar & Pagar</button>
-        <button class="btn btn-outline btn-block" onclick="app.fecharConfirmacaoAposta()">Cancelar</button>
+      <div>
+        <h3>Contacto</h3>
+        <a href="https://wa.me/258860407269" target="_blank">WhatsApp Admin</a>
+        <p style="color: rgba(255,255,255,0.6); margin-top: 8px; font-size: 0.9rem;">© 2026 MOZ1VENDAS</p>
       </div>
     </div>
-
-    <!-- ==================== MODAL DEPOSITO ==================== -->
-    <div id="modal-deposito" class="modal-overlay hidden">
-      <div class="modal-content">
-        <div class="card-title">Carregar Saldo via Netshop / M-Pesa</div>
-        <p class="hint">Use a sua referencia ou pague diretamente pelo telefone.</p>
-
-        <div class="ref-box" style="margin-bottom:12px;">
-          <div class="ref-label">Sua Referencia</div>
-          <div style="display:flex;gap:8px;align-items:center;">
-            <div class="ref-code" id="dep-ref" style="flex:1;">SMZ000000</div>
-            <button class="btn btn-sm" onclick="app.copiarReferencia()" title="Copiar">📋</button>
-          </div>
-        </div>
-
-        <input class="input" id="dep-telefone" type="tel" placeholder="Telefone M-Pesa (ex: 84xxxxxxx)" />
-        <input class="input" id="dep-valor" type="number" placeholder="Valor (min. 10 MZN)" min="10" />
-        <select class="input" id="dep-metodo" style="margin-bottom:12px;">
-          <option value="mpesa">M-Pesa</option>
-          <option value="emola">e-Mola</option>
-        </select>
-
-        <div id="dep-status" class="hidden" style="margin-bottom:12px;padding:10px;border-radius:8px;font-size:13px;text-align:center;"></div>
-
-        <button class="btn btn-gold btn-block" id="btn-depositar" style="margin-bottom:8px;" onclick="app.processarDeposito()">Pagar Agora</button>
-        <a href="https://www.netshop.co.mz/p/r9hhaw3r" target="_blank" class="btn btn-outline btn-block" style="text-decoration:none;text-align:center;margin-bottom:8px;">Pagar no Portal Netshop</a>
-        <button class="btn btn-outline btn-block" onclick="app.fecharDeposito()">Fechar</button>
-      </div>
+    <div class="footer-bottom">
+      <p>Feito com ❤️ em Moçambique</p>
     </div>
+  </footer>
 
-    <!-- ==================== MODAL LEVANTAMENTO ==================== -->
-    <div id="modal-levantamento" class="modal-overlay hidden">
-      <div class="modal-content">
-        <div class="card-title">Levantar para M-Pesa</div>
-        <p class="hint">Transferencia direta para a sua conta M-Pesa.</p>
-        <div class="info-row" style="margin-bottom:12px;">
-          <span class="info-label">Saldo Disponivel</span>
-          <span class="info-val gold" id="lev-saldo">0 MZN</span>
-        </div>
-        <input class="input" type="number" id="lev-valor" placeholder="Valor (MZN) - Minimo 50" min="50" />
-        <input class="input" type="tel" id="lev-telefone" placeholder="Telefone M-Pesa (ex: 84xxxxxxx)" />
-        <button class="btn btn-primary btn-block" id="btn-confirmar-lev" style="margin-bottom:8px;" onclick="app.solicitarLevantamento()">Solicitar Levantamento</button>
-        <button class="btn btn-outline btn-block" onclick="app.fecharLevantamento()">Cancelar</button>
-      </div>
-    </div>
-
-    <!-- ==================== TOAST ==================== -->
-    <div class="toast" id="toast"></div>
-  </div>
-
+  <!-- Scripts -->
   <script src="js/app.js"></script>
 </body>
 </html>
