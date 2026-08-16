@@ -26,45 +26,25 @@
     </div>
   </header>
 
-  <!-- Páginas -->
+  <!-- Banner de debug (aparece se API_URL nao configurada) -->
+  <div id="apiWarning" style="display:none; background:#dc2626; color:#fff; text-align:center; padding:12px; font-weight:600; font-size:0.9rem;">
+    ⚠️ Configure a URL da API no ficheiro js/app.js (linha API_URL)
+  </div>
+
+  <!-- Paginas -->
   <main>
-    <!-- Home -->
     <div class="page" id="pageHome"></div>
-
-    <!-- Produtos -->
     <div class="page hidden" id="pageProdutos"></div>
-
-    <!-- Detalhe Produto -->
     <div class="page hidden" id="pageProduto"></div>
-
-    <!-- Login -->
     <div class="page hidden" id="pageLogin"></div>
-
-    <!-- Registo -->
     <div class="page hidden" id="pageRegisto"></div>
-
-    <!-- Dashboard -->
     <div class="page hidden" id="pageDashboard"></div>
-
-    <!-- Meus Produtos -->
     <div class="page hidden" id="pageMeusProdutos"></div>
-
-    <!-- Adicionar Produto -->
     <div class="page hidden" id="pageAdicionarProduto"></div>
-
-    <!-- Editar Produto -->
     <div class="page hidden" id="pageEditarProduto"></div>
-
-    <!-- Minhas Vendas -->
     <div class="page hidden" id="pageMinhasVendas"></div>
-
-    <!-- Carteira -->
     <div class="page hidden" id="pageCarteira"></div>
-
-    <!-- Plano -->
     <div class="page hidden" id="pagePlano"></div>
-
-    <!-- Vender -->
     <div class="page hidden" id="pageVender"></div>
   </main>
 
@@ -97,7 +77,12 @@
     </div>
   </footer>
 
-  <!-- Scripts -->
   <script src="js/app.js"></script>
+  <script>
+    // Mostrar aviso se API_URL nao foi configurada
+    if (typeof CONFIG !== 'undefined' && CONFIG.API_URL.includes('SEU_ID_AQUI')) {
+      document.getElementById('apiWarning').style.display = 'block';
+    }
+  </script>
 </body>
 </html>
