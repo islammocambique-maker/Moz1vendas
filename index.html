@@ -1,656 +1,2763 @@
+# MOZ1VENDAS — index.html
+
+```html
 <!DOCTYPE html>
 <html lang="pt">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>MOZ1VENDAS - Catálogo & Marketplace</title>
+
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+  >
+
   <style>
-    /* Estilo para cartões com efeito de vidro */
     .glass-card {
-      background: rgba(255, 255, 255, 0.95);
+      background: rgba(255,255,255,.95);
       backdrop-filter: blur(10px);
+    }
+
+    .modal-scroll {
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    button:disabled {
+      opacity: .6;
+      cursor: not-allowed;
     }
   </style>
 </head>
+
 <body class="bg-slate-50 font-sans min-h-screen flex flex-col text-slate-800">
 
-  <!-- HEADER ELEGANTE -->
-  <header class="bg-gradient-to-r from-blue-700 via-indigo-700 to-blue-900 text-white shadow-lg sticky top-0 z-50">
-    <div class="container mx-auto px-6 py-4 flex justify-between items-center">
-      <!-- Logo & Título -->
-      <div class="flex items-center cursor-pointer" onclick="carregarProdutos()">
-        <div class="bg-white/10 p-3 rounded-xl backdrop-blur-md shadow-md transition hover:scale-105 duration-300">
-          <i class="fa-solid fa-store text-3xl text-amber-400"></i>
-        </div>
-        <div class="ml-3">
-          <h1 class="text-xl font-extrabold tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-white to-blue-100">MOZ1VENDAS</h1>
-          <p class="text-[10px] text-blue-200 uppercase tracking-widest font-semibold">Marketplace Moçambique</p>
-        </div>
+<!-- =========================================================
+     HEADER
+========================================================= -->
+
+<header class="bg-gradient-to-r from-blue-700 via-indigo-700 to-blue-900 text-white shadow-lg sticky top-0 z-50">
+
+  <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+
+    <div
+      class="flex items-center cursor-pointer"
+      onclick="carregarProdutos()"
+    >
+
+      <div class="bg-white/10 p-3 rounded-xl backdrop-blur-md shadow-md transition hover:scale-105 duration-300">
+
+        <i class="fa-solid fa-store text-3xl text-amber-400"></i>
+
       </div>
 
-      <!-- Ações rápidas -->
-      <div class="flex items-center gap-4">
-        <a href="https://wa.me/258860407269?text=Olá! Preciso de suporte no MOZ1VENDAS." target="_blank" class="hidden sm:flex items-center gap-2 bg-emerald-600/90 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-xs font-semibold transition border border-emerald-500/30 shadow-sm">
-          <i class="fa-brands fa-whatsapp"></i> Suporte
-        </a>
-        <div id="authArea" class="flex gap-2">
-          <button onclick="abrirModalAuth()" class="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg text-sm font-semibold transition border border-white/20">Entrar / Registar</button>
-        </div>
+      <div class="ml-3">
+
+        <h1 class="text-xl font-extrabold tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-white to-blue-100">
+          MOZ1VENDAS
+        </h1>
+
+        <p class="text-[10px] text-blue-200 uppercase tracking-widest font-semibold">
+          Marketplace Moçambique
+        </p>
+
       </div>
+
     </div>
-  </header>
 
-  <!-- BANNER DE BOAS-VINDAS & REGRAS -->
-  <section class="bg-blue-600 text-white py-6 shadow-inner">
-    <div class="container mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4 text-center md:text-left">
-      <div>
-        <h2 class="text-lg md:text-xl font-bold">Compre e Venda com Segurança em Moçambique</h2>
-        <p class="text-blue-100 text-xs md:text-sm mt-1">Produtos Físicos e Digitais com pagamento via M-Pesa e e-Mola.</p>
+    <div class="flex items-center gap-4">
+
+      <a
+        href="https://wa.me/258860407269?text=Olá! Preciso de suporte no MOZ1VENDAS."
+        target="_blank"
+        rel="noopener noreferrer"
+        class="hidden sm:flex items-center gap-2 bg-emerald-600/90 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-xs font-semibold transition border border-emerald-500/30 shadow-sm"
+      >
+        <i class="fa-brands fa-whatsapp"></i>
+        Suporte
+      </a>
+
+      <div id="authArea" class="flex gap-2">
+
+        <button
+          onclick="abrirModalAuth()"
+          class="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg text-sm font-semibold transition border border-white/20"
+        >
+          Entrar / Registar
+        </button>
+
       </div>
-      <button onclick="abrirModalTermos()" class="text-xs bg-blue-800/60 hover:bg-blue-700 text-blue-100 px-4 py-2 rounded-lg border border-blue-400/30 transition flex items-center gap-2 shadow-md">
-        <i class="fa-solid fa-shield-halved"></i> Termos de Segurança & Banimento
+
+    </div>
+
+  </div>
+
+</header>
+
+
+<!-- =========================================================
+     BANNER
+========================================================= -->
+
+<section class="bg-blue-600 text-white py-6 shadow-inner">
+
+  <div class="container mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4 text-center md:text-left">
+
+    <div>
+
+      <h2 class="text-lg md:text-xl font-bold">
+        Compre e Venda com Segurança em Moçambique
+      </h2>
+
+      <p class="text-blue-100 text-xs md:text-sm mt-1">
+        Produtos Físicos e Digitais com pagamento via M-Pesa e e-Mola.
+      </p>
+
+    </div>
+
+    <button
+      onclick="abrirModalTermos()"
+      class="text-xs bg-blue-800/60 hover:bg-blue-700 text-blue-100 px-4 py-2 rounded-lg border border-blue-400/30 transition flex items-center gap-2 shadow-md"
+    >
+
+      <i class="fa-solid fa-shield-halved"></i>
+
+      Termos de Segurança & Banimento
+
+    </button>
+
+  </div>
+
+</section>
+
+
+<!-- =========================================================
+     CONTEÚDO PRINCIPAL
+========================================================= -->
+
+<main class="flex-1 container mx-auto px-6 py-8">
+
+  <!-- FILTROS -->
+
+  <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200/80 mb-8 flex flex-col md:flex-row gap-4 items-center">
+
+    <div class="relative flex-grow w-full md:w-2/3">
+
+      <i class="fa-solid fa-magnifying-glass absolute left-4 top-3 text-slate-400"></i>
+
+      <input
+        type="text"
+        id="inputBusca"
+        placeholder="Buscar por produtos ou marcas..."
+        class="w-full pl-12 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white text-sm"
+      >
+
+    </div>
+
+
+    <div class="flex gap-3 w-full md:w-auto mt-4 md:mt-0">
+
+      <select
+        id="selectCategoria"
+        class="w-full md:w-48 px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm font-medium"
+      >
+
+        <option value="">
+          Todas Categorias
+        </option>
+
+        <option value="FISICO">
+          📦 Produtos Físicos
+        </option>
+
+        <option value="DIGITAL">
+          ⚡ Produtos Digitais
+        </option>
+
+      </select>
+
+
+      <button
+        onclick="carregarProdutos()"
+        class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-semibold text-sm transition shadow-sm shadow-blue-600/30 flex items-center justify-center gap-2"
+      >
+
+        <i class="fa-solid fa-filter"></i>
+
+        Filtrar
+
       </button>
-    </div>
-  </section>
 
-  <!-- FILTROS E BUSCA -->
-  <main class="flex-1 container mx-auto px-6 py-8">
-    <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200/80 mb-8 flex flex-col md:flex-row gap-4 items-center">
-      <!-- Busca -->
-      <div class="relative flex-grow w-full md:w-2/3">
-        <i class="fa-solid fa-magnifying-glass absolute left-4 top-3 text-slate-400"></i>
+    </div>
+
+  </div>
+
+
+  <!-- PRODUTOS -->
+
+  <div
+    id="gridProdutos"
+    class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
+  >
+
+    <div class="col-span-full py-12 text-center text-slate-400">
+
+      <i class="fa-solid fa-spinner fa-spin text-3xl mb-3"></i>
+
+      <p class="font-medium">
+        Carregando catálogo...
+      </p>
+
+    </div>
+
+  </div>
+
+</main>
+
+
+<!-- =========================================================
+     FOOTER
+========================================================= -->
+
+<footer class="bg-slate-900 text-slate-400 py-8 border-t border-slate-800">
+
+  <div class="container mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-8">
+
+    <div>
+
+      <div class="flex items-center space-x-2 mb-3">
+
+        <i class="fa-solid fa-store text-amber-400 text-xl"></i>
+
+        <span class="font-bold text-lg">
+          MOZ1VENDAS
+        </span>
+
+      </div>
+
+      <p class="text-xs leading-relaxed">
+        Sua plataforma confiável de vendas online em Moçambique.
+      </p>
+
+    </div>
+
+
+    <div>
+
+      <h4 class="text-white font-semibold mb-3 text-sm">
+        Políticas & Segurança
+      </h4>
+
+      <ul class="space-y-2 text-xs">
+
+        <li>
+          <button
+            onclick="abrirModalTermos()"
+            class="hover:text-blue-400 transition"
+          >
+            Termos de Uso e Condições
+          </button>
+        </li>
+
+        <li>
+          <button
+            onclick="abrirModalTermos()"
+            class="hover:text-blue-400 transition"
+          >
+            Política de Zero Tolerância contra Fraudes
+          </button>
+        </li>
+
+      </ul>
+
+    </div>
+
+
+    <div>
+
+      <h4 class="text-white font-semibold mb-3 text-sm">
+        Atendimento ao Cliente
+      </h4>
+
+      <a
+        href="https://wa.me/258860407269"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="flex items-center gap-2 text-emerald-400 text-xs hover:underline"
+      >
+
+        <i class="fa-brands fa-whatsapp"></i>
+
+        +258 860 407 269 (WhatsApp)
+
+      </a>
+
+    </div>
+
+  </div>
+
+
+  <div class="mt-8 pt-6 border-t border-slate-800 text-center text-[11px] text-slate-500">
+
+    &copy; MOZ1VENDAS - Todos os direitos reservados.
+
+  </div>
+
+</footer>
+
+
+<!-- =========================================================
+     MODAL AUTH
+========================================================= -->
+
+<div
+  id="modalAuth"
+  class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex justify-center items-center p-4 z-50"
+>
+
+  <div class="bg-white p-8 rounded-2xl max-w-sm w-full relative shadow-xl">
+
+    <button
+      onclick="fecharModal('modalAuth')"
+      class="absolute top-3 right-4 text-slate-400 hover:text-slate-600 text-2xl font-bold"
+    >
+      &times;
+    </button>
+
+    <div class="flex justify-center mb-4">
+
+      <div class="w-14 h-14 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center text-xl shadow-md">
+
+        <i class="fa-solid fa-user-gear"></i>
+
+      </div>
+
+    </div>
+
+    <h2 class="text-xl font-bold text-slate-800 mb-2 text-center">
+      Área do Vendedor
+    </h2>
+
+    <p class="text-xs text-slate-500 mb-6 text-center">
+      Acesse sua conta para gerenciar produtos.
+    </p>
+
+    <div class="flex flex-col gap-3">
+
+      <button
+        onclick="trocarModalAuth('modalAuth','modalLogin')"
+        class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl font-semibold transition"
+      >
+        Entrar na Conta
+      </button>
+
+      <button
+        onclick="trocarModalAuth('modalAuth','modalRegisto')"
+        class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-xl font-semibold transition"
+      >
+        Criar Nova Conta
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- =========================================================
+     LOGIN
+========================================================= -->
+
+<div
+  id="modalLogin"
+  class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex justify-center items-center p-4 z-50"
+>
+
+  <div class="bg-white p-8 rounded-2xl max-w-md w-full relative shadow-xl">
+
+    <button
+      onclick="fecharModal('modalLogin')"
+      class="absolute top-3 right-4 text-slate-400 hover:text-slate-600 text-2xl font-bold"
+    >
+      &times;
+    </button>
+
+    <h2 class="text-xl font-bold text-slate-800 mb-4">
+      Entrar como Vendedor
+    </h2>
+
+    <form onsubmit="fazerLogin(event)">
+
+      <div class="mb-4">
+
+        <label class="block text-xs font-semibold mb-1 text-slate-600">
+          Empresa ou Telefone
+        </label>
+
         <input
           type="text"
-          id="inputBusca"
-          placeholder="Buscar por produtos ou marcas..."
-          class="w-full pl-12 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white text-sm"
-        />
+          id="loginIdentificador"
+          required
+          class="w-full border border-slate-200 p-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm"
+        >
+
       </div>
-      <!-- Filtros -->
-      <div class="flex gap-3 w-full md:w-auto mt-4 md:mt-0">
+
+
+      <div class="mb-6">
+
+        <label class="block text-xs font-semibold mb-1 text-slate-600">
+          PIN Numérico
+        </label>
+
+        <input
+          type="password"
+          id="loginPin"
+          required
+          inputmode="numeric"
+          class="w-full border border-slate-200 p-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm"
+        >
+
+      </div>
+
+
+      <button
+        type="submit"
+        id="btnLogin"
+        class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-semibold transition"
+      >
+        Entrar
+      </button>
+
+    </form>
+
+  </div>
+
+</div>
+
+
+<!-- =========================================================
+     REGISTO
+========================================================= -->
+
+<div
+  id="modalRegisto"
+  class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex justify-center items-center p-4 z-50 overflow-y-auto"
+>
+
+  <div class="bg-white p-8 rounded-2xl max-w-md w-full relative shadow-xl my-6">
+
+    <button
+      onclick="fecharModal('modalRegisto')"
+      class="absolute top-3 right-4 text-slate-400 hover:text-slate-600 text-2xl font-bold"
+    >
+      &times;
+    </button>
+
+    <h2 class="text-xl font-bold text-slate-800 mb-4">
+      Registar Vendedor
+    </h2>
+
+    <p class="text-xs text-slate-500 mb-4">
+      Crie sua conta para começar a vender hoje.
+    </p>
+
+
+    <form onsubmit="fazerRegisto(event)">
+
+      <div class="mb-3">
+
+        <label class="block text-xs font-semibold mb-1 text-slate-600">
+          Nome Completo
+        </label>
+
+        <input
+          type="text"
+          id="regNome"
+          required
+          class="w-full border border-slate-200 p-2 rounded-xl text-sm"
+        >
+
+      </div>
+
+
+      <div class="mb-3">
+
+        <label class="block text-xs font-semibold mb-1 text-slate-600">
+          Telefone
+        </label>
+
+        <input
+          type="tel"
+          id="regTelefone"
+          placeholder="841234567"
+          required
+          class="w-full border border-slate-200 p-2 rounded-xl text-sm"
+        >
+
+      </div>
+
+
+      <div class="mb-3">
+
+        <label class="block text-xs font-semibold mb-1 text-slate-600">
+          Número do BI
+        </label>
+
+        <input
+          type="text"
+          id="regBi"
+          required
+          class="w-full border border-slate-200 p-2 rounded-xl text-sm"
+        >
+
+      </div>
+
+
+      <div class="mb-3">
+
+        <label class="block text-xs font-semibold mb-1 text-slate-600">
+          Nome da Empresa / Marca
+        </label>
+
+        <input
+          type="text"
+          id="regEmpresa"
+          required
+          class="w-full border border-slate-200 p-2 rounded-xl text-sm"
+        >
+
+      </div>
+
+
+      <div class="mb-3">
+
+        <label class="block text-xs font-semibold mb-1 text-slate-600">
+          PIN Secreto
+        </label>
+
+        <input
+          type="password"
+          id="regPin"
+          required
+          minlength="4"
+          inputmode="numeric"
+          class="w-full border border-slate-200 p-2 rounded-xl text-sm"
+        >
+
+      </div>
+
+
+      <div class="mb-3">
+
+        <label class="block text-xs font-semibold mb-1 text-slate-600">
+          Plano Inicial
+        </label>
+
         <select
-          id="selectCategoria"
-          class="w-full md:w-48 px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm font-medium"
+          id="regPlano"
+          class="w-full border border-slate-200 p-2 rounded-xl text-sm"
         >
-          <option value="">Todas Categorias</option>
-          <option value="FISICO">📦 Produtos Físicos</option>
-          <option value="DIGITAL">⚡ Produtos Digitais</option>
+
+          <option value="SIMPLES">
+            Plano Simples
+          </option>
+
         </select>
-        <button
-          onclick="carregarProdutos()"
-          class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-semibold text-sm transition shadow-sm shadow-blue-600/30 flex items-center justify-center gap-2"
-        >
-          <i class="fa-solid fa-filter"></i> Filtrar
-        </button>
+
       </div>
+
+
+      <div class="mb-4 bg-amber-50 p-3 rounded-xl border border-amber-200/60">
+
+        <label class="flex items-start gap-2 text-xs text-slate-700 cursor-pointer">
+
+          <input
+            type="checkbox"
+            id="regAceitaTermos"
+            required
+            class="mt-0.5 rounded border-slate-300 text-blue-600"
+          >
+
+          <span>
+
+            Declaro que li e concordo com os
+
+            <button
+              type="button"
+              onclick="abrirModalTermos()"
+              class="text-blue-600 underline font-semibold"
+            >
+              Termos de Uso
+            </button>.
+
+            Estou ciente de que vendas fraudulentas ou ilegalidades resultam em banimento imediato.
+
+          </span>
+
+        </label>
+
+      </div>
+
+
+      <button
+        type="submit"
+        id="btnRegisto"
+        class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-semibold transition"
+      >
+        Registar Conta
+      </button>
+
+    </form>
+
+  </div>
+
+</div>
+
+
+<!-- =========================================================
+     TERMOS
+========================================================= -->
+
+<div
+  id="modalTermos"
+  class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex justify-center items-center p-4 z-[60]"
+>
+
+  <div class="bg-white p-8 rounded-2xl max-w-lg w-full relative shadow-xl max-h-[85vh] overflow-y-auto">
+
+    <button
+      onclick="fecharModal('modalTermos')"
+      class="absolute top-3 right-4 text-slate-400 hover:text-slate-600 text-2xl font-bold"
+    >
+      &times;
+    </button>
+
+    <div class="flex items-center gap-2 mb-4">
+
+      <i class="fa-solid fa-gavel text-red-600"></i>
+
+      <h3 class="text-lg font-bold text-slate-800">
+        Termos de Uso & Segurança
+      </h3>
+
     </div>
 
-    <!-- Lista de produtos -->
-    <div id="gridProdutos" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-      <div class="col-span-full py-12 text-center text-slate-400">
-        <i class="fa-solid fa-spinner fa-spin text-3xl mb-3"></i>
-        <p class="font-medium">Carregando catálogo...</p>
-      </div>
-    </div>
-  </main>
 
-  <!-- FOOTER -->
-  <footer class="bg-slate-900 text-slate-400 py-8 border-t border-slate-800">
-    <div class="container mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-8">
-      <!-- Sobre -->
-      <div>
-        <div class="flex items-center space-x-2 mb-3">
-          <i class="fa-solid fa-store text-amber-400 text-xl"></i>
-          <span class="font-bold text-lg">MOZ1VENDAS</span>
-        </div>
-        <p class="text-xs leading-relaxed">
-          Sua plataforma confiável de vendas online em Moçambique.
+    <div class="space-y-4 text-xs text-slate-600 leading-relaxed">
+
+      <p class="font-semibold text-slate-800">
+
+        Ao utilizar a plataforma MOZ1VENDAS, você concorda expressamente com os seguintes termos:
+
+      </p>
+
+
+      <div class="bg-red-50 p-3 rounded-xl border border-red-200 text-red-800">
+
+        <p class="font-bold mb-2">
+          🚫 Proibições Estritas:
         </p>
-      </div>
-      <!-- Políticas -->
-      <div>
-        <h4 class="text-white font-semibold mb-3 text-sm">Políticas & Segurança</h4>
-        <ul class="space-y-2 text-xs">
-          <li><button onclick="abrirModalTermos()" class="hover:text-blue-400 transition">Termos de Uso e Condições</button></li>
-          <li><button onclick="abrirModalTermos()" class="hover:text-blue-400 transition">Política de Zero Tolerância contra Fraudes</button></li>
+
+        <ul class="list-disc pl-4 space-y-1">
+
+          <li>
+            Produtos roubados, furtados ou de procedência ilegal.
+          </li>
+
+          <li>
+            Venda de cópias não autorizadas, pirataria, cursos falsos ou golpes.
+          </li>
+
+          <li>
+            Múltiplos perfis falsos para enganar clientes.
+          </li>
+
         </ul>
+
       </div>
-      <!-- Contato -->
+
+
+      <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+
+        <p class="font-bold mb-1">
+          ⚖️ Penalizações & Banimento:
+        </p>
+
+        <p>
+          Atividades suspeitas ou fraude confirmada podem levar a banimento, bloqueio e denúncia às autoridades competentes.
+        </p>
+
+      </div>
+
+
+      <p class="text-[11px]">
+
+        Dúvidas? Contate-nos pelo WhatsApp:
+        <strong>+258 860 407 269</strong>.
+
+      </p>
+
+    </div>
+
+
+    <button
+      onclick="fecharModal('modalTermos')"
+      class="w-full mt-6 bg-slate-800 hover:bg-slate-900 text-white py-2.5 rounded-xl font-semibold text-xs transition"
+    >
+      Entendido
+    </button>
+
+  </div>
+
+</div>
+
+
+<!-- =========================================================
+     PAINEL VENDEDOR
+========================================================= -->
+
+<div
+  id="modalPainelVendedor"
+  class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex justify-center items-center p-4 z-50"
+>
+
+  <div class="bg-white p-8 rounded-2xl max-w-2xl w-full relative shadow-xl max-h-[90vh] overflow-y-auto">
+
+    <button
+      onclick="fecharModal('modalPainelVendedor')"
+      class="absolute top-3 right-4 text-slate-400 hover:text-slate-600 text-2xl font-bold"
+    >
+      &times;
+    </button>
+
+
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6 pb-4 border-b border-slate-100">
+
       <div>
-        <h4 class="text-white font-semibold mb-3 text-sm">Atendimento ao Cliente</h4>
-        <a href="https://wa.me/258860407269" target="_blank" class="flex items-center gap-2 text-emerald-400 text-xs hover:underline">
-          <i class="fa-brands fa-whatsapp"></i> +258 860 407 269 (WhatsApp)
-        </a>
-      </div>
-    </div>
-    <div class="mt-8 pt-6 border-t border-slate-800 text-center text-[11px] text-slate-500">
-      &copy; MOZ1VENDAS - Todos os direitos reservados.
-    </div>
-  </footer>
 
-  <!-- MODAIS -->
-  <!-- Autenticação -->
-  <div id="modalAuth" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex justify-center items-center p-4 z-50">
-    <div class="bg-white p-8 rounded-2xl max-w-sm w-full relative shadow-xl border border-slate-100">
-      <button onclick="fecharModal('modalAuth')" class="absolute top-3 right-4 text-slate-400 hover:text-slate-600 text-2xl font-bold">&times;</button>
-      <div class="flex justify-center mb-4">
-        <div class="w-14 h-14 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center text-xl shadow-md">
-          <i class="fa-solid fa-user-gear"></i>
-        </div>
+        <h2 class="text-xl font-bold text-slate-800">
+          Painel do Vendedor
+        </h2>
+
+        <p class="text-xs text-slate-500">
+          Gerencie seu catálogo de produtos cadastrados.
+        </p>
+
       </div>
-      <h2 class="text-xl font-bold text-slate-800 mb-2 text-center">Área do Vendedor</h2>
-      <p class="text-xs text-slate-500 mb-6 text-center">Acesse sua conta para gerenciar produtos.</p>
-      <div class="flex flex-col gap-3">
-        <button onclick="trocarModalAuth('modalAuth', 'modalLogin')" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl font-semibold transition">Entrar na Conta</button>
-        <button onclick="trocarModalAuth('modalAuth', 'modalRegisto')" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-xl font-semibold transition">Criar Nova Conta</button>
-      </div>
+
+
+      <button
+        onclick="abrirModalCriarProduto()"
+        class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl font-bold text-xs transition flex items-center gap-1.5"
+      >
+
+        <i class="fa-solid fa-plus"></i>
+
+        Adicionar Produto
+
+      </button>
+
     </div>
+
+
+    <h3 class="font-bold text-sm text-slate-700 mb-3">
+      Meus Produtos Cadastrados
+    </h3>
+
+
+    <div
+      id="listaMeusProdutos"
+      class="space-y-3"
+    >
+
+      <p class="text-slate-500 text-center py-4 text-xs">
+        Carregando seus produtos...
+      </p>
+
+    </div>
+
   </div>
 
-  <!-- Modal Login -->
-  <div id="modalLogin" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex justify-center items-center p-4 z-50">
-    <div class="bg-white p-8 rounded-2xl max-w-md w-full relative shadow-xl border border-slate-100">
-      <button onclick="fecharModal('modalLogin')" class="absolute top-3 right-4 text-slate-400 hover:text-slate-600 text-2xl font-bold">&times;</button>
-      <h2 class="text-xl font-bold text-slate-800 mb-4">Entrar como Vendedor</h2>
-      <form onsubmit="fazerLogin(event)">
-        <div class="mb-4">
-          <label class="block text-xs font-semibold mb-1 text-slate-600">Empresa ou Telefone</label>
-          <input type="text" id="loginIdentificador" required class="w-full border border-slate-200 p-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm" />
-        </div>
-        <div class="mb-6">
-          <label class="block text-xs font-semibold mb-1 text-slate-600">PIN Numérico</label>
-          <input type="password" id="loginPin" required class="w-full border border-slate-200 p-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm" />
-        </div>
-        <button type="submit" id="btnLogin" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-semibold transition">Entrar</button>
-      </form>
-    </div>
-  </div>
+</div>
 
-  <!-- Modal Registo -->
-  <div id="modalRegisto" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex justify-center items-center p-4 z-50 overflow-y-auto max-h-[90vh]">
-    <div class="bg-white p-8 rounded-2xl max-w-md w-full relative shadow-xl border border-slate-100">
-      <button onclick="fecharModal('modalRegisto')" class="absolute top-3 right-4 text-slate-400 hover:text-slate-600 text-2xl font-bold">&times;</button>
-      <h2 class="text-xl font-bold text-slate-800 mb-4">Registar Vendedor</h2>
-      <p class="text-xs text-slate-500 mb-4">Crie sua conta para começar a vender hoje.</p>
-      <form onsubmit="fazerRegisto(event)">
-        <!-- Campos -->
-        <div class="mb-3">
-          <label class="block text-xs font-semibold mb-1 text-slate-600">Nome Completo</label>
-          <input type="text" id="regNome" required class="w-full border border-slate-200 p-2 rounded-xl text-sm" />
-        </div>
-        <div class="mb-3">
-          <label class="block text-xs font-semibold mb-1 text-slate-600">Telefone</label>
-          <input type="tel" id="regTelefone" placeholder="841234567" required class="w-full border border-slate-200 p-2 rounded-xl text-sm" />
-        </div>
-        <div class="mb-3">
-          <label class="block text-xs font-semibold mb-1 text-slate-600">Número do BI</label>
-          <input type="text" id="regBi" required class="w-full border border-slate-200 p-2 rounded-xl text-sm" />
-        </div>
-        <div class="mb-3">
-          <label class="block text-xs font-semibold mb-1 text-slate-600">Nome da Empresa / Marca</label>
-          <input type="text" id="regEmpresa" required class="w-full border border-slate-200 p-2 rounded-xl text-sm" />
-        </div>
-        <div class="mb-3">
-          <label class="block text-xs font-semibold mb-1 text-slate-600">PIN Secreto</label>
-          <input type="password" id="regPin" required class="w-full border border-slate-200 p-2 rounded-xl text-sm" />
-        </div>
-        <div class="mb-3">
-          <label class="block text-xs font-semibold mb-1 text-slate-600">Plano Inicial</label>
-          <select id="regPlano" class="w-full border border-slate-200 p-2 rounded-xl text-sm">
-            <option value="SIMPLES">Plano Simples</option>
-          </select>
-        </div>
-        <!-- Termos -->
-        <div class="mb-4 bg-amber-50 p-3 rounded-xl border border-amber-200/60">
-          <label class="flex items-start gap-2 text-xs text-slate-700 cursor-pointer">
-            <input type="checkbox" id="regAceitaTermos" required class="mt-0.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
-            <span>Declaro que li e concordo com os <button type="button" onclick="abrirModalTermos()" class="text-blue-600 underline font-semibold">Termos de Uso</button>. Estou ciente de que vendas fraudulentas ou ilegalidades resultam em banimento imediato.</span>
-          </label>
-        </div>
-        <button type="submit" id="btnRegisto" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-semibold transition">Registar Conta</button>
-      </form>
-    </div>
-  </div>
 
-  <!-- Termos de Uso -->
-  <div id="modalTermos" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex justify-center items-center p-4 z-50 overflow-y-auto max-h-[85vh]">
-    <div class="bg-white p-8 rounded-2xl max-w-lg w-full relative shadow-xl border border-slate-100 max-h-[85vh] overflow-y-auto">
-      <button onclick="fecharModal('modalTermos')" class="absolute top-3 right-4 text-slate-400 hover:text-slate-600 text-2xl font-bold">&times;</button>
-      <div class="flex items-center gap-2 mb-4">
-        <i class="fa-solid fa-gavel text-red-600"></i>
-        <h3 class="text-lg font-bold text-slate-800">Termos de Uso & Segurança</h3>
+<!-- =========================================================
+     CRIAR PRODUTO
+========================================================= -->
+
+<div
+  id="modalCriarProduto"
+  class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex justify-center items-center p-4 z-50"
+>
+
+  <div class="bg-white p-8 rounded-2xl max-w-md w-full relative shadow-xl max-h-[90vh] overflow-y-auto">
+
+    <button
+      onclick="fecharModal('modalCriarProduto')"
+      class="absolute top-3 right-4 text-slate-400 hover:text-slate-600 text-2xl font-bold"
+    >
+      &times;
+    </button>
+
+
+    <h2 class="text-xl font-bold text-slate-800 mb-4">
+      Novo Produto
+    </h2>
+
+
+    <form onsubmit="salvarProduto(event)">
+
+      <div class="mb-3">
+
+        <label class="block text-xs font-semibold mb-1 text-slate-600">
+          Nome do Produto
+        </label>
+
+        <input
+          type="text"
+          id="prodNome"
+          required
+          class="w-full border border-slate-200 p-2 rounded-xl text-sm"
+        >
+
       </div>
-      <div class="space-y-4 text-xs text-slate-600 leading-relaxed max-h-[70vh] overflow-y-auto">
-        <p class="font-semibold text-slate-800">Ao utilizar a plataforma MOZ1VENDAS, você concorda expressamente com os seguintes termos:</p>
-        <div class="bg-red-50 p-3 rounded-xl border border-red-200 text-red-800 space-y-2">
-          <p class="font-bold">🚫 Proibições Estritas:</p>
-          <ul class="list-disc pl-4 space-y-1">
-            <li>Produtos roubados, furtados ou sem procedência ilegal.</li>
-            <li>Venda de cópias não autorizadas, pirataria, cursos falsos, golpes.</li>
-            <li>Múltiplos perfis falsos para enganar clientes.</li>
-          </ul>
-        </div>
-        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
-          <p class="font-bold mb-1">⚖️ Penalizações & Banimento:</p>
-          <p>Atividades suspeitas ou fraude confirmada levam a banimento imediato, bloqueio e denúncia às autoridades.</p>
-        </div>
-        <p class="text-[11px] mt-4">Dúvidas? Contate-nos pelo WhatsApp: <strong>+258 860 407 269</strong>.</p>
+
+
+      <div class="mb-3">
+
+        <label class="block text-xs font-semibold mb-1 text-slate-600">
+          Descrição
+        </label>
+
+        <textarea
+          id="prodDescricao"
+          required
+          rows="2"
+          class="w-full border border-slate-200 p-2 rounded-xl text-sm"
+        ></textarea>
+
       </div>
-      <button onclick="fecharModal('modalTermos')" class="w-full mt-6 bg-slate-800 hover:bg-slate-900 text-white py-2.5 rounded-xl font-semibold text-xs transition">Entendido</button>
-    </div>
-  </div>
 
-  <!-- Painel do Vendedor -->
-  <div id="modalPainelVendedor" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex justify-center items-center p-4 z-50">
-    <div class="bg-white p-8 rounded-2xl max-w-2xl w-full relative shadow-xl border border-slate-100 max-h-[90vh] overflow-y-auto">
-      <button onclick="fecharModal('modalPainelVendedor')" class="absolute top-3 right-4 text-slate-400 hover:text-slate-600 text-2xl font-bold">&times;</button>
-      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6 pb-4 border-b border-slate-100">
-        <div>
-          <h2 class="text-xl font-bold text-slate-800">Painel do Vendedor</h2>
-          <p class="text-xs text-slate-500">Gerencie seu catálogo de produtos cadastrados.</p>
-        </div>
-        <button onclick="abrirModalCriarProduto()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl font-bold text-xs transition flex items-center gap-1.5 shadow-sm shadow-emerald-600/30">
-          <i class="fa-solid fa-plus"></i> Adicionar Produto
-        </button>
+
+      <div class="mb-3">
+
+        <label class="block text-xs font-semibold mb-1 text-slate-600">
+          Link / URL da Imagem
+        </label>
+
+        <input
+          type="url"
+          id="prodImagem"
+          placeholder="Cole o link aqui..."
+          class="w-full border border-slate-200 p-2 rounded-xl text-sm"
+        >
+
       </div>
-      <h3 class="font-bold text-sm text-slate-700 mb-3">Meus Produtos Cadastrados</h3>
-      <div id="listaMeusProdutos" class="space-y-3">
-        <p class="text-slate-500 text-center py-4 text-xs">Carregando seus produtos...</p>
+
+
+      <div class="mb-3">
+
+        <label class="block text-xs font-semibold mb-1 text-slate-600">
+          Preço (MT)
+        </label>
+
+        <input
+          type="number"
+          step="0.01"
+          min="0.01"
+          id="prodPreco"
+          required
+          class="w-full border border-slate-200 p-2 rounded-xl text-sm"
+        >
+
       </div>
-    </div>
+
+
+      <div class="mb-3">
+
+        <label class="block text-xs font-semibold mb-1 text-slate-600">
+          Tipo de Produto
+        </label>
+
+        <select
+          id="prodTipo"
+          onchange="alternarCamposTipo()"
+          class="w-full border border-slate-200 p-2 rounded-xl text-sm"
+        >
+
+          <option value="FISICO">
+            Físico
+          </option>
+
+          <option value="DIGITAL">
+            Digital (PDF, E-book, Cursos)
+          </option>
+
+        </select>
+
+      </div>
+
+
+      <div class="mb-3">
+
+        <label class="block text-xs font-semibold mb-1 text-slate-600">
+          Método de Recebimento
+        </label>
+
+        <select
+          id="prodMetodo"
+          onchange="alternarCamposTipo()"
+          class="w-full border border-slate-200 p-2 rounded-xl text-sm"
+        >
+
+          <option value="NETSHOP">
+            Netshop (M-Pesa / e-Mola)
+          </option>
+
+          <option value="WHATSAPP">
+            WhatsApp Direto
+          </option>
+
+        </select>
+
+      </div>
+
+
+      <div
+        class="mb-3"
+        id="campoWhatsapp"
+      >
+
+        <label class="block text-xs font-semibold mb-1 text-slate-600">
+          WhatsApp para Contato
+        </label>
+
+        <input
+          type="tel"
+          id="prodWhatsapp"
+          placeholder="258841234567"
+          class="w-full border border-slate-200 p-2 rounded-xl text-sm"
+        >
+
+      </div>
+
+
+      <div
+        class="mb-4 hidden"
+        id="campoDownload"
+      >
+
+        <label class="block text-xs font-semibold mb-1 text-slate-600">
+          Link do Arquivo / PDF
+        </label>
+
+        <input
+          type="url"
+          id="prodDownload"
+          placeholder="https://drive.google.com/..."
+          class="w-full border border-slate-200 p-2 rounded-xl text-sm"
+        >
+
+        <p class="text-[11px] text-slate-400 mt-1">
+          Pode colar um link de partilha.
+        </p>
+
+      </div>
+
+
+      <button
+        type="submit"
+        id="btnSalvarProd"
+        class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-semibold transition"
+      >
+        Publicar Produto
+      </button>
+
+    </form>
+
   </div>
 
-  <!-- Modal Criar Produto -->
-  <div id="modalCriarProduto" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex justify-center items-center p-4 z-50">
-    <div class="bg-white p-8 rounded-2xl max-w-md w-full relative shadow-xl border border-slate-100 max-h-[90vh] overflow-y-auto">
-      <button onclick="fecharModal('modalCriarProduto')" class="absolute top-3 right-4 text-slate-400 hover:text-slate-600 text-2xl font-bold">&times;</button>
-      <h2 class="text-xl font-bold text-slate-800 mb-4">Novo Produto</h2>
-      <form onsubmit="salvarProduto(event)">
-        <!-- Campos do produto -->
-        <div class="mb-3">
-          <label class="block text-xs font-semibold mb-1 text-slate-600">Nome do Produto</label>
-          <input type="text" id="prodNome" required class="w-full border border-slate-200 p-2 rounded-xl text-sm"/>
-        </div>
-        <div class="mb-3">
-          <label class="block text-xs font-semibold mb-1 text-slate-600">Descrição</label>
-          <textarea id="prodDescricao" required class="w-full border border-slate-200 p-2 rounded-xl text-sm" rows="2"></textarea>
-        </div>
-        <div class="mb-3">
-          <label class="block text-xs font-semibold mb-1 text-slate-600">Link / URL da Imagem</label>
-          <input type="url" id="prodImagem" placeholder="Cole o link aqui..." class="w-full border border-slate-200 p-2 rounded-xl text-sm"/>
-        </div>
-        <div class="mb-3">
-          <label class="block text-xs font-semibold mb-1 text-slate-600">Preço (MT)</label>
-          <input type="number" step="0.01" id="prodPreco" required class="w-full border border-slate-200 p-2 rounded-xl text-sm"/>
-        </div>
-        <div class="mb-3">
-          <label class="block text-xs font-semibold mb-1 text-slate-600">Tipo de Produto</label>
-          <select id="prodTipo" onchange="alternarCamposTipo()" class="w-full border border-slate-200 p-2 rounded-xl text-sm">
-            <option value="FISICO">Físico</option>
-            <option value="DIGITAL">Digital (PDF, E-book, Cursos)</option>
-          </select>
-        </div>
-        <div class="mb-3">
-          <label class="block text-xs font-semibold mb-1 text-slate-600">Método de Recebimento</label>
-          <select id="prodMetodo" onchange="alternarCamposTipo()" class="w-full border border-slate-200 p-2 rounded-xl text-sm">
-            <option value="NETSHOP">Netshop (M-Pesa / e-Mola)</option>
-            <option value="WHATSAPP">WhatsApp Direto</option>
-          </select>
-        </div>
-        <!-- WhatsApp contato -->
-        <div class="mb-3" id="campoWhatsapp">
-          <label class="block text-xs font-semibold mb-1 text-slate-600">WhatsApp para Contato</label>
-          <input type="tel" id="prodWhatsapp" placeholder="258841234567" class="w-full border border-slate-200 p-2 rounded-xl text-sm"/>
-        </div>
-        <!-- Link download digital -->
-        <div class="mb-4 hidden" id="campoDownload">
-          <label class="block text-xs font-semibold mb-1 text-slate-600">Link do Arquivo / PDF</label>
-          <input type="url" id="prodDownload" placeholder="https://drive.google.com/..." class="w-full border border-slate-200 p-2 rounded-xl text-sm"/>
-          <p class="text-[11px] text-slate-400 mt-1">Pode colar o link de partilha, o sistema converte para download.</p>
-        </div>
-        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-semibold transition">Publicar Produto</button>
-      </form>
-    </div>
+</div>
+
+
+<!-- =========================================================
+     COMPRA
+========================================================= -->
+
+<div
+  id="modalCompra"
+  class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex justify-center items-center p-4 z-50"
+>
+
+  <div class="bg-white p-8 rounded-2xl max-w-md w-full relative shadow-xl">
+
+    <button
+      onclick="fecharModal('modalCompra')"
+      class="absolute top-3 right-4 text-slate-400 hover:text-slate-600 text-2xl font-bold"
+    >
+      &times;
+    </button>
+
+
+    <h2
+      id="modalTitulo"
+      class="text-xl font-bold text-slate-800 mb-2"
+    >
+      Comprar Produto
+    </h2>
+
+
+    <p
+      id="modalPreco"
+      class="text-lg text-blue-600 font-bold mb-4"
+    ></p>
+
+
+    <form
+      id="formCheckout"
+      onsubmit="processarCompra(event)"
+    >
+
+      <input
+        type="hidden"
+        id="compraProdutoId"
+      >
+
+
+      <div class="mb-4">
+
+        <label class="block text-xs font-semibold mb-1 text-slate-600">
+          Telefone M-Pesa / e-Mola
+        </label>
+
+        <input
+          type="tel"
+          id="clienteTelefone"
+          placeholder="841234567"
+          required
+          class="w-full border border-slate-200 p-2.5 rounded-xl text-sm"
+        >
+
+      </div>
+
+
+      <div class="mb-6">
+
+        <label class="block text-xs font-semibold mb-1 text-slate-600">
+          Carteira Móvel
+        </label>
+
+        <select
+          id="metodoPagamento"
+          class="w-full border border-slate-200 p-2.5 rounded-xl text-sm"
+        >
+
+          <option value="mpesa">
+            M-Pesa
+          </option>
+
+          <option value="emola">
+            e-Mola
+          </option>
+
+        </select>
+
+      </div>
+
+
+      <button
+        type="submit"
+        id="btnPagar"
+        class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-semibold transition"
+      >
+        Pagar com Netshop
+      </button>
+
+    </form>
+
   </div>
 
-  <!-- Modal Compra -->
-  <div id="modalCompra" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex justify-center items-center p-4 z-50">
-    <div class="bg-white p-8 rounded-2xl max-w-md w-full relative shadow-xl border border-slate-100">
-      <button onclick="fecharModal('modalCompra')" class="absolute top-3 right-4 text-slate-400 hover:text-slate-600 text-2xl font-bold">&times;</button>
-      <h2 id="modalTitulo" class="text-xl font-bold text-slate-800 mb-2">Comprar Produto</h2>
-      <p id="modalPreco" class="text-lg text-blue-600 font-bold mb-4"></p>
-      <form id="formCheckout" onsubmit="processarCompra(event)">
-        <input type="hidden" id="compraProdutoId" />
-        <div class="mb-4">
-          <label class="block text-xs font-semibold mb-1 text-slate-600">Telefone M-Pesa / e-Mola</label>
-          <input type="tel" id="clienteTelefone" placeholder="841234567" required class="w-full border border-slate-200 p-2.5 rounded-xl text-sm"/>
-        </div>
-        <div class="mb-6">
-          <label class="block text-xs font-semibold mb-1 text-slate-600">Carteira Móvel</label>
-          <select id="metodoPagamento" class="w-full border border-slate-200 p-2.5 rounded-xl text-sm">
-            <option value="mpesa">M-Pesa</option>
-            <option value="emola">e-Mola</option>
-          </select>
-        </div>
-        <button type="submit" id="btnPagar" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-semibold transition">Pagar com Netshop</button>
-      </form>
-    </div>
-  </div>
+</div>
 
-  <!-- Scripts -->
-  <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbz62rB-RTzLg-h6fXMogftj01-z-sCOtTz0PFo7BoTdalzoVQvnIoOfi5a7vcBhOGMh/exec";
 
-    // Funções utilitárias
-    function formatarUrlImagem(rawUrl) {
-      if (!rawUrl) return 'https://via.placeholder.com/300x200?text=Sem+Imagem';
-      let url = rawUrl.trim();
-      
-      if (url.includes('[img]')) {
-        const match = url.match(/\[img\](.*?)\[\/img\]/i);
-        if (match && match[1]) url = match[1];
-      }
-      if (url.includes('ibb.co/') && !url.includes('i.ibb.co/')) {
-        url = url.replace('ibb.co/', 'i.ibb.co/');
-      }
-      if (url.includes('drive.google.com')) {
-        const idMatch = url.match(/[-\w]{25,}/);
-        if (idMatch) return `https://lh3.googleusercontent.com/d/${idMatch[0]}`;
-      }
-      if (url.includes('dropbox.com')) {
-        return url.replace('www.dropbox.com', 'dl.dropboxusercontent.com').replace('?dl=0', '');
-      }
-      return url;
+<!-- =========================================================
+     JAVASCRIPT
+========================================================= -->
+
+<script>
+
+const GAS_URL =
+"https://script.google.com/macros/s/AKfycbz62rB-RTzLg-h6fXMogftj01-z-sCOtTz0PFo7BoTdalzoVQvnIoOfi5a7vcBhOGMh/exec";
+
+
+/* =========================================================
+   UTILITÁRIOS
+========================================================= */
+
+function escapeHtml(valor) {
+
+  if (valor === null || valor === undefined) {
+    return "";
+  }
+
+  return String(valor)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+
+function numeroSeguro(valor) {
+
+  const n = Number(valor);
+
+  return Number.isFinite(n) ? n : 0;
+
+}
+
+
+/* =========================================================
+   IMAGENS
+========================================================= */
+
+function formatarUrlImagem(rawUrl) {
+
+  if (!rawUrl) {
+
+    return "https://via.placeholder.com/600x400?text=Sem+Imagem";
+
+  }
+
+  let url = String(rawUrl).trim();
+
+  const imgMatch = url.match(
+    /\[img\](.*?)\[\/img\]/i
+  );
+
+  if (imgMatch && imgMatch[1]) {
+
+    url = imgMatch[1].trim();
+
+  }
+
+
+  /*
+   * Imgbb:
+   * O link https://ibb.co/xxxx é página,
+   * não imagem direta.
+   *
+   * Portanto não fazemos mais:
+   * ibb.co -> i.ibb.co
+   */
+
+  if (url.includes("i.ibb.co")) {
+
+    return url;
+
+  }
+
+
+  /*
+   * Google Drive
+   */
+
+  if (url.includes("drive.google.com")) {
+
+    const match = url.match(
+      /[-\w]{25,}/
+    );
+
+    if (match) {
+
+      return "https://lh3.googleusercontent.com/d/" + match[0];
+
     }
 
-    function formatarUrlDownload(rawUrl) {
-      if (!rawUrl) return '';
-      let url = rawUrl.trim();
-      if (url.includes('drive.google.com')) {
-        const idMatch = url.match(/[-\w]{25,}/);
-        if (idMatch) return `https://drive.google.com/uc?export=download&id=${idMatch[0]}`;
-      }
-      if (url.includes('dropbox.com')) {
-        if (url.endsWith('dl=0')) return url.replace('dl=0', 'dl=1');
-        if (!url.includes('dl=')) return url + (url.includes('?') ? '&dl=1' : '?dl=1');
-      }
-      return url;
+  }
+
+
+  /*
+   * Dropbox
+   */
+
+  if (url.includes("dropbox.com")) {
+
+    return url
+      .replace("www.dropbox.com", "dl.dropboxusercontent.com")
+      .replace("?dl=0", "");
+
+  }
+
+
+  return url;
+
+}
+
+
+/* =========================================================
+   DOWNLOAD
+========================================================= */
+
+function formatarUrlDownload(rawUrl) {
+
+  if (!rawUrl) {
+    return "";
+  }
+
+  let url = String(rawUrl).trim();
+
+
+  if (url.includes("drive.google.com")) {
+
+    const match = url.match(
+      /[-\w]{25,}/
+    );
+
+    if (match) {
+
+      return "https://drive.google.com/uc?export=download&id=" + match[0];
+
     }
 
-    // Inicialização
-    document.addEventListener("DOMContentLoaded", () => {
-      carregarProdutos();
+  }
+
+
+  if (url.includes("dropbox.com")) {
+
+    if (url.includes("dl=0")) {
+
+      return url.replace("dl=0", "dl=1");
+
+    }
+
+    if (!url.includes("dl=")) {
+
+      return url +
+        (url.includes("?") ? "&dl=1" : "?dl=1");
+
+    }
+
+  }
+
+
+  return url;
+
+}
+
+
+/* =========================================================
+   RESPOSTA DO GAS
+========================================================= */
+
+async function respostaJson(response) {
+
+  const texto = await response.text();
+
+  if (!texto) {
+
+    throw new Error(
+      "O servidor não devolveu resposta."
+    );
+
+  }
+
+  try {
+
+    return JSON.parse(texto);
+
+  } catch (erro) {
+
+    console.error("Resposta recebida do GAS:", texto);
+
+    throw new Error(
+      "O GAS devolveu uma resposta inválida."
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   INICIALIZAÇÃO
+========================================================= */
+
+document.addEventListener(
+  "DOMContentLoaded",
+  function() {
+
+    carregarProdutos();
+
+    verificarSessao();
+
+    alternarCamposTipo();
+
+  }
+);
+
+
+/* =========================================================
+   MODAIS
+========================================================= */
+
+function abrirModalAuth() {
+
+  document
+    .getElementById("modalAuth")
+    .classList.remove("hidden");
+
+}
+
+
+function abrirModalTermos() {
+
+  document
+    .getElementById("modalTermos")
+    .classList.remove("hidden");
+
+}
+
+
+function trocarModalAuth(fecharId, abrirId) {
+
+  fecharModal(fecharId);
+
+  document
+    .getElementById(abrirId)
+    .classList.remove("hidden");
+
+}
+
+
+function fecharModal(id) {
+
+  const elemento =
+    document.getElementById(id);
+
+  if (elemento) {
+
+    elemento.classList.add("hidden");
+
+  }
+
+}
+
+
+/* =========================================================
+   LOGIN
+========================================================= */
+
+async function fazerLogin(e) {
+
+  e.preventDefault();
+
+  const btn =
+    document.getElementById("btnLogin");
+
+  btn.disabled = true;
+
+  btn.innerText = "Entrando...";
+
+
+  const payload = {
+
+    action: "loginVendedor",
+
+    identificador:
+      document
+        .getElementById("loginIdentificador")
+        .value
+        .trim(),
+
+    pin:
+      document
+        .getElementById("loginPin")
+        .value
+        .trim()
+
+  };
+
+
+  try {
+
+    const response = await fetch(
+      GAS_URL,
+      {
+        method: "POST",
+        body: JSON.stringify(payload)
+      }
+    );
+
+
+    const json =
+      await respostaJson(response);
+
+
+    if (json.ok && json.token) {
+
+      localStorage.setItem(
+        "moz1_token",
+        json.token
+      );
+
+
+      fecharModal("modalLogin");
+
       verificarSessao();
-    });
 
-    // Modal
-    function abrirModalAuth() { document.getElementById("modalAuth").classList.remove("hidden"); }
-    function abrirModalTermos() { document.getElementById("modalTermos").classList.remove("hidden"); }
-    function trocarModalAuth(fecharId, abrirId) { fecharModal(fecharId); document.getElementById(abrirId).classList.remove("hidden"); }
-    function fecharModal(id) { document.getElementById(id).classList.add("hidden"); }
+      abrirPainelVendedor();
 
-    // Autenticação
-    async function fazerLogin(e) {
-      e.preventDefault();
-      const btn = document.getElementById("btnLogin");
-      btn.disabled = true; btn.innerText = "Entrando...";
-      const payload = {
-        action: "loginVendedor",
-        identificador: document.getElementById("loginIdentificador").value,
-        pin: document.getElementById("loginPin").value,
-      };
-      try {
-        const res = await fetch(GAS_URL, {method: "POST", body: JSON.stringify(payload)});
-        const json = await res.json();
-        if (json.ok && json.token) {
-          localStorage.setItem("moz1_token", json.token);
-          fecharModal("modalLogin");
-          verificarSessao();
-          abrirPainelVendedor();
-        } else {
-          alert("Erro: " + (json.erro || "PIN ou utilizador incorreto"));
-        }
-      } catch {
-        alert("Erro na comunicação com o servidor.");
-      } finally {
-        btn.disabled = false; btn.innerText = "Entrar";
+      return;
+
+    }
+
+
+    alert(
+      "Erro: " +
+      (
+        json.erro ||
+        json.msg ||
+        "PIN ou utilizador incorreto."
+      )
+    );
+
+
+  } catch (erro) {
+
+    console.error(erro);
+
+    alert(
+      "Erro na comunicação com o servidor."
+    );
+
+  } finally {
+
+    btn.disabled = false;
+
+    btn.innerText = "Entrar";
+
+  }
+
+}
+
+
+/* =========================================================
+   REGISTO
+========================================================= */
+
+async function fazerRegisto(e) {
+
+  e.preventDefault();
+
+  const btn =
+    document.getElementById("btnRegisto");
+
+  btn.disabled = true;
+
+  btn.innerText = "Registando...";
+
+
+  const payload = {
+
+    action: "registarVendedor",
+
+    nome:
+      document
+        .getElementById("regNome")
+        .value
+        .trim(),
+
+    telefone:
+      document
+        .getElementById("regTelefone")
+        .value
+        .trim(),
+
+    bi:
+      document
+        .getElementById("regBi")
+        .value
+        .trim(),
+
+    empresa:
+      document
+        .getElementById("regEmpresa")
+        .value
+        .trim(),
+
+    pin:
+      document
+        .getElementById("regPin")
+        .value
+        .trim(),
+
+    plano:
+      document
+        .getElementById("regPlano")
+        .value,
+
+    aceitaTermos:
+      document
+        .getElementById("regAceitaTermos")
+        .checked
+
+  };
+
+
+  try {
+
+    const response = await fetch(
+      GAS_URL,
+      {
+        method: "POST",
+        body: JSON.stringify(payload)
       }
+    );
+
+
+    const json =
+      await respostaJson(response);
+
+
+    if (json.ok) {
+
+      alert(
+        json.msg ||
+        "Conta criada com sucesso! Faça login."
+      );
+
+
+      fecharModal("modalRegisto");
+
+      document
+        .getElementById("modalLogin")
+        .classList.remove("hidden");
+
+
+      document
+        .getElementById("loginIdentificador")
+        .value =
+        payload.telefone;
+
+
+      return;
+
     }
 
-    async function fazerRegisto(e) {
-      e.preventDefault();
-      const btn = document.getElementById("btnRegisto");
-      btn.disabled = true; btn.innerText = "Registando...";
-      const payload = {
-        action: "registarVendedor",
-        nome: document.getElementById("regNome").value,
-        telefone: document.getElementById("regTelefone").value,
-        bi: document.getElementById("regBi").value,
-        empresa: document.getElementById("regEmpresa").value,
-        pin: document.getElementById("regPin").value,
-        plano: document.getElementById("regPlano").value,
-      };
-      try {
-        const res = await fetch(GAS_URL, {method: "POST", body: JSON.stringify(payload)});
-        const json = await res.json();
-        if (json.ok) {
-          alert(json.msg || "Conta criada com sucesso! Faça login.");
-          fecharModal("modalRegisto");
-          trocarModalAuth('modalRegisto', 'modalLogin');
-        } else {
-          alert("Erro: " + (json.erro || "Falha ao criar conta"));
-        }
-      } catch {
-        alert("Erro na comunicação com o servidor.");
-      } finally {
-        btn.disabled = false; btn.innerText = "Registar Conta";
-      }
-    }
 
-    function verificarSessao() {
-      const token = localStorage.getItem("moz1_token");
-      const authArea = document.getElementById("authArea");
-      if (token) {
-        authArea.innerHTML = `
-          <button onclick="abrirPainelVendedor()" class="bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition border border-white/20">Meus Produtos</button>
-          <button onclick="sair()" class="bg-red-500/80 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition">Sair</button>
-        `;
-      } else {
-        authArea.innerHTML = `
-          <button onclick="abrirModalAuth()" class="bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition border border-white/20">Entrar / Registar</button>
-        `;
-      }
-    }
+    alert(
+      "Erro: " +
+      (
+        json.erro ||
+        json.msg ||
+        "Falha ao criar conta."
+      )
+    );
 
-    function sair() { localStorage.removeItem("moz1_token"); verificarSessao(); }
 
-    // Gestão de produtos
-    function abrirPainelVendedor() {
-      document.getElementById("modalPainelVendedor").classList.remove("hidden");
-      carregarMeusProdutos();
-    }
+  } catch (erro) {
 
-    async function carregarMeusProdutos() {
-      const container = document.getElementById("listaMeusProdutos");
-      const token = localStorage.getItem("moz1_token");
-      if (!token) return;
-      container.innerHTML = `<p class="text-slate-400 text-center py-4 text-xs">Carregando seus produtos...</p>`;
-      try {
-        const res = await fetch(`${GAS_URL}?action=meusProdutos&token=${encodeURIComponent(token)}`);
-        const produtos = await res.json();
-        if (Array.isArray(produtos) && produtos.length > 0) {
-          container.innerHTML = produtos.map(p => `
-            <div class="border border-slate-200 p-3 rounded-xl flex justify-between items-center bg-slate-50 hover:shadow-md transition">
-              <div>
-                <p class="font-bold text-slate-800 text-sm">${p.nome}</p>
-                <p class="text-xs text-slate-500">${p.preco} MT | Status: <span class="font-bold ${p.status === 'ATIVO' ? 'text-emerald-600' : 'text-red-600'}">${p.status}</span></p>
-              </div>
-              <span class="text-[10px] font-bold bg-slate-200 text-slate-700 px-2 py-1 rounded-md uppercase">${p.tipo}</span>
-            </div>
-          `).join('');
-        } else {
-          container.innerHTML = `<p class="text-slate-400 text-center py-4 text-xs">Você ainda não tem produtos cadastrados.</p>`;
-        }
-      } catch {
-        container.innerHTML = `<p class="text-red-500 text-center py-4 text-xs">Erro ao carregar produtos.</p>`;
-      }
-    }
+    console.error(erro);
 
-    function abrirModalCriarProduto() {
-      document.getElementById("modalCriarProduto").classList.remove("hidden");
-      alternarCamposTipo();
-    }
+    alert(
+      "Erro na comunicação com o servidor."
+    );
 
-    function alternarCamposTipo() {
-      const tipo = document.getElementById("prodTipo").value;
-      const metodo = document.getElementById("prodMetodo");
-      const campoDownload = document.getElementById("campoDownload");
-      const campoWhatsapp = document.getElementById("campoWhatsapp");
-      if (tipo === "DIGITAL") {
-        metodo.value = "NETSHOP";
-        metodo.disabled = true;
-        campoDownload.classList.remove("hidden");
-        campoWhatsapp.classList.add("hidden");
-      } else {
-        metodo.disabled = false;
-        campoDownload.classList.add("hidden");
-        if (metodo.value === "WHATSAPP") {
-          campoWhatsapp.classList.remove("hidden");
-        } else {
-          campoWhatsapp.classList.add("hidden");
-        }
-      }
-    }
+  } finally {
 
-    async function salvarProduto(e) {
-      e.preventDefault();
-      const btn = document.getElementById("btnSalvarProd");
-      const token = localStorage.getItem("moz1_token");
-      btn.disabled = true; btn.innerText = "Salvando...";
-      const rawImagem = document.getElementById("prodImagem").value;
-      const rawDownload = document.getElementById("prodDownload").value;
-      const payload = {
-        action: "criarProduto",
-        token: token,
-        nome: document.getElementById("prodNome").value,
-        descricao: document.getElementById("prodDescricao").value,
-        imagemUrl: formatarUrlImagem(rawImagem),
-        preco: parseFloat(document.getElementById("prodPreco").value),
-        tipo: document.getElementById("prodTipo").value,
-        metodoPagamento: document.getElementById("prodMetodo").value,
-        whatsapp: document.getElementById("prodWhatsapp").value,
-        downloadUrl: formatarUrlDownload(rawDownload),
-      };
-      try {
-        const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify(payload) });
-        const json = await res.json();
-        if (json.ok) {
-          alert(json.msg || "Produto cadastrado com sucesso!");
-          fecharModal("modalCriarProduto");
-          carregarMeusProdutos();
-          carregarProdutos();
-        } else {
-          alert("Erro: " + (json.erro || "Falha ao criar produto"));
-        }
-      } catch {
-        alert("Erro na comunicação com o servidor.");
-      } finally {
-        btn.disabled = false; btn.innerText = "Publicar Produto";
-      }
-    }
+    btn.disabled = false;
 
-    async function carregarProdutos() {
-      const grid = document.getElementById("gridProdutos");
-      grid.innerHTML = `
-        <div class="col-span-full py-12 text-center">
-          <i class="fa-solid fa-spinner fa-spin text-3xl text-blue-600 mb-3"></i>
-          <p class="text-slate-500 font-medium">Carregando produtos...</p>
+    btn.innerText = "Registar Conta";
+
+  }
+
+}
+
+
+/* =========================================================
+   SESSÃO
+========================================================= */
+
+function verificarSessao() {
+
+  const token =
+    localStorage.getItem("moz1_token");
+
+  const authArea =
+    document.getElementById("authArea");
+
+
+  if (token) {
+
+    authArea.innerHTML = `
+
+      <button
+        onclick="abrirPainelVendedor()"
+        class="bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition border border-white/20"
+      >
+        <i class="fa-solid fa-box"></i>
+        Meus Produtos
+      </button>
+
+      <button
+        onclick="sair()"
+        class="bg-red-500/80 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition"
+      >
+        Sair
+      </button>
+
+    `;
+
+  } else {
+
+    authArea.innerHTML = `
+
+      <button
+        onclick="abrirModalAuth()"
+        class="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg text-sm font-semibold transition border border-white/20"
+      >
+        Entrar / Registar
+      </button>
+
+    `;
+
+  }
+
+}
+
+
+function sair() {
+
+  localStorage.removeItem(
+    "moz1_token"
+  );
+
+  fecharModal(
+    "modalPainelVendedor"
+  );
+
+  verificarSessao();
+
+}
+
+
+/* =========================================================
+   PAINEL VENDEDOR
+========================================================= */
+
+function abrirPainelVendedor() {
+
+  const token =
+    localStorage.getItem("moz1_token");
+
+
+  if (!token) {
+
+    abrirModalAuth();
+
+    return;
+
+  }
+
+
+  document
+    .getElementById("modalPainelVendedor")
+    .classList.remove("hidden");
+
+
+  carregarMeusProdutos();
+
+}
+
+
+/* =========================================================
+   MEUS PRODUTOS
+========================================================= */
+
+async function carregarMeusProdutos() {
+
+  const container =
+    document.getElementById(
+      "listaMeusProdutos"
+    );
+
+
+  const token =
+    localStorage.getItem("moz1_token");
+
+
+  if (!token) {
+
+    container.innerHTML =
+      `<p class="text-red-500 text-center py-4 text-xs">
+        Sessão não encontrada.
+      </p>`;
+
+    return;
+
+  }
+
+
+  container.innerHTML = `
+    <p class="text-slate-400 text-center py-4 text-xs">
+      <i class="fa-solid fa-spinner fa-spin mr-1"></i>
+      Carregando seus produtos...
+    </p>
+  `;
+
+
+  try {
+
+    const url =
+      GAS_URL +
+      "?action=meusProdutos&token=" +
+      encodeURIComponent(token);
+
+
+    const response =
+      await fetch(url);
+
+
+    const json =
+      await respostaJson(response);
+
+
+    const produtos =
+      Array.isArray(json)
+        ? json
+        : (
+            Array.isArray(json.produtos)
+              ? json.produtos
+              : []
+          );
+
+
+    if (produtos.length === 0) {
+
+      container.innerHTML = `
+        <div class="text-center py-8">
+
+          <i class="fa-solid fa-box-open text-3xl text-slate-300 mb-3"></i>
+
+          <p class="text-slate-400 text-xs">
+            Você ainda não tem produtos cadastrados.
+          </p>
+
         </div>
       `;
-      const busca = document.getElementById("inputBusca").value;
-      const cat = document.getElementById("selectCategoria").value;
-      try {
-        const res = await fetch(`${GAS_URL}?action=produtos&search=${encodeURIComponent(busca)}&categoria=${encodeURIComponent(cat)}`);
-        const json = await res.json();
-        if (json.ok && json.produtos.length > 0) {
-          grid.innerHTML = json.produtos.map(p => {
-            const imgFinal = formatarUrlImagem(p.imagemUrl);
-            return `
-              <div class="bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden flex flex-col hover:shadow-xl transition">
-                <div class="relative bg-slate-100">
-                  <img src="${imgFinal}" onerror="this.onerror=null; this.src='https://via.placeholder.com/300x200?text=Sem+Imagem';" alt="${p.nome}" class="w-full h-48 object-cover" />
-                  <span class="absolute top-2 right-2 text-[10px] font-extrabold uppercase tracking-wide px-2 py-0.5 rounded-md shadow-sm ${p.tipo === 'DIGITAL' ? 'bg-amber-400 text-amber-950' : 'bg-blue-600 text-white'}">${p.tipo}</span>
-                </div>
-                <div class="p-4 flex flex-col flex-1 justify-between">
-                  <div>
-                    <h3 class="font-bold text-slate-800 text-base line-clamp-1">${p.nome}</h3>
-                    <p class="text-xs text-slate-500 mt-1 line-clamp-2">${p.descricao}</p>
-                  </div>
-                  <div class="mt-4 pt-3 border-t border-slate-100 flex justify-between items-center">
-                    <div>
-                      <p class="text-xs text-slate-400">Preço</p>
-                      <p class="text-blue-700 font-extrabold text-lg">${p.preco} <span class="text-xs font-semibold">MT</span></p>
-                    </div>
-                    <p class="text-[11px] text-slate-400 flex items-center"><i class="fa-solid fa-store"></i> ${p.marca}</p>
-                  </div>
-                </div>
-                <div class="p-4 bg-slate-50 border-t border-slate-200 flex flex-col gap-2">
-                  ${p.metodoPagamento === 'NETSHOP'
-                    ? `<button onclick="abrirCompra('${p.produtoId}', '${p.nome}', ${p.preco})" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl text-xs font-semibold flex justify-center items-center gap-2 transition shadow-sm">
-                        <i class="fa-solid fa-cart-shopping"></i> Comprar Agora
-                      </button>`
-                    : `<a href="https://wa.me/${p.whatsapp}?text=Olá! Tenho interesse no produto: ${encodeURIComponent(p.nome)}" target="_blank" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-xl text-xs font-semibold flex justify-center items-center gap-2 transition shadow-sm">
-                        <i class="fa-brands fa-whatsapp"></i> Contactar WhatsApp
-                      </a>`
-                  }
-                </div>
+
+      return;
+
+    }
+
+
+    container.innerHTML =
+      produtos.map(function(p) {
+
+        const nome =
+          escapeHtml(p.nome || "Produto sem nome");
+
+        const preco =
+          numeroSeguro(p.preco).toFixed(2);
+
+        const status =
+          escapeHtml(p.status || "PENDENTE");
+
+        const tipo =
+          escapeHtml(p.tipo || "FISICO");
+
+
+        const ativo =
+          String(p.status || "").toUpperCase()
+          === "ATIVO";
+
+
+        return `
+
+          <div
+            class="border border-slate-200 p-3 rounded-xl flex justify-between items-center bg-slate-50 hover:shadow-md transition"
+          >
+
+            <div>
+
+              <p class="font-bold text-slate-800 text-sm">
+                ${nome}
+              </p>
+
+              <p class="text-xs text-slate-500">
+
+                ${preco} MT
+
+                |
+
+                Status:
+
+                <span
+                  class="font-bold ${
+                    ativo
+                      ? "text-emerald-600"
+                      : "text-red-600"
+                  }"
+                >
+                  ${status}
+                </span>
+
+              </p>
+
+            </div>
+
+
+            <span
+              class="text-[10px] font-bold bg-slate-200 text-slate-700 px-2 py-1 rounded-md uppercase"
+            >
+              ${tipo}
+            </span>
+
+          </div>
+
+        `;
+
+      }).join("");
+
+
+  } catch (erro) {
+
+    console.error(erro);
+
+    container.innerHTML = `
+      <p class="text-red-500 text-center py-4 text-xs">
+        Erro ao carregar seus produtos.
+      </p>
+    `;
+
+  }
+
+}
+
+
+/* =========================================================
+   CRIAR PRODUTO
+========================================================= */
+
+function abrirModalCriarProduto() {
+
+  const token =
+    localStorage.getItem("moz1_token");
+
+
+  if (!token) {
+
+    abrirModalAuth();
+
+    return;
+
+  }
+
+
+  document
+    .getElementById("modalCriarProduto")
+    .classList.remove("hidden");
+
+
+  alternarCamposTipo();
+
+}
+
+
+function alternarCamposTipo() {
+
+  const tipo =
+    document.getElementById("prodTipo").value;
+
+  const metodo =
+    document.getElementById("prodMetodo");
+
+  const campoDownload =
+    document.getElementById("campoDownload");
+
+  const campoWhatsapp =
+    document.getElementById("campoWhatsapp");
+
+
+  if (tipo === "DIGITAL") {
+
+    metodo.value = "NETSHOP";
+
+    metodo.disabled = true;
+
+    campoDownload
+      .classList
+      .remove("hidden");
+
+    campoWhatsapp
+      .classList
+      .add("hidden");
+
+
+    document
+      .getElementById("prodDownload")
+      .required = true;
+
+
+  } else {
+
+    metodo.disabled = false;
+
+    campoDownload
+      .classList
+      .add("hidden");
+
+
+    document
+      .getElementById("prodDownload")
+      .required = false;
+
+
+    if (metodo.value === "WHATSAPP") {
+
+      campoWhatsapp
+        .classList
+        .remove("hidden");
+
+    } else {
+
+      campoWhatsapp
+        .classList
+        .add("hidden");
+
+    }
+
+  }
+
+}
+
+
+/* =========================================================
+   SALVAR PRODUTO
+========================================================= */
+
+async function salvarProduto(e) {
+
+  e.preventDefault();
+
+
+  const btn =
+    document.getElementById(
+      "btnSalvarProd"
+    );
+
+
+  const token =
+    localStorage.getItem(
+      "moz1_token"
+    );
+
+
+  if (!token) {
+
+    alert(
+      "Sua sessão expirou. Faça login novamente."
+    );
+
+    fecharModal(
+      "modalCriarProduto"
+    );
+
+    abrirModalAuth();
+
+    return;
+
+  }
+
+
+  btn.disabled = true;
+
+  btn.innerText = "Salvando...";
+
+
+  const preco =
+    Number(
+      document.getElementById(
+        "prodPreco"
+      ).value
+    );
+
+
+  if (!Number.isFinite(preco) || preco <= 0) {
+
+    alert(
+      "Informe um preço válido."
+    );
+
+    btn.disabled = false;
+
+    btn.innerText =
+      "Publicar Produto";
+
+    return;
+
+  }
+
+
+  const tipo =
+    document.getElementById(
+      "prodTipo"
+    ).value;
+
+
+  const metodo =
+    document.getElementById(
+      "prodMetodo"
+    ).value;
+
+
+  const payload = {
+
+    action: "criarProduto",
+
+    token: token,
+
+    nome:
+      document
+        .getElementById("prodNome")
+        .value
+        .trim(),
+
+    descricao:
+      document
+        .getElementById("prodDescricao")
+        .value
+        .trim(),
+
+    imagemUrl:
+      formatarUrlImagem(
+        document
+          .getElementById("prodImagem")
+          .value
+      ),
+
+    preco: preco,
+
+    tipo: tipo,
+
+    metodoPagamento: metodo,
+
+    whatsapp:
+      document
+        .getElementById("prodWhatsapp")
+        .value
+        .trim(),
+
+    downloadUrl:
+      formatarUrlDownload(
+        document
+          .getElementById("prodDownload")
+          .value
+      )
+
+  };
+
+
+  try {
+
+    const response =
+      await fetch(
+        GAS_URL,
+        {
+          method: "POST",
+          body: JSON.stringify(payload)
+        }
+      );
+
+
+    const json =
+      await respostaJson(response);
+
+
+    if (json.ok) {
+
+      alert(
+        json.msg ||
+        "Produto cadastrado com sucesso!"
+      );
+
+
+      fecharModal(
+        "modalCriarProduto"
+      );
+
+
+      document
+        .getElementById("prodNome")
+        .value = "";
+
+      document
+        .getElementById("prodDescricao")
+        .value = "";
+
+      document
+        .getElementById("prodImagem")
+        .value = "";
+
+      document
+        .getElementById("prodPreco")
+        .value = "";
+
+      document
+        .getElementById("prodDownload")
+        .value = "";
+
+
+      await carregarMeusProdutos();
+
+      await carregarProdutos();
+
+
+      return;
+
+    }
+
+
+    /*
+     * Mostra exatamente a mensagem enviada pelo GAS.
+     * Isso é importante para erros como:
+     * "limite de 0 produtos atingido"
+     */
+
+    alert(
+      "Erro: " +
+      (
+        json.erro ||
+        json.msg ||
+        "Falha ao criar produto."
+      )
+    );
+
+
+  } catch (erro) {
+
+    console.error(erro);
+
+    alert(
+      erro.message ||
+      "Erro na comunicação com o servidor."
+    );
+
+  } finally {
+
+    btn.disabled = false;
+
+    btn.innerText =
+      "Publicar Produto";
+
+  }
+
+}
+
+
+/* =========================================================
+   CARREGAR PRODUTOS
+========================================================= */
+
+async function carregarProdutos() {
+
+  const grid =
+    document.getElementById(
+      "gridProdutos"
+    );
+
+
+  grid.innerHTML = `
+
+    <div class="col-span-full py-12 text-center">
+
+      <i class="fa-solid fa-spinner fa-spin text-3xl text-blue-600 mb-3"></i>
+
+      <p class="text-slate-500 font-medium">
+        Carregando produtos...
+      </p>
+
+    </div>
+
+  `;
+
+
+  const busca =
+    document
+      .getElementById("inputBusca")
+      .value
+      .trim();
+
+
+  const categoria =
+    document
+      .getElementById("selectCategoria")
+      .value;
+
+
+  try {
+
+    const url =
+      GAS_URL +
+      "?action=produtos" +
+      "&search=" +
+      encodeURIComponent(busca) +
+      "&categoria=" +
+      encodeURIComponent(categoria);
+
+
+    const response =
+      await fetch(url);
+
+
+    const json =
+      await respostaJson(response);
+
+
+    const produtos =
+      Array.isArray(json)
+        ? json
+        : (
+            Array.isArray(json.produtos)
+              ? json.produtos
+              : []
+          );
+
+
+    if (produtos.length === 0) {
+
+      grid.innerHTML = `
+
+        <div class="col-span-full text-center py-12">
+
+          <i class="fa-solid fa-box-open text-4xl text-slate-300 mb-3"></i>
+
+          <p class="text-slate-400">
+            Nenhum produto encontrado na loja.
+          </p>
+
+        </div>
+
+      `;
+
+      return;
+
+    }
+
+
+    grid.innerHTML =
+      produtos.map(function(p) {
+
+        const id =
+          String(
+            p.produtoId ||
+            p.id ||
+            ""
+          );
+
+
+        const nome =
+          String(
+            p.nome ||
+            "Produto"
+          );
+
+
+        const descricao =
+          escapeHtml(
+            p.descricao ||
+            "Sem descrição."
+          );
+
+
+        const marca =
+          escapeHtml(
+            p.marca ||
+            p.empresa ||
+            "Vendedor"
+          );
+
+
+        const tipo =
+          String(
+            p.tipo ||
+            "FISICO"
+          ).toUpperCase();
+
+
+        const metodo =
+          String(
+            p.metodoPagamento ||
+            "NETSHOP"
+          ).toUpperCase();
+
+
+        const preco =
+          numeroSeguro(
+            p.preco
+          );
+
+
+        const imagem =
+          escapeHtml(
+            formatarUrlImagem(
+              p.imagemUrl
+            )
+          );
+
+
+        const whatsapp =
+          String(
+            p.whatsapp ||
+            ""
+          ).replace(
+            /\D/g,
+            ""
+          );
+
+
+        const nomeSeguro =
+          JSON.stringify(nome)
+            .replace(
+              /'/g,
+              "&#39;"
+            );
+
+
+        const idSeguro =
+          JSON.stringify(id)
+            .replace(
+              /'/g,
+              "&#39;"
+            );
+
+
+        let botao = "";
+
+
+        if (
+          metodo === "NETSHOP"
+        ) {
+
+          botao = `
+
+            <button
+              onclick='abrirCompra(${idSeguro},${nomeSeguro},${preco})'
+              class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl text-xs font-semibold flex justify-center items-center gap-2 transition shadow-sm"
+            >
+
+              <i class="fa-solid fa-cart-shopping"></i>
+
+              Comprar Agora
+
+            </button>
+
+          `;
+
+        } else if (whatsapp) {
+
+          botao = `
+
+            <a
+              href="https://wa.me/${whatsapp}?text=${encodeURIComponent("Olá! Tenho interesse no produto: " + nome)}"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-xl text-xs font-semibold flex justify-center items-center gap-2 transition shadow-sm"
+            >
+
+              <i class="fa-brands fa-whatsapp"></i>
+
+              Contactar WhatsApp
+
+            </a>
+
+          `;
+
+        } else {
+
+          botao = `
+
+            <div
+              class="w-full bg-slate-200 text-slate-500 py-2.5 rounded-xl text-xs font-semibold text-center"
+            >
+              Contacto não disponível
+            </div>
+
+          `;
+
+        }
+
+
+        return `
+
+          <div
+            class="bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden flex flex-col hover:shadow-xl transition"
+          >
+
+            <div class="relative bg-slate-100">
+
+              <img
+                src="${imagem}"
+                onerror="this.onerror=null;this.src='https://via.placeholder.com/600x400?text=Sem+Imagem';"
+                alt="${escapeHtml(nome)}"
+                class="w-full h-48 object-cover"
+                loading="lazy"
+              >
+
+
+              <span
+                class="absolute top-2 right-2 text-[10px] font-extrabold uppercase tracking-wide px-2 py-0.5 rounded-md shadow-sm ${
+                  tipo === "DIGITAL"
+                    ? "bg-amber-400 text-amber-950"
+                    : "bg-blue-600 text-white"
+                }"
+              >
+                ${escapeHtml(tipo)}
+              </span>
+
+            </div>
+
+
+            <div class="p-4 flex flex-col flex-1 justify-between">
+
+              <div>
+
+                <h3
+                  class="font-bold text-slate-800 text-base line-clamp-1"
+                >
+                  ${escapeHtml(nome)}
+                </h3>
+
+
+                <p
+                  class="text-xs text-slate-500 mt-1 line-clamp-2"
+                >
+                  ${descricao}
+                </p>
+
               </div>
-            `;
-          }).join('');
-        } else {
-          grid.innerHTML = `<p class="text-slate-400 col-span-full text-center py-12">Nenhum produto encontrado na loja.</p>`;
+
+
+              <div
+                class="mt-4 pt-3 border-t border-slate-100 flex justify-between items-center"
+              >
+
+                <div>
+
+                  <p class="text-xs text-slate-400">
+                    Preço
+                  </p>
+
+                  <p class="text-blue-700 font-extrabold text-lg">
+
+                    ${preco.toFixed(2)}
+
+                    <span class="text-xs font-semibold">
+                      MT
+                    </span>
+
+                  </p>
+
+                </div>
+
+
+                <p
+                  class="text-[11px] text-slate-400 flex items-center gap-1"
+                >
+
+                  <i class="fa-solid fa-store"></i>
+
+                  ${marca}
+
+                </p>
+
+              </div>
+
+            </div>
+
+
+            <div
+              class="p-4 bg-slate-50 border-t border-slate-200 flex flex-col gap-2"
+            >
+
+              ${botao}
+
+            </div>
+
+          </div>
+
+        `;
+
+      }).join("");
+
+
+  } catch (erro) {
+
+    console.error(erro);
+
+    grid.innerHTML = `
+
+      <div class="col-span-full text-center py-12">
+
+        <i class="fa-solid fa-triangle-exclamation text-3xl text-red-400 mb-3"></i>
+
+        <p class="text-red-500">
+          Erro ao carregar os produtos.
+        </p>
+
+        <button
+          onclick="carregarProdutos()"
+          class="mt-3 bg-blue-600 text-white px-4 py-2 rounded-lg text-xs"
+        >
+          Tentar novamente
+        </button>
+
+      </div>
+
+    `;
+
+  }
+
+}
+
+
+/* =========================================================
+   COMPRA
+========================================================= */
+
+function abrirCompra(
+  id,
+  nome,
+  preco
+) {
+
+  document
+    .getElementById("compraProdutoId")
+    .value = id;
+
+
+  document
+    .getElementById("modalTitulo")
+    .innerText = nome;
+
+
+  document
+    .getElementById("modalPreco")
+    .innerText =
+    numeroSeguro(preco).toFixed(2) +
+    " MT";
+
+
+  document
+    .getElementById("modalCompra")
+    .classList
+    .remove("hidden");
+
+}
+
+
+/* =========================================================
+   PROCESSAR COMPRA
+========================================================= */
+
+async function processarCompra(e) {
+
+  e.preventDefault();
+
+
+  const btn =
+    document.getElementById(
+      "btnPagar"
+    );
+
+
+  btn.disabled = true;
+
+  btn.innerText =
+    "Processando...";
+
+
+  const payload = {
+
+    action: "criarPagamento",
+
+    produtoId:
+      document
+        .getElementById(
+          "compraProdutoId"
+        )
+        .value,
+
+    clienteTelefone:
+      document
+        .getElementById(
+          "clienteTelefone"
+        )
+        .value
+        .trim(),
+
+    metodo:
+      document
+        .getElementById(
+          "metodoPagamento"
+        )
+        .value
+
+  };
+
+
+  try {
+
+    const response =
+      await fetch(
+        GAS_URL,
+        {
+          method: "POST",
+          body: JSON.stringify(payload)
         }
-      } catch {
-        grid.innerHTML = `<p class="text-red-500 col-span-full text-center py-12">Erro ao carregar os produtos.</p>`;
-      }
+      );
+
+
+    const json =
+      await respostaJson(response);
+
+
+    if (
+      json.ok &&
+      json.checkoutUrl
+    ) {
+
+      window.location.href =
+        json.checkoutUrl;
+
+      return;
+
     }
 
-    function abrirCompra(id, nome, preco) {
-      document.getElementById("compraProdutoId").value = id;
-      document.getElementById("modalTitulo").innerText = nome;
-      document.getElementById("modalPreco").innerText = `${preco} MT`;
-      document.getElementById("modalCompra").classList.remove("hidden");
+
+    if (json.ok) {
+
+      alert(
+        json.msg ||
+        "Solicitação de pagamento enviada ao seu telefone."
+      );
+
+      fecharModal(
+        "modalCompra"
+      );
+
+      return;
+
     }
 
-    async function processarCompra(e) {
-      e.preventDefault();
-      const btn = document.getElementById("btnPagar");
-      btn.disabled = true; btn.innerText = "Processando...";
-      const payload = {
-        action: "criarPagamento",
-        produtoId: document.getElementById("compraProdutoId").value,
-        clienteTelefone: document.getElementById("clienteTelefone").value,
-        metodo: document.getElementById("metodoPagamento").value,
-      };
-      try {
-        const res = await fetch(GAS_URL, {method: "POST", body: JSON.stringify(payload)});
-        const json = await res.json();
-        if (json.ok && json.checkoutUrl) {
-          window.location.href = json.checkoutUrl;
-        } else if (json.ok) {
-          alert("Solicitação de pagamento enviada ao seu telefone!");
-          fecharModal("modalCompra");
-        } else {
-          alert("Erro: " + (json.erro || "Falha ao processar"));
-        }
-      } catch {
-        alert("Erro na comunicação com o servidor.");
-      } finally {
-        btn.disabled = false; btn.innerText = "Pagar com Netshop";
+
+    alert(
+      "Erro: " +
+      (
+        json.erro ||
+        json.msg ||
+        "Falha ao processar pagamento."
+      )
+    );
+
+
+  } catch (erro) {
+
+    console.error(erro);
+
+    alert(
+      erro.message ||
+      "Erro na comunicação com o servidor."
+    );
+
+  } finally {
+
+    btn.disabled = false;
+
+    btn.innerText =
+      "Pagar com Netshop";
+
+  }
+
+}
+
+
+/* =========================================================
+   ENTER NA BUSCA
+========================================================= */
+
+document
+  .getElementById("inputBusca")
+  .addEventListener(
+    "keydown",
+    function(e) {
+
+      if (e.key === "Enter") {
+
+        carregarProdutos();
+
       }
+
     }
-  </script>
+  );
+
+
+/* =========================================================
+   FECHAR MODAL CLICANDO FORA
+========================================================= */
+
+document.addEventListener(
+  "click",
+  function(e) {
+
+    const modais = [
+      "modalAuth",
+      "modalLogin",
+      "modalRegisto",
+      "modalTermos",
+      "modalPainelVendedor",
+      "modalCriarProduto",
+      "modalCompra"
+    ];
+
+
+    modais.forEach(
+      function(id) {
+
+        const modal =
+          document.getElementById(id);
+
+
+        if (
+          !modal ||
+          modal.classList.contains("hidden")
+        ) {
+          return;
+        }
+
+
+        if (e.target === modal) {
+
+          fecharModal(id);
+
+        }
+
+      }
+    );
+
+  }
+);
+
+</script>
+
 </body>
 </html>
+```
