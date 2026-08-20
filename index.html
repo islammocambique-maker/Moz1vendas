@@ -503,33 +503,36 @@
     }
 
     async function carregarMeusProdutos() {
-      const container = document.getElementById("listaMeusProdutos");
-      const token = localStorage.getItem("moz1_token");
-      if (!token) return;
+  const container = document.getElementById("listaMeusProdutos");
+  const token = localStorage.getItem("moz1_token");
+  if (!token) return;
 
-      container.innerHTML = `<p class="text-slate-400 text-center py-4 text-xs">Carregando seus produtos...</p>`;
+  container.innerHTML = '<p class="text-slate-400 text-center py-4 text-xs">Carregando seus produtos...</p>';
 
-      try {
-        const res = await fetch(`${GAS_URL}?action=meusProdutos&token=${encodeURIComponent(token)}`);
-        const produtos = await res.json();
+  try {
+    const res = await fetch(`${GAS_URL}?action=meusProdutos&token=${encodeURIComponent(token)}`);
+    const data = await res.json();
+    
+    // Suporta tanto se o backend retornar uma Array quanto se retornar { ok: true, produtos: [...] }
+    const produtos = Array.isArray(data) ? data : (data.produtos || []);
 
-        if (Array.isArray(produtos) && produtos.length > 0) {
-          container.innerHTML = produtos.map(p => `
-            <div class="border border-slate-200 p-3 rounded-xl flex justify-between items-center bg-slate-50">
-              <div>
-                <p class="font-bold text-slate-800 text-sm">${p.nome}</p>
-                <p class="text-xs text-slate-500">${p.preco} MT | Status: <span class="font-bold text-${p.status === 'ATIVO' ? 'emerald' : 'red'}-600">${p.status}</span></p>
-              </div>
-              <span class="text-[10px] font-bold bg-slate-200 text-slate-700 px-2 py-1 rounded-md uppercase">${p.tipo}</span>
-            </div>
-          `).join('');
-        } else {
-          container.innerHTML = `<p class="text-slate-400 text-center py-4 text-xs">Você ainda não tem produtos cadastrados.</p>`;
-        }
-      } catch (err) {
-        container.innerHTML = `<p class="text-red-500 text-center py-4 text-xs">Erro ao carregar produtos.</p>`;
-      }
+    if (produtos.length > 0) {
+      container.innerHTML = produtos.map(p => `
+        <div class="border border-slate-200 p-3 rounded-xl flex justify-between items-center bg-slate-50">
+          <div>
+            <p class="font-bold text-slate-800 text-sm">${p.nome}</p>
+            <p class="text-xs text-slate-500">${p.preco} MT | Status: <span class="font-bold text-${p.status === 'ATIVO' ? 'emerald' : 'red'}-600">${p.status}</span></p>
+          </div>
+          <span class="text-[10px] font-bold bg-slate-200 text-slate-700 px-2 py-1 rounded-md uppercase">${p.tipo}</span>
+        </div>
+      `).join('');
+    } else {
+      container.innerHTML = '<p class="text-slate-400 text-center py-4 text-xs">Você ainda não tem produtos cadastrados.</p>';
     }
+  } catch (err) {
+    container.innerHTML = '<p class="text-red-500 text-center py-4 text-xs">Erro ao carregar produtos.</p>';
+  }
+}
 
     function abrirModalCriarProduto() {
       document.getElementById("modalCriarProduto").classList.remove("hidden");
