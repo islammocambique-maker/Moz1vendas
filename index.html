@@ -498,55 +498,95 @@
       carregarMeusProdutos();
     }
 
-    async function carregarMeusProdutos() {
-  const container = document.getElementById("listaMeusProdutos");
-  const token = localStorage.getItem("moz1_token");
-  if (!token) return;
+    async function carregarProdutos() {
+  const grid = document.getElementById("gridProdutos");
+  grid.innerHTML = `
+    <div class="col-span-full py-12 text-center">
+      <i class="fa-solid fa-spinner fa-spin text-3xl text-blue-600 mb-3"></i>
+      <p class="text-slate-500 font-medium">Carregando catálogo por empresa...</p>
+    </div>
+  `;
 
-  container.innerHTML = '<p class="text-slate-400 text-center py-4 text-xs">Carregando seus produtos...</p>';
+  const busca = document.getElementById("inputBusca") ? document.getElementById("inputBusca").value : "";
+  const cat = document.getElementById("selectCategoria") ? document.getElementById("selectCategoria").value : "";
 
   try {
-    const res = await fetch(`${GAS_URL}?action=meusProdutos&token=${encodeURIComponent(token)}`);
-    const data = await res.json();
-    const produtos = Array.isArray(data) ? data : (data.produtos || []);
+    const res = await fetch(`${GAS_URL}?action=produtos&search=${encodeURIComponent(busca)}&categoria=${encodeURIComponent(cat)}`);
+    const json = await res.json();
 
-    if (produtos.length > 0) {
-      container.innerHTML = produtos.map(p => `
-        <div id="meu-produto-${p.produtoId}" class="border border-slate-200 p-3 rounded-xl flex justify-between items-center bg-slate-50 mb-2">
-          <div>
-            <p class="font-bold text-slate-800 text-sm">${p.nome}</p>
-            <p class="text-xs text-slate-500">${p.preco} MT | Status: <span class="font-bold text-${p.status === 'ATIVO' ? 'emerald' : 'red'}-600">${p.status}</span></p>
+    if (json.ok && json.produtos.length > 0) {
+      // 1. Agrupa os produtos pelo nome da marca/empresa do vendedor
+      const empresas = {};
+      json.produtos.forEach(p => {
+        const nomeEmpresa = p.marca || "Vendedor Geral";
+        if (!empresas[nomeEmpresa]) {
+          empresas[nomeEmpresa] = [];
+        }
+        empresas[nomeEmpresa].push(p);
+      });
+
+      // 2. Renderiza uma seção com título para cada empresa
+      let htmlFinal = "";
+
+      for (const [empresa, listaProdutos] of Object.entries(empresas)) {
+        htmlFinal += `
+          <div class="col-span-full mt-6 mb-2 border-b border-slate-200 pb-3 flex items-center justify-between">
+            <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+              <i class="fa-solid fa-store text-blue-600"></i> ${empresa}
+            </h2>
+            <span class="text-xs bg-slate-100 text-slate-600 px-3 py-1 rounded-full font-semibold">
+              ${listaProdutos.length} ${listaProdutos.length === 1 ? 'produto' : 'produtos'}
+            </span>
           </div>
-          <div class="flex items-center gap-2">
-            <span class="text-[10px] font-bold bg-slate-200 text-slate-700 px-2 py-1 rounded-md uppercase">${p.tipo}</span>
-            <button type="button" onclick="deletarProdutoLocal('${p.produtoId}')" class="bg-red-100 hover:bg-red-200 text-red-600 p-2 rounded-lg text-xs font-bold transition">
-              <i class="fa-solid fa-trash"></i>
-            </button>
-          </div>
-        </div>
-      `).join('');
+        `;
+
+        const cardsEmpresa = listaProdutos.map(p => {
+          const imgFinal = formatarUrlImagem(p.imagemUrl);
+          return `
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200/70 overflow-hidden flex flex-col justify-between hover:shadow-md transition">
+              <div class="relative bg-slate-100">
+                <img src="${imgFinal}" onerror="this.onerror=null; this.src='https://via.placeholder.com/300x200?text=Sem+Imagem';" alt="${p.nome}" class="w-full h-48 object-cover">
+                <span class="absolute top-2 right-2 text-[10px] font-extrabold uppercase tracking-wide px-2 py-0.5 rounded-md shadow-sm ${p.tipo === 'DIGITAL' ? 'bg-amber-400 text-amber-950': 'bg-blue-600 text-white'}">
+                  ${p.tipo}
+                </span>
+              </div>
+              <div class="p-4 flex-grow flex flex-col justify-between">
+                <div>
+                  <h3 class="font-bold text-slate-800 text-base leading-snug line-clamp-1">${p.nome}</h3>
+                  <p class="text-slate-500 text-xs mt-1 line-clamp-2">${p.descricao}</p>
+                </div>
+                <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+                  <div>
+                    <p class="text-xs text-slate-400">Preço</p>
+                    <p class="text-blue-700 font-extrabold text-lg leading-none">${p.preco} <span class="text-xs font-semibold">MT</span></p>
+                  </div>
+                </div>
+              </div>
+              <div class="p-4 bg-slate-50 border-t border-slate-100">
+                ${p.metodoPagamento === 'NETSHOP'
+                  ? `<button onclick="abrirCompra('${p.produtoId}', '${p.nome}', ${p.preco})" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl text-xs font-bold transition shadow-sm shadow-blue-600/20 flex items-center justify-center gap-2">
+                      <i class="fa-solid fa-cart-shopping"></i> Comprar Agora
+                     </button>` 
+                  : `<a href="https://wa.me/${p.whatsapp}?text=Olá! Tenho interesse no produto: ${encodeURIComponent(p.nome)}" target="_blank" class="w-full block text-center bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-xl text-xs font-bold transition shadow-sm shadow-emerald-600/20 flex items-center justify-center gap-2">
+                      <i class="fa-brands fa-whatsapp text-sm"></i> Contactar WhatsApp
+                     </a>`
+                }
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        htmlFinal += cardsEmpresa;
+      }
+
+      grid.innerHTML = htmlFinal;
+
     } else {
-      container.innerHTML = '<p class="text-slate-400 text-center py-4 text-xs">Você ainda não tem produtos cadastrados.</p>';
+      grid.innerHTML = '<p class="text-slate-400 col-span-full text-center py-12">Nenhum produto encontrado na loja.</p>';
     }
-  } catch (err) {
-    container.innerHTML = '<p class="text-red-500 text-center py-4 text-xs">Erro ao carregar produtos.</p>';
+  } catch (e) {
+    grid.innerHTML = '<p class="text-red-500 col-span-full text-center py-12">Erro ao carregar os produtos.</p>';
   }
-}
-
-function deletarProdutoLocal(produtoId) {
-  if (!confirm("Tem certeza que deseja remover este produto da tela?")) return;
-
-  const elementoPainel = document.getElementById(`meu-produto-${produtoId}`);
-  if (elementoPainel) {
-    elementoPainel.remove();
-  }
-
-  const containerPainel = document.getElementById("listaMeusProdutos");
-  if (containerPainel && containerPainel.querySelectorAll('[id^="meu-produto-"]').length === 0) {
-    containerPainel.innerHTML = '<p class="text-slate-400 text-center py-4 text-xs">Você ainda não tem produtos cadastrados.</p>';
-  }
-
-  carregarProdutos();
 }
     function abrirModalCriarProduto() {
       document.getElementById("modalCriarProduto").classList.remove("hidden");
