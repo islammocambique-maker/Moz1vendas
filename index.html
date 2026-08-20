@@ -53,25 +53,21 @@
   </section>
 
   <!-- FILTROS E BUSCA -->
-  <main class="container mx-auto px-4 py-8 flex-grow">
-    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 mb-8 flex flex-col md:flex-row gap-4 items-center">
-      <div class="relative flex-grow w-full">
-        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3.5 text-slate-400"></i>
-        <input type="text" id="inputBusca" placeholder="Buscar por produtos ou marcas..." class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white transition text-sm">
-      </div>
-      
-      <div class="flex gap-3 w-full md:w-auto">
-        <select id="selectCategoria" class="w-full md:w-48 px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm font-medium">
-          <option value="">Todas Categorias</option>
-          <option value="FISICO">📦 Produtos Físicos</option>
-          <option value="DIGITAL">⚡ Produtos Digitais</option>
-        </select>
-        
-        <button onclick="carregarProdutos()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-semibold text-sm transition shadow-sm shadow-blue-600/30 flex items-center justify-center gap-2">
-          <i class="fa-solid fa-filter"></i> Filtrar
-        </button>
-      </div>
+<main class="container mx-auto px-4 py-8 flex-grow">
+  <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 mb-8 flex flex-col md:flex-row gap-4 items-center">
+    <div class="relative flex-grow w-full">
+      <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3.5 text-slate-400"></i>
+      <input type="text" id="inputBusca" placeholder="Buscar por produtos ou marcas..." class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white transition text-sm">
     </div>
+    
+    <div class="flex gap-3 w-full md:w-auto">
+      <select id="selectCategoria" class="w-full md:w-48 px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm font-medium">
+        <option value="">Todas Categorias</option>
+        <option value="FISICO">📦 Produtos Físicos</option>
+        <option value="DIGITAL">⚡ Produtos Digitais</option>
+      </select>
+    </div>
+  </div>
 
     <!-- LISTA DE PRODUTOS DA LOJA -->
     <div id="gridProdutos" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
