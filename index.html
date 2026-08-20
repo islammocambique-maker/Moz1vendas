@@ -533,7 +533,25 @@
     container.innerHTML = '<p class="text-red-500 text-center py-4 text-xs">Erro ao carregar produtos.</p>';
   }
 }
+// FUNÇÃO PARA DELETAR PRODUTO DO PAINEL
+function deletarProdutoLocal(produtoId) {
+  if (!confirm("Tem certeza que deseja remover este produto da tela?")) return;
 
+  // 1. Apaga a linha do produto no modal do vendedor
+  const elementoPainel = document.getElementById(`meu-produto-${produtoId}`);
+  if (elementoPainel) {
+    elementoPainel.remove();
+  }
+
+  // 2. Se não restar nenhum produto, mostra a mensagem de lista vazia
+  const containerPainel = document.getElementById("listaMeusProdutos");
+  if (containerPainel && containerPainel.children.length === 0) {
+    containerPainel.innerHTML = '<p class="text-slate-400 text-center py-4 text-xs">Você ainda não tem produtos cadastrados.</p>';
+  }
+
+  // 3. Atualiza a vitrine pública de vendas
+  carregarProdutos();
+}
     function abrirModalCriarProduto() {
       document.getElementById("modalCriarProduto").classList.remove("hidden");
       alternarCamposTipo();
