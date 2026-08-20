@@ -14,301 +14,303 @@
 </style>
 </head>
 <body class="bg-slate-50 font-sans min-h-screen flex flex-col text-slate-800">
-
 <!-- HEADER ELEGANTE -->
 <header class="bg-gradient-to-r from-blue-700 via-indigo-700 to-blue-900 text-white shadow-lg sticky top-0 z-40">
 <div class="container mx-auto px-4 py-3 flex justify-between items-center">
-  <div class="flex items-center space-x-3 cursor-pointer" onclick="carregarProdutos()">
-    <div class="bg-white/10 p-2 rounded-xl backdrop-blur-md">
-      <i class="fa-solid fa-store text-2xl text-amber-400"></i>
-    </div>
-    <div>
-      <h1 class="text-xl font-extrabold tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-white to-blue-100">MOZ1VENDAS</h1>
-      <p class="text-[10px] text-blue-200 uppercase tracking-widest font-semibold">Marketplace Moçambique</p>
-    </div>
-  </div>
-  <div class="flex items-center gap-3">
-    <a href="https://wa.me/258860407269?text=Olá! Preciso de suporte no MOZ1VENDAS." target="_blank" class="hidden sm:flex items-center gap-2 bg-emerald-600/90 hover:bg-emerald-600 text-white px-3 py-2 rounded-lg text-xs font-semibold transition backdrop-blur-sm border border-emerald-500/30">
-      <i class="fa-brands fa-whatsapp text-base"></i> Suporte
-    </a>
-    <div id="authArea" class="flex gap-2">
-      <button onclick="abrirModalAuth()" class="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg text-sm font-semibold transition border border-white/20">Entrar / Registar</button>
-    </div>
-  </div>
+<div class="flex items-center space-x-3 cursor-pointer" onclick="carregarProdutos()">
+<div class="bg-white/10 p-2 rounded-xl backdrop-blur-md">
+<i class="fa-solid fa-store text-2xl text-amber-400"></i>
+</div>
+<div>
+<h1 class="text-xl font-extrabold tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-white to-blue-100">MOZ1VENDAS</h1>
+<p class="text-[10px] text-blue-200 uppercase tracking-widest font-semibold">Marketplace Moçambique</p>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<a href="https://wa.me/258860407269?text=Olá! Preciso de suporte no MOZ1VENDAS." target="_blank" class="hidden sm:flex items-center gap-2 bg-emerald-600/90 hover:bg-emerald-600 text-white px-3 py-2 rounded-lg text-xs font-semibold transition backdrop-blur-sm border border-emerald-500/30">
+<i class="fa-brands fa-whatsapp text-base"></i> Suporte
+</a>
+<div id="authArea" class="flex gap-2">
+<button onclick="abrirModalAuth()" class="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg text-sm font-semibold transition border border-white/20">Entrar / Registar</button>
+</div>
+</div>
 </div>
 </header>
-
-<!-- BANNER DE BOAS-VINDAS -->
+<!-- BANNER DE BOAS-VINDAS & REGRAS -->
 <section class="bg-blue-600 text-white py-6 shadow-inner">
 <div class="container mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4 text-center md:text-left">
-  <div>
-    <h2 class="text-lg md:text-xl font-bold">Compre e Venda com Segurança em Moçambique</h2>
-    <p class="text-blue-100 text-xs md:text-sm mt-1">Produtos Físicos e Digitais com pagamento via M-Pesa e e-Mola.</p>
-  </div>
-  <button onclick="abrirModalTermos()" class="text-xs bg-blue-800/60 hover:bg-blue-800 text-blue-100 px-3 py-1.5 rounded-lg border border-blue-400/30 transition flex items-center gap-1">
-    <i class="fa-solid fa-shield-halved text-amber-400"></i> Termos de Segurança & Banimento
-  </button>
+<div>
+<h2 class="text-lg md:text-xl font-bold">Compre e Venda com Segurança em Moçambique</h2>
+<p class="text-blue-100 text-xs md:text-sm mt-1">Produtos Físicos e Digitais com pagamento via M-Pesa e e-Mola.</p>
+</div>
+<button onclick="abrirModalTermos()" class="text-xs bg-blue-800/60 hover:bg-blue-800 text-blue-100 px-3 py-1.5 rounded-lg border border-blue-400/30 transition flex items-center gap-1">
+<i class="fa-solid fa-shield-halved text-amber-400"></i> Termos de Segurança & Banimento
+</button>
 </div>
 </section>
-
 <!-- FILTROS E BUSCA -->
 <main class="container mx-auto px-4 py-8 flex-grow">
 <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 mb-8 flex flex-col md:flex-row gap-4 items-center">
-  <div class="relative flex-grow w-full">
-    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3.5 text-slate-400"></i>
-    <input type="text" id="inputBusca" placeholder="Buscar por produtos ou marcas..." class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white transition text-sm">
-  </div>
-  <div class="flex gap-3 w-full md:w-auto">
-    <select id="selectCategoria" class="w-full md:w-48 px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm font-medium">
-      <option value="">Todas Categorias</option>
-      <option value="FISICO">Produtos Físicos</option>
-      <option value="DIGITAL">Produtos Digitais</option>
-    </select>
-    <button onclick="carregarProdutos()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-semibold text-sm transition shadow-sm shadow-blue-600/30 flex items-center justify-center gap-2">
-      <i class="fa-solid fa-filter"></i> Filtrar
-    </button>
-  </div>
+<div class="relative flex-grow w-full">
+<i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3.5 text-slate-400"></i>
+<input type="text" id="inputBusca" placeholder="Buscar por produtos ou marcas..." class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white transition text-sm">
 </div>
-
+<div class="flex gap-3 w-full md:w-auto">
+<select id="selectCategoria" class="w-full md:w-48 px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm font-medium">
+<option value="">Todas Categorias</option>
+<option value="FISICO">Produtos Físicos</option>
+<option value="DIGITAL">Produtos Digitais</option>
+</select>
+<button onclick="carregarProdutos()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-semibold text-sm transition shadow-sm shadow-blue-600/30 flex items-center justify-center gap-2">
+<i class="fa-solid fa-filter"></i> Filtrar
+</button>
+</div>
+</div>
 <!-- LISTA DE PRODUTOS DA LOJA -->
 <div id="gridProdutos" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-  <div class="col-span-full py-12 text-center">
-    <i class="fa-solid fa-spinner fa-spin text-3xl text-blue-600 mb-3"></i>
-    <p class="text-slate-500 font-medium">Carregando catálogo...</p>
-  </div>
+<div class="col-span-full py-12 text-center">
+<i class="fa-solid fa-spinner fa-spin text-3xl text-blue-600 mb-3"></i>
+<p class="text-slate-500 font-medium">Carregando catálogo...</p>
+</div>
 </div>
 </main>
-
 <!-- FOOTER ELEGANTE -->
 <footer class="bg-slate-900 text-slate-400 py-10 border-t border-slate-800">
 <div class="container mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8">
-  <div>
-    <div class="flex items-center space-x-2 text-white font-bold text-lg mb-3">
-      <i class="fa-solid fa-store text-amber-400"></i>
-      <span>MOZ1VENDAS</span>
-    </div>
-    <p class="text-xs text-slate-400 leading-relaxed">
-      Sua plataforma confiável de vendas online em Moçambique.
-    </p>
-  </div>
-  <div>
-    <h4 class="text-white font-semibold text-sm mb-3">Políticas & Segurança</h4>
-    <ul class="space-y-2 text-xs">
-      <li><button onclick="abrirModalTermos()" class="hover:text-blue-400 transition">Termos de Uso e Condições</button></li>
-      <li><button onclick="abrirModalTermos()" class="hover:text-blue-400 transition">Política de Zero Tolerância contra Fraudes</button></li>
-    </ul>
-  </div>
-  <div>
-    <h4 class="text-white font-semibold text-sm mb-3">Atendimento ao Cliente</h4>
-    <a href="https://wa.me/258860407269" target="_blank" class="inline-flex items-center gap-2 text-emerald-400 text-xs hover:underline">
-      <i class="fa-brands fa-whatsapp text-base"></i> +258 860 407 269 (WhatsApp)
-    </a>
-  </div>
+<div>
+<div class="flex items-center space-x-2 text-white font-bold text-lg mb-3">
+<i class="fa-solid fa-store text-amber-400"></i>
+<span>MOZ1VENDAS</span>
+</div>
+<p class="text-xs text-slate-400 leading-relaxed">
+Sua plataforma confiável de vendas online em Moçambique.
+</p>
+</div>
+<div>
+<h4 class="text-white font-semibold text-sm mb-3">Políticas & Segurança</h4>
+<ul class="space-y-2 text-xs">
+<li><button onclick="abrirModalTermos()" class="hover:text-blue-400 transition">Termos de Uso e Condições</button></li>
+<li><button onclick="abrirModalTermos()" class="hover:text-blue-400 transition">Política de Zero Tolerância contra Fraudes</button></li>
+</ul>
+</div>
+<div>
+<h4 class="text-white font-semibold text-sm mb-3">Atendimento ao Cliente</h4>
+<a href="https://wa.me/258860407269" target="_blank" class="inline-flex items-center gap-2 text-emerald-400 text-xs hover:underline">
+<i class="fa-brands fa-whatsapp text-base"></i> +258 860 407 269 (WhatsApp)
+</a>
+</div>
 </div>
 <div class="container mx-auto px-4 mt-8 border-slate-800/60 text-center text-[11px] pt-6 border-t text-slate-500">
-  &copy; MOZ1VENDAS - Todos os direitos reservados.
+&copy; MOZ1VENDAS - Todos os direitos reservados.
 </div>
 </footer>
-
 <!-- MODAL SELEÇÃO AUTH -->
 <div id="modalAuth" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex justify-center items-center p-4 z-50">
 <div class="bg-white p-6 rounded-2xl max-w-sm w-full relative shadow-xl border border-slate-100 text-center">
-  <button onclick="fecharModal('modalAuth')" class="absolute top-3 right-4 text-slate-400 hover:text-slate-600 text-2xl font-bold">&times;</button>
-  <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-3 text-xl">
-    <i class="fa-solid fa-user-gear"></i>
-  </div>
-  <h2 class="text-xl font-bold text-slate-800 mb-1">Área do Vendedor</h2>
-  <p class="text-slate-500 text-xs mb-6">Acesse sua conta para gerenciar produtos.</p>
-  <div class="flex flex-col gap-3">
-    <button onclick="trocarModalAuth('modalAuth', 'modalLogin')" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl font-bold text-sm transition">Entrar na Conta</button>
-    <button onclick="trocarModalAuth('modalAuth', 'modalRegisto')" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-xl font-bold text-sm transition">Criar Nova Conta</button>
-  </div>
+<button onclick="fecharModal('modalAuth')" class="absolute top-3 right-4 text-slate-400 hover:text-slate-600 text-2xl font-bold">&times;</button>
+<div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-3 text-xl">
+<i class="fa-solid fa-user-gear"></i>
+</div>
+<h2 class="text-xl font-bold text-slate-800 mb-1">Área do Vendedor</h2>
+<p class="text-slate-500 text-xs mb-6">Acesse sua conta para gerenciar produtos.</p>
+<div class="flex flex-col gap-3">
+<button onclick="trocarModalAuth('modalAuth', 'modalLogin')" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl font-bold text-sm transition">Entrar na Conta</button>
+<button onclick="trocarModalAuth('modalAuth', 'modalRegisto')" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-xl font-bold text-sm transition">Criar Nova Conta</button>
 </div>
 </div>
-
+</div>
 <!-- MODAL LOGIN -->
 <div id="modalLogin" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex justify-center items-center p-4 z-50">
 <div class="bg-white p-6 rounded-2xl max-w-md w-full relative shadow-xl border border-slate-100">
-  <button onclick="fecharModal('modalLogin')" class="absolute top-3 right-4 text-slate-400 hover:text-slate-600 text-2xl font-bold">&times;</button>
-  <h2 class="text-xl font-bold text-slate-800 mb-4">Entrar como Vendedor</h2>
-  <form onsubmit="fazerLogin(event)">
-    <div class="mb-4">
-      <label class="block text-xs font-semibold text-slate-600 mb-1">Empresa ou Telefone</label>
-      <input type="text" id="loginIdentificador" required class="w-full border border-slate-200 p-2.5 rounded-xl focus:ring-2 focus:ring-blue-600 text-sm">
-    </div>
-    <div class="mb-6">
-      <label class="block text-xs font-semibold text-slate-600 mb-1">PIN Numérico</label>
-      <input type="password" id="loginPin" required class="w-full border border-slate-200 p-2.5 rounded-xl focus:ring-2 focus:ring-blue-600 text-sm">
-    </div>
-    <button type="submit" id="btnLogin" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold text-sm transition">Entrar</button>
-  </form>
+<button onclick="fecharModal('modalLogin')" class="absolute top-3 right-4 text-slate-400 hover:text-slate-600 text-2xl font-bold">&times;</button>
+<h2 class="text-xl font-bold text-slate-800 mb-4">Entrar como Vendedor</h2>
+<form onsubmit="fazerLogin(event)">
+<div class="mb-4">
+<label class="block text-xs font-semibold text-slate-600 mb-1">Empresa ou Telefone</label>
+<input type="text" id="loginIdentificador" required class="w-full border border-slate-200 p-2.5 rounded-xl focus:ring-2 focus:ring-blue-600 text-sm">
+</div>
+<div class="mb-6">
+<label class="block text-xs font-semibold text-slate-600 mb-1">PIN Numérico</label>
+<input type="password" id="loginPin" required class="w-full border border-slate-200 p-2.5 rounded-xl focus:ring-2 focus:ring-blue-600 text-sm">
+</div>
+<button type="submit" id="btnLogin" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold text-sm transition">Entrar</button>
+</form>
 </div>
 </div>
-
 <!-- MODAL REGISTO -->
 <div id="modalRegisto" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex justify-center items-center p-4 z-50">
 <div class="bg-white p-6 rounded-2xl max-w-md w-full relative shadow-xl border border-slate-100 max-h-[90vh] overflow-y-auto">
-  <button onclick="fecharModal('modalRegisto')" class="absolute top-3 right-4 text-slate-400 hover:text-slate-600 text-2xl font-bold">&times;</button>
-  <h2 class="text-xl font-bold text-slate-800 mb-1">Registar Vendedor</h2>
-  <p class="text-xs text-slate-500 mb-4">Crie sua conta para começar a vender hoje.</p>
-  <form onsubmit="fazerRegisto(event)">
-    <div class="mb-3">
-      <label class="block text-xs font-semibold text-slate-600 mb-1">Nome Completo</label>
-      <input type="text" id="regNome" required class="w-full border border-slate-200 p-2 rounded-xl text-sm">
-    </div>
-    <div class="mb-3">
-      <label class="block text-xs font-semibold text-slate-600 mb-1">Telefone</label>
-      <input type="tel" id="regTelefone" placeholder="841234567" required class="w-full border border-slate-200 p-2 rounded-xl text-sm">
-    </div>
-    <div class="mb-3">
-      <label class="block text-xs font-semibold text-slate-600 mb-1">Número do BI</label>
-      <input type="text" id="regBi" required class="w-full border border-slate-200 p-2 rounded-xl text-sm">
-    </div>
-    <div class="mb-3">
-      <label class="block text-xs font-semibold text-slate-600 mb-1">Nome da Empresa / Marca</label>
-      <input type="text" id="regEmpresa" required class="w-full border border-slate-200 p-2 rounded-xl text-sm">
-    </div>
-    <div class="mb-3">
-      <label class="block text-xs font-semibold text-slate-600 mb-1">PIN Secreto</label>
-      <input type="password" id="regPin" required class="w-full border border-slate-200 p-2 rounded-xl text-sm">
-    </div>
-    <div class="mb-4">
-      <label class="block text-xs font-semibold text-slate-600 mb-1">Plano Inicial</label>
-      <select id="regPlano" class="w-full border border-slate-200 p-2 rounded-xl text-sm">
-        <option value="SIMPLES">Plano Simples</option>
-      </select>
-    </div>
-    <div class="mb-5 bg-amber-50 p-3 rounded-xl border border-amber-200/60">
-      <label class="flex items-start gap-2 text-xs text-slate-700 cursor-pointer">
-        <input type="checkbox" id="regAceitaTermos" required class="mt-0.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
-        <span>Declaro que li e concordo com os <button type="button" onclick="abrirModalTermos()" class="text-blue-600 underline font-semibold">Termos de Uso</button>.</span>
-      </label>
-    </div>
-    <button type="submit" id="btnRegisto" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-bold text-sm transition">Registar Conta</button>
-  </form>
+<button onclick="fecharModal('modalRegisto')" class="absolute top-3 right-4 text-slate-400 hover:text-slate-600 text-2xl font-bold">&times;</button>
+<h2 class="text-xl font-bold text-slate-800 mb-1">Registar Vendedor</h2>
+<p class="text-xs text-slate-500 mb-4">Crie sua conta para começar a vender hoje.</p>
+<form onsubmit="fazerRegisto(event)">
+<div class="mb-3">
+<label class="block text-xs font-semibold text-slate-600 mb-1">Nome Completo</label>
+<input type="text" id="regNome" required class="w-full border border-slate-200 p-2 rounded-xl text-sm">
+</div>
+<div class="mb-3">
+<label class="block text-xs font-semibold text-slate-600 mb-1">Telefone</label>
+<input type="tel" id="regTelefone" placeholder="841234567" required class="w-full border border-slate-200 p-2 rounded-xl text-sm">
+</div>
+<div class="mb-3">
+<label class="block text-xs font-semibold text-slate-600 mb-1">Número do BI</label>
+<input type="text" id="regBi" required class="w-full border border-slate-200 p-2 rounded-xl text-sm">
+</div>
+<div class="mb-3">
+<label class="block text-xs font-semibold text-slate-600 mb-1">Nome da Empresa / Marca</label>
+<input type="text" id="regEmpresa" required class="w-full border border-slate-200 p-2 rounded-xl text-sm">
+</div>
+<div class="mb-3">
+<label class="block text-xs font-semibold text-slate-600 mb-1">PIN Secreto</label>
+<input type="password" id="regPin" required class="w-full border border-slate-200 p-2 rounded-xl text-sm">
+</div>
+<div class="mb-4">
+<label class="block text-xs font-semibold text-slate-600 mb-1">Plano Inicial</label>
+<select id="regPlano" class="w-full border border-slate-200 p-2 rounded-xl text-sm">
+<option value="SIMPLES">Plano Simples</option>
+</select>
+</div>
+<div class="mb-5 bg-amber-50 p-3 rounded-xl border border-amber-200/60">
+<label class="flex items-start gap-2 text-xs text-slate-700 cursor-pointer">
+<input type="checkbox" id="regAceitaTermos" required class="mt-0.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+<span>Declaro que li e concordo com os <button type="button" onclick="abrirModalTermos()" class="text-blue-600 underline font-semibold">Termos de Uso</button>. Estou ciente de que vendas fraudulentas ou ilegalidades resultam em banimento imediato.</span>
+</label>
+</div>
+<button type="submit" id="btnRegisto" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-bold text-sm transition">Registar Conta</button>
+</form>
 </div>
 </div>
-
-<!-- MODAL TERMOS DE USO -->
+<!-- MODAL TERMOS DE USO & BANIMENTO -->
 <div id="modalTermos" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex justify-center items-center p-4 z-50">
 <div class="bg-white p-6 rounded-2xl max-w-lg w-full relative shadow-xl border border-slate-100 max-h-[85vh] overflow-y-auto">
-  <button onclick="fecharModal('modalTermos')" class="absolute top-3 right-4 text-slate-400 hover:text-slate-600 text-2xl font-bold">&times;</button>
-  <div class="flex items-center gap-2 text-red-600 font-bold text-lg mb-3">
-    <i class="fa-solid fa-gavel"></i>
-    <h3>Termos de Uso & Segurança</h3>
-  </div>
-  <div class="space-y-4 text-xs text-slate-600 leading-relaxed">
-    <p class="font-semibold text-slate-800">Ao utilizar a plataforma MOZ1VENDAS, você concorda com os termos previstos.</p>
-  </div>
-  <button onclick="fecharModal('modalTermos')" class="w-full mt-5 bg-slate-800 hover:bg-slate-900 text-white py-2.5 rounded-xl font-semibold text-xs transition">Entendido</button>
+<button onclick="fecharModal('modalTermos')" class="absolute top-3 right-4 text-slate-400 hover:text-slate-600 text-2xl font-bold">&times;</button>
+<div class="flex items-center gap-2 text-red-600 font-bold text-lg mb-3">
+<i class="fa-solid fa-gavel"></i>
+<h3>Termos de Uso & Segurança</h3>
+</div>
+<div class="space-y-4 text-xs text-slate-600 leading-relaxed">
+<p class="font-semibold text-slate-800">Ao utilizar a plataforma MOZ1VENDAS, você concorda expressamente com os seguintes termos:</p>
+<div class="bg-red-50 p-3 rounded-xl border border-red-200 text-red-800 space-y-2">
+<p class="font-bold">Proibições Estritas:</p>
+<ul class="list-disc pl-4 space-y-1">
+<li>É estritamente proibida a publicação de produtos roubados, furtados ou sem procedência legal.</li>
+<li>É proibida a venda de cópias não autorizadas, pirataria, cursos/arquivos falsos ou golpes digitais.</li>
+<li>É proibida a criação de múltiplos perfis falsos para induzir clientes ao erro.</li>
+</ul>
+</div>
+<div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+<p class="font-bold text-slate-800 mb-1">Penalizações & Banimento:</p>
+<p>Qualquer atividade suspeita ou denúncia confirmada de fraude resultará no <strong>banimento definitivo e imediato</strong> da conta do vendedor, bloqueio de saques e envio de dados às autoridades competentes.</p>
+</div>
+<p class="text-[11px] text-slate-400">Dúvidas? Entre em contato com o nosso suporte oficial pelo WhatsApp: <strong>+258 860 407 269</strong>.</p>
+</div>
+<button onclick="fecharModal('modalTermos')" class="w-full mt-5 bg-slate-800 hover:bg-slate-900 text-white py-2.5 rounded-xl font-semibold text-xs transition">Entendido</button>
 </div>
 </div>
-
 <!-- MODAL PAINEL DO VENDEDOR -->
 <div id="modalPainelVendedor" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex justify-center items-center p-4 z-50">
 <div class="bg-white p-6 rounded-2xl max-w-2xl w-full relative shadow-xl border border-slate-100 max-h-[90vh] overflow-y-auto">
-  <button onclick="fecharModal('modalPainelVendedor')" class="absolute top-3 right-4 text-slate-400 hover:text-slate-600 text-2xl font-bold">&times;</button>
-  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6 pb-4 border-b border-slate-100">
-    <div>
-      <h2 class="text-xl font-bold text-slate-800">Painel do Vendedor</h2>
-      <p class="text-xs text-slate-500">Gerencie seu catálogo de produtos cadastrados.</p>
-    </div>
-    <button onclick="abrirModalCriarProduto()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl font-bold text-xs transition flex items-center gap-1.5 shadow-sm shadow-emerald-600/30">
-      <i class="fa-solid fa-plus"></i> Adicionar Produto
-    </button>
-  </div>
-  <h3 class="font-bold text-sm text-slate-700 mb-3">Meus Produtos Cadastrados</h3>
-  <div id="listaMeusProdutos" class="space-y-3">
-    <p class="text-slate-500 text-center py-4 text-xs">Carregando seus produtos...</p>
-  </div>
+<button onclick="fecharModal('modalPainelVendedor')" class="absolute top-3 right-4 text-slate-400 hover:text-slate-600 text-2xl font-bold">&times;</button>
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6 pb-4 border-b border-slate-100">
+<div>
+<h2 class="text-xl font-bold text-slate-800">Painel do Vendedor</h2>
+<p class="text-xs text-slate-500">Gerencie seu catálogo de produtos cadastrados.</p>
+</div>
+<button onclick="abrirModalCriarProduto()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl font-bold text-xs transition flex items-center gap-1.5 shadow-sm shadow-emerald-600/30">
+<i class="fa-solid fa-plus"></i> Adicionar Produto
+</button>
+</div>
+<h3 class="font-bold text-sm text-slate-700 mb-3">Meus Produtos Cadastrados</h3>
+<div id="listaMeusProdutos" class="space-y-3">
+<p class="text-slate-500 text-center py-4 text-xs">Carregando seus produtos...</p>
 </div>
 </div>
-
-<!-- MODAL CRIAR PRODUTO -->
+</div>
+<!-- MODAL FORMULÁRIO DE CRIAR PRODUTO -->
 <div id="modalCriarProduto" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex justify-center items-center p-4 z-50">
 <div class="bg-white p-6 rounded-2xl max-w-md w-full relative shadow-xl border border-slate-100 max-h-[90vh] overflow-y-auto">
-  <button onclick="fecharModal('modalCriarProduto')" class="absolute top-3 right-4 text-slate-400 hover:text-slate-600 text-2xl font-bold">&times;</button>
-  <h2 class="text-xl font-bold text-slate-800 mb-4">Novo Produto</h2>
-  <form onsubmit="salvarProduto(event)">
-    <div class="mb-3">
-      <label class="block text-xs font-semibold text-slate-600 mb-1">Nome do Produto</label>
-      <input type="text" id="prodNome" required class="w-full border border-slate-200 p-2 rounded-xl text-sm">
-    </div>
-    <div class="mb-3">
-      <label class="block text-xs font-semibold text-slate-600 mb-1">Descrição</label>
-      <textarea id="prodDescricao" required class="w-full border border-slate-200 p-2 rounded-xl text-sm" rows="2"></textarea>
-    </div>
-    <div class="mb-3">
-      <label class="block text-xs font-semibold text-slate-600 mb-1">URL da Imagem</label>
-      <input type="url" id="prodImagem" placeholder="Link da imagem..." class="w-full border border-slate-200 p-2 rounded-xl text-sm">
-    </div>
-    <div class="mb-3">
-      <label class="block text-xs font-semibold text-slate-600 mb-1">Preço (MT)</label>
-      <input type="number" step="0.01" id="prodPreco" required class="w-full border border-slate-200 p-2 rounded-xl text-sm">
-    </div>
-    <div class="mb-3">
-      <label class="block text-xs font-semibold text-slate-600 mb-1">Tipo de Produto</label>
-      <select id="prodTipo" onchange="alternarCamposTipo()" class="w-full border border-slate-200 p-2 rounded-xl text-sm">
-        <option value="FISICO">Físico</option>
-        <option value="DIGITAL">Digital (PDF, E-book, Cursos, etc.)</option>
-      </select>
-    </div>
-    <div class="mb-3">
-      <label class="block text-xs font-semibold text-slate-600 mb-1">Método de Recebimento</label>
-      <select id="prodMetodo" onchange="alternarCamposTipo()" class="w-full border border-slate-200 p-2 rounded-xl text-sm">
-        <option value="NETSHOP">Netshop (M-Pesa / e-Mola)</option>
-        <option value="WHATSAPP">WhatsApp Direto</option>
-      </select>
-    </div>
-    <div class="mb-3" id="campoWhatsapp">
-      <label class="block text-xs font-semibold text-slate-600 mb-1">WhatsApp para Contato</label>
-      <input type="tel" id="prodWhatsapp" placeholder="258841234567" class="w-full border border-slate-200 p-2 rounded-xl text-sm">
-    </div>
-    <div class="mb-4 hidden" id="campoDownload">
-      <label class="block text-xs font-semibold text-slate-600 mb-1">Link do Arquivo / PDF</label>
-      <input type="url" id="prodDownload" placeholder="https://drive.google.com/..." class="w-full border border-slate-200 p-2 rounded-xl text-sm">
-    </div>
-    <button type="submit" id="btnSalvarProd" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold text-sm transition">Publicar Produto</button>
-  </form>
+<button onclick="fecharModal('modalCriarProduto')" class="absolute top-3 right-4 text-slate-400 hover:text-slate-600 text-2xl font-bold">&times;</button>
+<h2 class="text-xl font-bold text-slate-800 mb-4">Novo Produto</h2>
+<form onsubmit="salvarProduto(event)">
+<div class="mb-3">
+<label class="block text-xs font-semibold text-slate-600 mb-1">Nome do Produto</label>
+<input type="text" id="prodNome" required class="w-full border border-slate-200 p-2 rounded-xl text-sm">
+</div>
+<div class="mb-3">
+<label class="block text-xs font-semibold text-slate-600 mb-1">Descrição</label>
+<textarea id="prodDescricao" required class="w-full border border-slate-200 p-2 rounded-xl text-sm" rows="2"></textarea>
+</div>
+<div class="mb-3">
+<label class="block text-xs font-semibold text-slate-600 mb-1">Link / URL da Imagem (Google Drive, ImgBB, etc.)</label>
+<input type="url" id="prodImagem" placeholder="Cole o link aqui..." class="w-full border border-slate-200 p-2 rounded-xl text-sm">
+</div>
+<div class="mb-3">
+<label class="block text-xs font-semibold text-slate-600 mb-1">Preço (MT)</label>
+<input type="number" step="0.01" id="prodPreco" required class="w-full border border-slate-200 p-2 rounded-xl text-sm">
+</div>
+<div class="mb-3">
+<label class="block text-xs font-semibold text-slate-600 mb-1">Tipo de Produto</label>
+<select id="prodTipo" onchange="alternarCamposTipo()" class="w-full border border-slate-200 p-2 rounded-xl text-sm">
+<option value="FISICO">Físico</option>
+<option value="DIGITAL">Digital (PDF, E-book, Cursos, etc.)</option>
+</select>
+</div>
+<div class="mb-3">
+<label class="block text-xs font-semibold text-slate-600 mb-1">Método de Recebimento</label>
+<select id="prodMetodo" onchange="alternarCamposTipo()" class="w-full border border-slate-200 p-2 rounded-xl text-sm">
+<option value="NETSHOP">Netshop (M-Pesa / e-Mola)</option>
+<option value="WHATSAPP">WhatsApp Direto</option>
+</select>
+</div>
+<div class="mb-3" id="campoWhatsapp">
+<label class="block text-xs font-semibold text-slate-600 mb-1">WhatsApp para Contato</label>
+<input type="tel" id="prodWhatsapp" placeholder="258841234567" class="w-full border border-slate-200 p-2 rounded-xl text-sm">
+</div>
+<div class="mb-4 hidden" id="campoDownload">
+<label class="block text-xs font-semibold text-slate-600 mb-1">Link do Arquivo / PDF (Google Drive ou Dropbox)</label>
+<input type="url" id="prodDownload" placeholder="https://drive.google.com/..." class="w-full border border-slate-200 p-2 rounded-xl text-sm">
+<p class="text-[11px] text-slate-400 mt-1">Pode colar o link normal de partilha, o sistema converte para download automático.</p>
+</div>
+<button type="submit" id="btnSalvarProd" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold text-sm transition">Publicar Produto</button>
+</form>
 </div>
 </div>
-
-<!-- MODAL COMPRA -->
+<!-- MODAL DE CHECKOUT / COMPRA -->
 <div id="modalCompra" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex justify-center items-center p-4 z-50">
 <div class="bg-white p-6 rounded-2xl max-w-md w-full relative shadow-xl border border-slate-100">
-  <button onclick="fecharModal('modalCompra')" class="absolute top-3 right-4 text-slate-400 hover:text-slate-600 text-2xl font-bold">&times;</button>
-  <h2 id="modalTitulo" class="text-xl font-bold text-slate-800 mb-1">Comprar Produto</h2>
-  <p id="modalPreco" class="text-lg text-blue-600 font-bold mb-4"></p>
-  <form id="formCheckout" onsubmit="processarCompra(event)">
-    <input type="hidden" id="compraProdutoId">
-    <div class="mb-4">
-      <label class="block text-xs font-semibold text-slate-600 mb-1">Telefone M-Pesa / e-Mola</label>
-      <input type="tel" id="clienteTelefone" placeholder="841234567" required class="w-full border border-slate-200 p-2.5 rounded-xl text-sm">
-    </div>
-    <div class="mb-6">
-      <label class="block text-xs font-semibold text-slate-600 mb-1">Carteira Móvel</label>
-      <select id="metodoPagamento" class="w-full border border-slate-200 p-2.5 rounded-xl text-sm">
-        <option value="mpesa">M-Pesa</option>
-        <option value="emola">e-Mola</option>
-      </select>
-    </div>
-    <button type="submit" id="btnPagar" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-bold text-sm transition">Pagar com Netshop</button>
-  </form>
+<button onclick="fecharModal('modalCompra')" class="absolute top-3 right-4 text-slate-400 hover:text-slate-600 text-2xl font-bold">&times;</button>
+<h2 id="modalTitulo" class="text-xl font-bold text-slate-800 mb-1">Comprar Produto</h2>
+<p id="modalPreco" class="text-lg text-blue-600 font-bold mb-4"></p>
+<form id="formCheckout" onsubmit="processarCompra(event)">
+<input type="hidden" id="compraProdutoId">
+<div class="mb-4">
+<label class="block text-xs font-semibold text-slate-600 mb-1">Telefone M-Pesa / e-Mola</label>
+<input type="tel" id="clienteTelefone" placeholder="841234567" required class="w-full border border-slate-200 p-2.5 rounded-xl text-sm">
+</div>
+<div class="mb-6">
+<label class="block text-xs font-semibold text-slate-600 mb-1">Carteira Móvel</label>
+<select id="metodoPagamento" class="w-full border border-slate-200 p-2.5 rounded-xl text-sm">
+<option value="mpesa">M-Pesa</option>
+<option value="emola">e-Mola</option>
+</select>
+</div>
+<button type="submit" id="btnPagar" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-bold text-sm transition">Pagar com Netshop</button>
+</form>
 </div>
 </div>
 
-<!-- SCRIPT COMPATÍVEL COM O GOOGLE APPS SCRIPT -->
+<!-- SCRIPT AJUSTADO PARA COMPATIBILIDADE GAS -->
 <script>
 const GAS_URL = "https://script.google.com/macros/s/AKfycbz62rB-RTzLg-h6fXMogftj01-z-sC0tTz0PFo7BoTdalzoVQvnIo0fi5a7vcBh0GMh/exec";
 
-// Função para envio no formato que evita erro de CORS com Apps Script
-async function postToGAS(payload) {
-  const response = await fetch(GAS_URL, {
+// Função utilitária para contornar limitações de CORS e tipo de mídia do Google Apps Script
+async function enviarGAS(payload) {
+  const res = await fetch(GAS_URL, {
     method: "POST",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
     body: JSON.stringify(payload)
   });
-  return await response.json();
+  return await res.json();
 }
 
 function formatarUrlImagem(rawUrl) {
@@ -364,7 +366,7 @@ async function fazerLogin(e) {
   const btn = document.getElementById("btnLogin");
   btn.disabled = true;
   btn.innerText = "Entrando...";
-
+  
   const payload = {
     action: "loginVendedor",
     identificador: document.getElementById("loginIdentificador").value,
@@ -372,7 +374,7 @@ async function fazerLogin(e) {
   };
 
   try {
-    const json = await postToGAS(payload);
+    const json = await enviarGAS(payload);
     if (json.ok && json.token) {
       localStorage.setItem("moz1_token", json.token);
       fecharModal("modalLogin");
@@ -406,7 +408,7 @@ async function fazerRegisto(e) {
   };
 
   try {
-    const json = await postToGAS(payload);
+    const json = await enviarGAS(payload);
     if (json.ok) {
       alert(json.msg || "Conta criada com sucesso! Faça login.");
       fecharModal("modalRegisto");
@@ -529,7 +531,7 @@ async function salvarProduto(e) {
   };
 
   try {
-    const json = await postToGAS(payload);
+    const json = await enviarGAS(payload);
     if (json.ok) {
       alert(json.msg || "Produto cadastrado com sucesso!");
       fecharModal("modalCriarProduto");
@@ -629,7 +631,7 @@ async function processarCompra(e) {
   };
 
   try {
-    const json = await postToGAS(payload);
+    const json = await enviarGAS(payload);
     if (json.ok && json.checkoutUrl) {
       window.location.href = json.checkoutUrl;
     } else if (json.ok) {
