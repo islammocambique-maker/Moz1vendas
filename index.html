@@ -512,18 +512,21 @@
   try {
     const res = await fetch(`${GAS_URL}?action=meusProdutos&token=${encodeURIComponent(token)}`);
     const data = await res.json();
-    
-    // Suporta tanto se o backend retornar uma Array quanto se retornar { ok: true, produtos: [...] }
     const produtos = Array.isArray(data) ? data : (data.produtos || []);
 
     if (produtos.length > 0) {
       container.innerHTML = produtos.map(p => `
-        <div class="border border-slate-200 p-3 rounded-xl flex justify-between items-center bg-slate-50">
+        <div id="meu-produto-${p.produtoId}" class="border border-slate-200 p-3 rounded-xl flex justify-between items-center bg-slate-50 mb-2">
           <div>
             <p class="font-bold text-slate-800 text-sm">${p.nome}</p>
             <p class="text-xs text-slate-500">${p.preco} MT | Status: <span class="font-bold text-${p.status === 'ATIVO' ? 'emerald' : 'red'}-600">${p.status}</span></p>
           </div>
-          <span class="text-[10px] font-bold bg-slate-200 text-slate-700 px-2 py-1 rounded-md uppercase">${p.tipo}</span>
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] font-bold bg-slate-200 text-slate-700 px-2 py-1 rounded-md uppercase">${p.tipo}</span>
+            <button type="button" onclick="deletarProdutoLocal('${p.produtoId}')" class="bg-red-100 hover:bg-red-200 text-red-600 p-2 rounded-lg text-xs font-bold transition">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </div>
         </div>
       `).join('');
     } else {
@@ -533,23 +536,20 @@
     container.innerHTML = '<p class="text-red-500 text-center py-4 text-xs">Erro ao carregar produtos.</p>';
   }
 }
-// FUNÇÃO PARA DELETAR PRODUTO DO PAINEL
+
 function deletarProdutoLocal(produtoId) {
   if (!confirm("Tem certeza que deseja remover este produto da tela?")) return;
 
-  // 1. Apaga a linha do produto no modal do vendedor
   const elementoPainel = document.getElementById(`meu-produto-${produtoId}`);
   if (elementoPainel) {
     elementoPainel.remove();
   }
 
-  // 2. Se não restar nenhum produto, mostra a mensagem de lista vazia
   const containerPainel = document.getElementById("listaMeusProdutos");
-  if (containerPainel && containerPainel.children.length === 0) {
+  if (containerPainel && containerPainel.querySelectorAll('[id^="meu-produto-"]').length === 0) {
     containerPainel.innerHTML = '<p class="text-slate-400 text-center py-4 text-xs">Você ainda não tem produtos cadastrados.</p>';
   }
 
-  // 3. Atualiza a vitrine pública de vendas
   carregarProdutos();
 }
     function abrirModalCriarProduto() {
